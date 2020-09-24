@@ -10,10 +10,17 @@ class Stream extends Model
     use HasFactory;
 
 
+    /**
+     * ---------------------------------------------------------------------------------------------------------
+     * STATUS OBSAHUJE STAVY ( SUCCESS, WAITING, WARNING , NO_SCRAMBLED, OUT_OF_SYNC, PID_NOT_MATCH, ERROR )
+     * ---------------------------------------------------------------------------------------------------------
+     */
+
     protected $fillable = [
         'nazev',
         'stream_url',
         'image',
+        'pcrPid',
         'dokumentaceUrl',
         'dokumentaceId',
         'dohledovano',
@@ -21,6 +28,8 @@ class Stream extends Model
         'dohledBitrate',
         'vytvaretNahled',
         'sendMailAlert',
-        'sendSmsAlert'
+        'sendSmsAlert',
+        'status',
+        'process_pid'
     ];
 }

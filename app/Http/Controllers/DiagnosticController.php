@@ -11,9 +11,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Stream;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\StreamHistory;
+use App\Models\StreamSync;
 
 class DiagnosticController extends Controller
 {
@@ -61,7 +63,7 @@ class DiagnosticController extends Controller
      * fn pro zsíkání pcrPidu
      *
      * @param array $streamData
-     * @return void
+     * @return string
      */
     public static function collect_pcrpid_from_diagnostic(array $streamData)
     {
@@ -76,9 +78,39 @@ class DiagnosticController extends Controller
         }
     }
 
+    /**
+     * fn pro získání informací zda se dekryptuje kanál
+     *
+     * @param array $streamData
+     * @return string
+     */
+    public static function collect_dekryptInfo_from_diagnostic(array $streamData)
+    {
+
+        // access=scrambled
+        // access=clear
+
+        foreach ($streamData as $data) {
+            // pokud existuje hodnota scrambled => kanál se nedekryptuje ==> PROBLEM NA MULTICASTU
+            // overeni zda vubec existuje scrambpled nebo access
+            if (!Str::contains($data, "access=scrambled") || !Str::contains($data, "access=clear")) {
+                return null;
+            }
+
+            // pokud existuje access=scrambled ==> MULTICAST PROBLEM
+            if (Str::contains($data, 'access=scrambled')) {
+
+                return "no_dekrypt";
+            }
+
+            return "dektypt"; // kanál se dekryptuje, je vše v pořádku
+        }
+    }
+
 
     /**
      * hlavní funkce. která v realném čase dohleduje jednotlivé streamy
+     * u kanálu je uložen process_pid pod kterým funguje tento loop
      *
      * @param array $stream
      * @return void
@@ -103,6 +135,9 @@ class DiagnosticController extends Controller
                         'stream_id' => $stream["id"],
                         'status' => false
                     ]);
+
+                    // aktualizace záznamu v tabulce streams
+                    Stream::where('id', $stream["id"])->update(['status', "error"]);
                 }
             }
 
@@ -116,14 +151,69 @@ class DiagnosticController extends Controller
                 // převedení stringu do pole rozdělením podle ":" pod stejnou proměnnou
                 $tsDuckData = explode(":", $tsDuckData);
 
-                // zpracování dat a následně navrácení potřebných hodnot
-                $loop = \React\EventLoop\Factory::create();
+                // zpracování dat a následně navrácení potřebných hodnot , data se sbírají asynchronně
+                $reactLoop = \React\EventLoop\Factory::create();
 
-                self::collect_invalidsync_from_diagnostic($tsDuckData); // invalidsync
-                self::collect_transportErrors_from_diagnostic($tsDuckData); // transportErrors
-                self::collect_pcrpid_from_diagnostic($tsDuckData); // pcrpid
+                // sběr dat a následné vyhodnocení
+                $invalidSync = self::collect_invalidsync_from_diagnostic($tsDuckData); // invalidsync
+                $transportErrors = self::collect_transportErrors_from_diagnostic($tsDuckData); // transportErrors
+                $pcrPid = self::collect_pcrpid_from_diagnostic($tsDuckData); // pcrpid
+                $dekrypt = self::collect_dekryptInfo_from_diagnostic($tsDuckData); // scrambled info ( zjisteni zda se kanal dekryptuje ci nikoliv)
 
-                $loop->run();
+                $reactLoop->run();
+
+                // ověření zda stream má hodnotu null
+                // pokud má hodnotu null tak je něco špatně ve streamu jelikož se jedná o elementární hodnoty, které stream musí obsahovat. tudíž stream nejspíše nefunguje tak jak by měl
+                // uloží se do StreamHistory jako false jelikoz stream nefunguje korektně
+                if (is_null($invalidSync) || is_null($transportErrors) || is_null($pcrPid) || is_null($dekrypt)) {
+
+                    StreamHistory::create([
+                        'stream_id' => $stream["id"],
+                        'status' => false
+                    ]);
+
+
+                    //  zárověn se stream aktualizje v tabulce streams , kdy se změní status ze jineho než warning na warning
+                    // ověření zda stream je ve stavu warrning
+                    if (Stream::find($stream["id"])->status != "warning") {
+
+                        // aktualizace záznamu v tabulce streams
+                        Stream::where('id', $stream["id"])->update(['status', "warrning"]);
+                    }
+                } else {
+
+                    // Ověření zda kanál má problém se synchronizací audia / videa
+                    // pro test ukládání do tabulky, následně po vyhodnocení jak se data ukladají a co všechno se zaznamenává se nad tímto provede diagnostika
+                    StreamSync::create([
+                        'stream_id' => $stream["id"],
+                        'sync_data' => $invalidSync
+                    ]);
+
+                    // Ověřením zda se stream dekryptuje
+                    // pokud se nedekryptuje aktualizuje se záznam u kanálu NO_SCRAMBLED no_dekrypt
+
+                    if ($dekrypt == "no_dekrypt") {
+                        Stream::where('id', $stream["id"])->update(['status', "NO_SCRAMBLED"]);
+                    } else if ($pid = Stream::find($stream["id"])->pcrPid == null) {
+                        // pcrpid => hlídání zda se změnil ci nikoliv
+                        // pokud se změní je nutné provést změnu stavu v tabulce streams
+                        // pokud pcrpid jeste neexistuje v tabulce streams => zalození updatem
+                        Stream::where('id', $stream["id"])->updade(['pcrPid', $pcrPid]);
+                    } else if ($pid != $pcrPid) {
+
+                        // pidy nejsou stejne, nejspise doslo ke zmene poradi primo od distributora
+                        Stream::where('id', $stream["id"])->update(['status', "pid_not_match"]);
+                    } else {
+
+
+                        // vse je v porádku, overení zda kanal jiz je ve statusu success
+                        if (Stream::find($stream["id"])->status != "success") {
+
+                            // aktualizace záznamu v tabulce streams
+                            Stream::where('id', $stream["id"])->update(['status', "success"]);
+                        }
+                    }
+                }
             }
         }
     }

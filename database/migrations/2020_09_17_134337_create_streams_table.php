@@ -18,6 +18,7 @@ class CreateStreamsTable extends Migration
             $table->string('nazev')->index();
             $table->string('stream_url')->index();
             $table->string('image')->default('false');
+            $table->string('pcrPid')->nullable();
             $table->longText('dokumentaceUrl')->nullable();
             $table->string('dokumentaceId')->nullable();
             $table->boolean('dohledovano')->default(false)->index();
@@ -26,6 +27,8 @@ class CreateStreamsTable extends Migration
             $table->boolean('vytvaretNahled')->default(false)->index();
             $table->boolean('sendMailAlert')->default(false)->index();
             $table->boolean('sendSmsAlert')->default(false)->index();
+            $table->string('status')->default('waiting')->index();
+            $table->string('process_pid')->nullable();
             $table->timestamps();
         });
     }
