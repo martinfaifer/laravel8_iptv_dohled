@@ -21,92 +21,77 @@ class DiagnosticController extends Controller
 {
 
     /**
-     * fn pro získání invalidsyncs ze záznamu tsducku
+     * funkce pro prevedeni stringu, ktery generuje tsduck do pole
      *
-     * @param array $streamData
-     * @return string
+     * @param string $tsduckString
+     * @return array
      */
-    public static function collect_invalidsync_from_diagnostic(array $streamData)
+    public static function convert_tsduck_string_to_array(string $tsduckString)
     {
+        // definice proměnné, do které se budou ukladat zpracovaná data ze stringu
+        $output = array();
+        //vytvoření pole, které obsahuje zatím pro nás nepotřebné informace o streamu, toto pole se následne zpracuje pro nás ideální formu
+        $tsDuckData = explode("\n", $tsduckString);
 
-        foreach ($streamData as $data) {
-            // pokud existuje invalidsyncs= vrátí hodnotu
-            if (!Str::contains($data, "invalidsyncs=")) {
-                return null;
+        foreach ($tsDuckData as $data) {
+            // title: vynecháváme jelikož pro ás je to zbytečný udaj
+            if ($data == "title:") {
+                /**
+                 * -------------------------------------------------------------
+                 * NIC ZDE NEDĚLÁME A POKRACUJEME VESELE DÁLE VE ZPRACOVÁNÍ POLE
+                 * -------------------------------------------------------------
+                 */
+            } else {
+
+                /**
+                 * ---------------------------------------------------
+                 * TS => TRANSPORT STREAM, OBECNÉ INFORMACE O STREAMU
+                 * ---------------------------------------------------
+                 */
+                if (Str::contains($data, "ts:")) {
+                    $data = str_replace("ts:", "", $data);
+                    $output["ts"] = explode(":", $data);
+                }
+
+                /**
+                 * ------------------------------------------
+                 * GLOBAL => OBSAHUJE PIDY, UNICAST A POD
+                 * ------------------------------------------
+                 */
+
+                if (Str::contains($data, "global:")) {
+                    $data = str_replace("global:", "", $data);
+                    $output["global"] = explode(":", $data);
+                }
+
+                /**
+                 * --------------------------------------------
+                 * SERVICE => OBECNÉ INFORMACE PODOBNĚ JAKO TS
+                 * --------------------------------------------
+                 */
+                if (Str::contains($data, "service:")) {
+                    $data = str_replace("service:", "", $data);
+                    $output["service"] = explode(":", $data);
+                }
+
+                /**
+                 * ------------------------------------------
+                 * PIDS => INFORMACE O JEDNOTLIVÝCH PIDECH
+                 *
+                 * JEDNÁ SE O VÍCEROZMĚRNÉ POLE
+                 * ------------------------------------------
+                 */
+
+                if (Str::contains($data, "pid:")) {
+                    $data = str_replace("pid:", "", $data);
+                    $pids[] = explode(":", $data);
+                    $output["pids"] = $pids;
+                }
             }
-
-            return str_replace("invalidsyncs=", "", $data);
         }
+
+        return $output;
     }
-
-
-    /**
-     * fn pro získání TS erroru
-     *
-     * @param array $streamData
-     * @return string
-     */
-    public static function collect_transportErrors_from_diagnostic(array $streamData)
-    {
-
-        foreach ($streamData as $data) {
-            // pokud existuje invalidsyncs= vrátí hodnotu
-            if (!Str::contains($data, "transporterrors=")) {
-                return null;
-            }
-
-            return str_replace("transporterrors=", "", $data);
-        }
-    }
-
-    /**
-     * fn pro zsíkání pcrPidu
-     *
-     * @param array $streamData
-     * @return string
-     */
-    public static function collect_pcrpid_from_diagnostic(array $streamData)
-    {
-
-        foreach ($streamData as $data) {
-            // pokud existuje invalidsyncs= vrátí hodnotu
-            if (!Str::contains($data, "pcrpid=")) {
-                return null;
-            }
-
-            return str_replace("pcrpid=", "", $data);
-        }
-    }
-
-    /**
-     * fn pro získání informací zda se dekryptuje kanál
-     *
-     * @param array $streamData
-     * @return string
-     */
-    public static function collect_dekryptInfo_from_diagnostic(array $streamData)
-    {
-
-        // access=scrambled
-        // access=clear
-
-        foreach ($streamData as $data) {
-            // pokud existuje hodnota scrambled => kanál se nedekryptuje ==> PROBLEM NA MULTICASTU
-            // overeni zda vubec existuje scrambpled nebo access
-            if (!Str::contains($data, "access=scrambled") || !Str::contains($data, "access=clear")) {
-                return null;
-            }
-
-            // pokud existuje access=scrambled ==> MULTICAST PROBLEM
-            if (Str::contains($data, 'access=scrambled')) {
-
-                return "no_dekrypt";
-            }
-
-            return "dektypt"; // kanál se dekryptuje, je vše v pořádku
-        }
-    }
-
 
     /**
      * hlavní funkce. která v realném čase dohleduje jednotlivé streamy
@@ -143,78 +128,316 @@ class DiagnosticController extends Controller
 
             // stream funguje
             // vyčtou se ze streamu všechny možná data, která případně pomohou diagnostikovat chyby ve streamu
+            // převod stringu do pole
             else {
-
-                // tsduck posílá neformátovaný string, který je zapotřebý kompletně rozebrat a vyčíst si data co nás zajímají pro případnou diagnostiku a dohled
-                // hodnoty co nás zajímají -> invalidsyncs ( ověření zda video / audio jsou synchronní ) , transporterrors ( hlídání počtu chyb ve streamu  ) , bitrate ( sledování datového toku ) , access=scrambled ( jelikož v tomto případě je hodnota scrambled => video se nedekryptuje již na příjmu)
-
-                // převedení stringu do pole rozdělením podle ":" pod stejnou proměnnou
-                $tsDuckData = explode(":", $tsDuckData);
-
-                // zpracování dat a následně navrácení potřebných hodnot , data se sbírají asynchronně
-                $reactLoop = \React\EventLoop\Factory::create();
-
-                // sběr dat a následné vyhodnocení
-                $invalidSync = self::collect_invalidsync_from_diagnostic($tsDuckData); // invalidsync
-                $transportErrors = self::collect_transportErrors_from_diagnostic($tsDuckData); // transportErrors
-                $pcrPid = self::collect_pcrpid_from_diagnostic($tsDuckData); // pcrpid
-                $dekrypt = self::collect_dekryptInfo_from_diagnostic($tsDuckData); // scrambled info ( zjisteni zda se kanal dekryptuje ci nikoliv)
-
-                $reactLoop->run();
-
-                // ověření zda stream má hodnotu null
-                // pokud má hodnotu null tak je něco špatně ve streamu jelikož se jedná o elementární hodnoty, které stream musí obsahovat. tudíž stream nejspíše nefunguje tak jak by měl
-                // uloží se do StreamHistory jako false jelikoz stream nefunguje korektně
-                if (is_null($invalidSync) || is_null($transportErrors) || is_null($pcrPid) || is_null($dekrypt)) {
-
-                    StreamHistory::create([
-                        'stream_id' => $stream["id"],
-                        'status' => false
-                    ]);
+                // fn pro převedení stringu do pole
+                $tsduckArr = self::convert_tsduck_string_to_array($tsDuckData);
 
 
-                    //  zárověn se stream aktualizje v tabulce streams , kdy se změní status ze jineho než warning na warning
-                    // ověření zda stream je ve stavu warrning
-                    if (Stream::find($stream["id"])->status != "warning") {
+                // zpracování pole
+                // vyhledání specifických klíčů, dle kterých se pole zpracuje
+                if (array_key_exists('ts', $tsduckArr)) {
+                    $ts = self::collect_transportStream_from_tsduckArr($tsduckArr["ts"]);
+                }
 
-                        // aktualizace záznamu v tabulce streams
-                        Stream::where('id', $stream["id"])->update(['status', "warrning"]);
-                    }
-                } else {
+                if (array_key_exists('global', $tsduckArr)) {
+                    $global = self::collect_global_from_tsduckArr($tsduckArr["global"]);
+                }
 
-                    // Ověření zda kanál má problém se synchronizací audia / videa
-                    // pro test ukládání do tabulky, následně po vyhodnocení jak se data ukladají a co všechno se zaznamenává se nad tímto provede diagnostika
-                    StreamSync::create([
-                        'stream_id' => $stream["id"],
-                        'sync_data' => $invalidSync
-                    ]);
+                if (array_key_exists('service', $tsduckArr)) {
+                    $service = self::collect_service_from_tsduckArr($tsduckArr["service"]);
+                }
 
-                    // Ověřením zda se stream dekryptuje
-                    // pokud se nedekryptuje aktualizuje se záznam u kanálu NO_SCRAMBLED no_dekrypt
-
-                    if ($dekrypt == "no_dekrypt") {
-                        Stream::where('id', $stream["id"])->update(['status', "NO_SCRAMBLED"]);
-                    } else if ($pid = Stream::find($stream["id"])->pcrPid == null) {
-                        // pcrpid => hlídání zda se změnil ci nikoliv
-                        // pokud se změní je nutné provést změnu stavu v tabulce streams
-                        // pokud pcrpid jeste neexistuje v tabulce streams => zalození updatem
-                        Stream::where('id', $stream["id"])->updade(['pcrPid', $pcrPid]);
-                    } else if ($pid != $pcrPid) {
-
-                        // pidy nejsou stejne, nejspise doslo ke zmene poradi primo od distributora
-                        Stream::where('id', $stream["id"])->update(['status', "pid_not_match"]);
-                    } else {
-
-
-                        // vse je v porádku, overení zda kanal jiz je ve statusu success
-                        if (Stream::find($stream["id"])->status != "success") {
-
-                            // aktualizace záznamu v tabulce streams
-                            Stream::where('id', $stream["id"])->update(['status', "success"]);
-                        }
-                    }
+                if (array_key_exists('pids', $tsduckArr)) {
+                    $pids = self::collect_pids_from_tsduckArr($tsduckArr["pids"]);
                 }
             }
         }
+    }
+
+
+    /**
+     * funkce pro získání invalidsyncs , scrambledpids , transporterrors
+     *
+     * @param array $tsduckArr
+     * @return array
+     */
+    public static function collect_transportStream_from_tsduckArr(array $tsduckArr)
+    {
+        // definice proměnných
+        $invalidsyncs = null;
+        $scrambledpids = null;
+        $transporterrors = null;
+
+        // vyhledání dat
+        foreach ($tsduckArr as $ts) {
+
+            if (Str::contains($ts, 'invalidsyncs=')) {
+                // zpracování
+                $invalidsyncs = str_replace('invalidsyncs=', "", $ts);
+            }
+            if (Str::contains($ts, 'scrambledpids=')) {
+                // zpracování
+                $scrambledpids = str_replace('scrambledpids=', "", $ts);
+            }
+
+            if (Str::contains($ts, 'transporterrors=')) {
+                // zpracování
+                $transporterrors = str_replace('transporterrors=', "", $ts);
+            }
+        }
+
+        // poslání na zpět do hlavní funkce
+        return [
+            $invalidsyncs,
+            $scrambledpids,
+            $transporterrors
+        ];
+    }
+
+    /**
+     * funknce pro získání celkového bitratu "bitrate"
+     *
+     * @param array $tsduckArr
+     * @return array
+     */
+    public static function collect_global_from_tsduckArr(array $tsduckArr)
+    {
+
+        // definice proměnných
+        $maxBitrate = null;
+
+        // vyhledání dat
+        foreach ($tsduckArr as $global) {
+
+            if (Str::contains($global, 'bitrate=')) {
+                // zpracování
+                $maxBitrate = str_replace('bitrate=', "", $global);
+            }
+        }
+
+        // poslání na zpět do hlavní funkce
+        return [
+            $maxBitrate
+        ];
+    }
+
+    /**
+     * funkce pro získání service dat tsid , access=clear , pmtpid , pcrpid , provider , name
+     *
+     * @param array $tsduckArr
+     * @return array
+     */
+    public static function collect_service_from_tsduckArr(array $tsduckArr)
+    {
+        // definice proměnných
+        $tsid = null;
+        $access = null;
+        $pmtpid = null;
+        $pcrpid = null;
+        $provider = null;
+        $name = null;
+
+        // vyhledání dat
+        foreach ($tsduckArr as $service) {
+
+            if (Str::contains($service, 'tsid=')) {
+                // zpracování
+                $tsid = str_replace('tsid=', "", $service);
+            }
+
+            if (Str::contains($service, 'pmtpid=')) {
+                // zpracování
+                $pmtpid = str_replace('pmtpid=', "", $service);
+            }
+
+            if (Str::contains($service, 'pcrpid=')) {
+                // zpracování
+                $pcrpid = str_replace('pcrpid=', "", $service);
+            }
+
+            if (Str::contains($service, 'provider=')) {
+                // zpracování
+                $provider = str_replace('provider=', "", $service);
+            }
+
+            if (Str::contains($service, 'name=')) {
+                // zpracování
+                $name = str_replace('name=', "", $service);
+            }
+
+            // nejslozitejsi cast!!!
+            // pokud existuje access=clear => tak se kanál jako takový dekryptuje
+            if (Str::contains($service, 'access=clear')) {
+                // zpracování
+                $access = "access";
+            } else {
+                $access = "scrambled";
+            }
+        }
+
+        // poslání na zpět do hlavní funkce
+        return [
+            $tsid,
+            $pmtpid,
+            $pcrpid,
+            $provider,
+            $name,
+            $access
+        ];
+    }
+
+
+
+    // "pids": [
+    //     [
+    //     "pid=0",
+    //     "access=clear",
+    //     "servcount=0",
+    //     "bitrate=6009",
+    //     "bitrate204=6520",
+    //     "packets=4",
+    //     "clear=4",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=0",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "unitstart=4",
+    //     "description=PAT"
+    //     ],
+    //     [
+    //     "pid=17",
+    //     "access=clear",
+    //     "servcount=0",
+    //     "bitrate=1502",
+    //     "bitrate204=1629",
+    //     "packets=1",
+    //     "clear=1",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=0",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "unitstart=1",
+    //     "description=SDT/BAT"
+    //     ],
+    //     [
+    //     "pid=20",
+    //     "access=clear",
+    //     "servcount=0",
+    //     "bitrate=1502",
+    //     "bitrate204=1629",
+    //     "packets=1",
+    //     "clear=1",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=0",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "unitstart=1",
+    //     "description=TDT/TOT"
+    //     ],
+    //     [
+    //     "pid=1100",
+    //     "pmt",
+    //     "access=clear",
+    //     "servcount=1",
+    //     "servlist=601",
+    //     "bitrate=24039",
+    //     "bitrate204=26084",
+    //     "packets=16",
+    //     "clear=16",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=0",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "unitstart=16",
+    //     "description=PMT"
+    //     ],
+    //     [
+    //     "pid=1101",
+    //     "access=clear",
+    //     "streamid=224",
+    //     "video",
+    //     "servcount=1",
+    //     "servlist=601",
+    //     "bitrate=11149955",
+    //     "bitrate204=12098887",
+    //     "packets=7421",
+    //     "clear=7421",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=55",
+    //     "pcr=28",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "pes=25",
+    //     "invalidpesprefix=0",
+    //     "description=HEVC video"
+    //     ],
+    //     [
+    //     "pid=1102",
+    //     "access=clear",
+    //     "streamid=192",
+    //     "audio",
+    //     "language=eng",
+    //     "servcount=1",
+    //     "servlist=601",
+    //     "bitrate=282467",
+    //     "bitrate204=306506",
+    //     "packets=188",
+    //     "clear=188",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=47",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "pes=47",
+    //     "invalidpesprefix=0",
+    //     "description=MPEG-2 AAC Audio (eng, Audio layer 0, dual channel)"
+    //     ],
+    //     [
+    //     "pid=1191",
+    //     "ecm",
+    //     "cas=2816",
+    //     "access=clear",
+    //     "servcount=1",
+    //     "servlist=601",
+    //     "bitrate=0",
+    //     "bitrate204=0",
+    //     "packets=0",
+    //     "clear=0",
+    //     "scrambled=0",
+    //     "invalidscrambling=0",
+    //     "af=0",
+    //     "pcr=0",
+    //     "discontinuities=0",
+    //     "duplicated=0",
+    //     "unitstart=0",
+    //     "description=Conax ECM"
+    //     ]
+    //     ]
+
+
+    /**
+     * funkce na zpracování pidu, které jsme získali z tsducku
+     *
+     *
+     * tato funknce schromazduje veskere informace co maji pidy jako jsou audio / video pidy, ale take pidy modulu a krypt
+     *
+     * zasila se pole, deleni se jeste musi promyslet ...
+     *
+     * @param array $tsduckArr
+     * @return array
+     */
+    public static function collect_pids_from_tsduckArr(array $tsduckArr)
+    {
     }
 }
