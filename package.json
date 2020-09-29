@@ -26,7 +26,7 @@
         "laravel-echo": "^1.8.1",
         "vue": "^2.6.12",
         "vue-chartkick": "^0.6.1",
-        "vue-router": "^3.4.3",
+        "vue-router": "^3.4.5",
         "vuetify": "^2.3.10",
         "vuex": "^3.5.1"
     }
