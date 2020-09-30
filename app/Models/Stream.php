@@ -20,16 +20,19 @@ class Stream extends Model
         'nazev',
         'stream_url',
         'image',
-        'pcrPid',
+        // 'pcrPid',
         'dokumentaceUrl',
         'dokumentaceId',
         'dohledovano',
+        'dohledVidea',
         'dohledVolume',
+        'dohledAudia',
         'dohledBitrate',
         'vytvaretNahled',
         'sendMailAlert',
         'sendSmsAlert',
         'status',
-        'process_pid'
+        'process_pid',
+        'ffmpeg_pid'
     ];
 }

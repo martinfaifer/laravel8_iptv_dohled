@@ -39,6 +39,26 @@ class SystemController extends Controller
      */
     public static function selfCheck()
     {
-        // some code here ...aphp artisan make:test UserTest
+        // some code here ...
+    }
+
+
+    /**
+     * funkce, která hlídá, zda pid, který je uložený v tabulce streams označený jako process_pid nebo ffmpeg_pid existuje
+     *
+     * pokud pid neexistuje vyvolá se alert / případně pokud bude žádost pokusí se pustit process sám
+     *
+     * funknce bude volána
+     *
+     * @param string $pid
+     * @return void | string $pid . "_process_not_running"
+     */
+    public static function check_if_process_running(string $pid)
+    {
+        if (file_exists("/proc/{$pid}")) {
+            // OK, process uložený pod $pid je aktivní
+        } else {
+            return $pid . "_process_not_running";
+        }
     }
 }
