@@ -15,13 +15,18 @@
 
         </script>
         {{-- app.js => obsahuje kompilovaný vuejs , vuetify --}}
-        <script src="{{ asset('js/app.js') }}" defer></script>
+        {{-- <script src="{{ asset('js/app.js') }}" defer></script> --}}
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Nunito:200,600" rel="stylesheet">
         {{-- css --}}
         <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
         <link href="{{ asset('css/app.css') }}" rel="stylesheet">
         <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+
+        <link href="https://vjs.zencdn.net/7.8.4/video-js.css" rel="stylesheet" />
+
+        <!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
+        <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script>
 
         <style>
             body {
@@ -30,10 +35,23 @@
         </style>
     </head>
 
-    <body>
-       <v-app id="app">
+    {{-- <body>
+        <div>
+            <video src="http://93.91.154.54:10224/udp/239.250.6.25:1234	">
+                <!-- Fallback here -->
+               </video>
+        </div>
+       {{-- <v-app id="app">
         <router-view></router-view>
-    </v-app>
+    </v-app> --}}
 
-    </body>
+    {{-- </body>  --}}
+
+    <body>
+
+        <hr>
+        <video controls>
+            <source src="udp://127.0.0.1/video.webm" type="video/webm">
+          </video>
+      </body>
 </html>

@@ -13,7 +13,7 @@ class StreamAlert extends Model
      *
      *
      * ------------------------------------------------------------------------------------
-     * STATUS NESE MOŽNOSTI AUDIO_WARNING, VIDEO_WARNING, CA_WARNING
+     * STATUS NESE MOŽNOSTI AUDIO_WARNING, VIDEO_WARNING, CA_WARNING , START_ERROR
      * MESSAGE -> ZPRÁVA DO FRONTENDU
      * ------------------------------------------------------------------------------------
      *

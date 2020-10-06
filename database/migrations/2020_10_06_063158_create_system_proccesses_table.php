@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateStreamHistoriesTable extends Migration
+class CreateSystemProccessesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,10 @@ class CreateStreamHistoriesTable extends Migration
      */
     public function up()
     {
-        Schema::create('stream_histories', function (Blueprint $table) {
+        Schema::create('system_proccesses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('stream_id')->index();
-            $table->text('status');
+            $table->string('process_name')->nullable();
+            $table->string('pid');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ class CreateStreamHistoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('stream_histories');
+        Schema::dropIfExists('system_proccesses');
     }
 }

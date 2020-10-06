@@ -24,7 +24,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // overování zda sluzby fungují jak mají
+        $schedule->command('command:check_if_serverices_running')->everyMinute()->runInBackground();
+
+        // spustení všech diagnostic a náhledů, které ještě nefungují nebo z nějakého duvodu crashnuly a je zapotřebí je znovu spustit
+        $schedule->command('command:start_all_streams_for_diagnostic')->everyMinute()->runInBackground();
+
+        // kontrola zda funguje redis server
+        $schedule->command('command:check_redis')->everyMinute()->runInBackground();
+
+        // kontrola zda funguje queue a případě jej spustí
+        $schedule->command('command:check_queue')->everyMinute()->runInBackground();
     }
 
     /**
@@ -34,7 +44,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

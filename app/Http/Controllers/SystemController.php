@@ -57,8 +57,9 @@ class SystemController extends Controller
     {
         if (file_exists("/proc/{$pid}")) {
             // OK, process uložený pod $pid je aktivní
+            return "running";
         } else {
-            return $pid . "_process_not_running";
+            return "not_running";
         }
     }
 }
