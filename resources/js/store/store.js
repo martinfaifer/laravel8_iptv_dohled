@@ -7,6 +7,7 @@ Vue.use(Vuex);
 export const store = new Vuex.Store({
     state: {
         userData: [],
+        alerts: [],
     },
     actions: {
 
@@ -14,6 +15,10 @@ export const store = new Vuex.Store({
     mutations: {
       update (state, user) {
         state.userData = user;
+      },
+
+      update (state, alert) {
+        state.alerts = alert;
       },
 
     },

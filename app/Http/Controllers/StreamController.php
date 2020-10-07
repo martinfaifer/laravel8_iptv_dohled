@@ -295,4 +295,98 @@ class StreamController extends Controller
             ];
         }
     }
+
+
+
+    /**
+     * ------------------------------------------------------------------------------------------------------------
+     *
+     * BLOK URČENÝ PRO VÝPIS INFORMACÍ O STREAMECH VE FRONTENDU
+     *
+     * TÝKÁ SE TO CELKOVÝCH INFORMACÍ O JEDNOTLIVÝCH STREAMECH, ALERTECH A DALŠÍCH DETAILNÍCH INFORMACÍ
+     *
+     * ------------------------------------------------------------------------------------------------------------
+     */
+
+
+    /**
+     * funkce pro výpis streamů, ktere mají status jiný než success nebo waiting
+     * vyhledání jednotlivých detailních informací a vypsání ( pouze pokud se jedná o status issue u statusu error, se toto netýká jelikož stream nejspíše vůbec nefunguje)
+     *
+     * error => error color
+     * issue => warning color
+     * not_scrambled => warning color
+     *
+     * barvy jsou brány dle sass
+     *
+     * @return array
+     */
+    public function show_problematic_streams_as_alerts(): array
+    {
+        if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->first()) {
+            // neexistuje žádný stream, který má jinou hodnotu než success nebo waiting
+
+            // vrací prázdné pole
+            return [];
+        }
+
+        // zpracování problematických streamů
+        foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->get() as $problematicStream) {
+            $dataAboutStream[] = $this->sort_stream_status_by_data($problematicStream);
+        }
+
+        return $dataAboutStream;
+    }
+
+
+    /**
+     * funkce pro prebrání chybových statusu streamu a následně vytvorení polí, které obsahují informace o chybách
+     *
+     * @param array $stream
+     * @return array
+     */
+    public static function sort_stream_status_by_data($stream): array
+    {
+        switch ($stream['status']) {
+            case "error":
+                // error status
+
+                return [
+                    'status' => "error",
+                    'msg' => "{$stream["nazev"]} negunguje!"
+                ];
+                break;
+            case "diagnostic_crash":
+                // diagnostic_crash
+
+                return [
+                    'status' => "error",
+                    'msg' => "{$stream["nazev"]} negunguje!"
+                ];
+
+                break;
+            case "not_scrambled":
+                // not_scrambled status
+                return [
+                    'status' => "warning",
+                    'msg' => "{$stream["nazev"]} se nedekryptuje!"
+                ];
+
+                break;
+            case "issue":
+                // issue status
+                return [
+                    'status' => "warning",
+                    'msg' => "{$stream["nazev"]} má problémy!",
+                    'data' => StreamAlertController::return_information_about_issued_stream($stream["id"])
+                ];
+                break;
+            default:
+                // neznámí status
+                return [
+                    'status' => "error",
+                    'msg' => "Neznámí status streamu"
+                ];
+        }
+    }
 }

@@ -6,7 +6,7 @@
  * DIAGNOSTICKÉ JÁDRO, KTERÉ ZODPOVÍDÁ ZA KONTROLU KANÁLŮ , POUŽÍVÁ SE PRIMÁRNĚ TSDUCK PRO DIAGNOSTIKU A FFPROBE PRO ZÍSKÁNÍ LOW LEVEL INFORMACÍ
  * --------------------------------------------------------------------------------------------------------------------------------------------
  *
- * JÁDRO VERZE 0.3
+ * JÁDRO VERZE 0.4
  *
  *
  */
@@ -162,10 +162,10 @@ class DiagnosticController extends Controller
                     self::collect_transportStream_from_tsduckArr($tsduckArr["ts"], $streamId);
                 }
 
-                // zatím vynechat
-                // if (array_key_exists('global', $tsduckArr)) {
-                //     self::collect_global_from_tsduckArr($tsduckArr["global"], $streamId);
-                // }
+                // kontrola, zda pid není roven 0 , pokud ano, vypadá to, že stream je bez audia
+                if (array_key_exists('global', $tsduckArr)) {
+                    self::collect_global_from_tsduckArr($tsduckArr["global"], $streamId);
+                }
 
                 if (array_key_exists('service', $tsduckArr)) {
                     self::collect_service_from_tsduckArr($tsduckArr["service"], $streamId);
@@ -185,7 +185,7 @@ class DiagnosticController extends Controller
 
                 $eventLoop->run(); // konec event loopu
             }
-            sleep(2);
+            sleep(3);
         } // end of loop
     }
 
@@ -638,7 +638,7 @@ class DiagnosticController extends Controller
     }
 
     /**
-     * funknce pro získání celkového bitratu "bitrate"
+     * funkce na overení zda funguje audio
      *
      * @param array $tsduckArr
      * @param string $streamId
@@ -647,27 +647,58 @@ class DiagnosticController extends Controller
     public static function collect_global_from_tsduckArr(array $tsduckArr, string $streamId)
     {
 
-        // definice proměnných
-        $maxBitrate = null;
+        $globalPid = null;
 
         // vyhledání dat
         foreach ($tsduckArr as $global) {
 
-            if (Str::contains($global, 'bitrate=')) {
+            if (Str::contains($global, 'pid=')) {
                 // zpracování
-                $maxBitrate = str_replace('bitrate=', "", $global);
+                $globalPid = str_replace('pid=', "", $global);
             }
         }
 
-        if (!is_null($maxBitrate)) {
+        if (!is_null($globalPid)) {
 
-            // uložení záznamu audioBitrate do tabulky
-            StreamBitrate::create([
-                'stream_id' => $streamId,
-                'bitrate' => $maxBitrate
-            ]);
+            // oveření zda pid je nebo není roven 0
+            if ($globalPid == "0") {
+                // stream je nejspíše bez audia
+                // update záznamu Stream z jiného statusu nez issue na issue
+                if (Stream::where('id', $streamId)->first()->status != "issue") {
+                    Stream::where('id', $streamId)->update(['status', "issue"]);
 
-            return;
+                    //  ulození do tabulky StreamAlerts a StreamHistory
+                    StreamHistory::create([
+                        'stream_id' => $streamId,
+                        'status' => "no_audio"
+                    ]);
+
+                    StreamAlert::create([
+                        'stream_id' => $streamId,
+                        'status' => "no_audio",
+                        'meddage' => "Stream bez zvuku"
+                    ]);
+
+                    return;
+                }
+            }
+
+            // overeni zda stream nemel hodnotu issue , záznam v StreamAlert a vytvori se záznam do StreamHistory
+            // Stream nemá chyby
+            // overení zda stream má status issue
+            if (Stream::where('id', $streamId)->first()->status == "issue") {
+                Stream::where('id', $streamId)->update(['status', "success"]);
+            }
+
+            // odebrání záznamu a vytvirení záamu do historie
+            if (StreamAlert::where('stream_id', $streamId)->where('status', "no_audio")->first()) {
+                // smazání,
+                StreamAlert::where('stream_id', $streamId)->where('status', "no_audio")->delete();
+                StreamHistory::create([
+                    'stream_id' => $streamId,
+                    'status' => "audio_OK"
+                ]);
+            }
         }
     }
 

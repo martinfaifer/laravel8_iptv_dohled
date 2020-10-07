@@ -14,10 +14,19 @@ Vue.use(Chartkick.use(Chart));
 
 
 import LoginComponent from './components/LoginComponent'
+import NavigationComponent from './components/NavigationComponent'
+import MozaikaComponent from './components/Main/MozaikaComponent'
 
 let routes = [
     {
         path: "/",
+        component: NavigationComponent,
+        children: [
+            {
+                path: '',
+                component: MozaikaComponent
+            }
+        ]
     },
     {
         path: '/login',
@@ -38,8 +47,12 @@ const opts = {}
 //module.export
 const app = new Vue({
     el: '#app',
+    store,
     router,
     vuetify: new Vuetify({
+        theme: {
+            dark: true,
+        },
         opts
     })
 });

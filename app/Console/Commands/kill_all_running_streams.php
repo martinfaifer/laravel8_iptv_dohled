@@ -38,6 +38,8 @@ class kill_all_running_streams extends Command
      */
     public function handle()
     {
-        return StreamController::kill_all_running_streams();
+        StreamController::kill_all_running_streams();
+        // vycistení queue tabulky po ukoncení vsech streamů => implementace od verze jádra 0.4
+        shell_exec('php artisan queue:clear');
     }
 }

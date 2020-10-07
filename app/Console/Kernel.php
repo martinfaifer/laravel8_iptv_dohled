@@ -35,6 +35,11 @@ class Kernel extends ConsoleKernel
 
         // kontrola zda funguje queue a případě jej spustí
         $schedule->command('command:check_queue')->everyMinute()->runInBackground();
+
+        // cistení queue tabulky, kvuli performance issues,
+        // pokud je mále cpu, tak se nespoustejí dostatatecne rychle queues a zbytecne se hromadí tabulky , implementace od verze jádra 0.4
+        // cistení probehne kazdou druhou minutu
+        $schedule->command('queue:clear')->everyTwoMinutes()->runInBackground();
     }
 
     /**

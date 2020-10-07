@@ -15,7 +15,7 @@
 
         </script>
         {{-- app.js => obsahuje kompilovaný vuejs , vuetify --}}
-        {{-- <script src="{{ asset('js/app.js') }}" defer></script> --}}
+        <script src="{{ asset('js/app.js') }}" defer></script>
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Nunito:200,600" rel="stylesheet">
         {{-- css --}}
@@ -30,28 +30,15 @@
 
         <style>
             body {
-                font-family: Sans-Serif;
+                font-family: Roboto;
             }
         </style>
     </head>
 
-    {{-- <body>
-        <div>
-            <video src="http://93.91.154.54:10224/udp/239.250.6.25:1234	">
-                <!-- Fallback here -->
-               </video>
-        </div>
-       {{-- <v-app id="app">
-        <router-view></router-view>
-    </v-app> --}}
-
-    {{-- </body>  --}}
-
     <body>
-
-        <hr>
-        <video controls>
-            <source src="udp://127.0.0.1/video.webm" type="video/webm">
-          </video>
-      </body>
+        {{-- registrace vuejs --}}
+        <v-app id="app">
+            <router-view></router-view>
+        </v-app>
+    </body>
 </html>

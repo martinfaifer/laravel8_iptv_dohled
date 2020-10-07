@@ -52,7 +52,7 @@ class SystemProccessController extends Controller
                 $redisPid = self::start_redis_server_return_pid();
 
                 // update záznamu
-                SystemProccess::where('process_name', "redis_server")->update(['pid' => $redisPid]);
+                SystemProccess::where('process_name', "redis_server")->update(['pid' => intval($redisPid)]);
 
                 return;
             }
@@ -92,7 +92,7 @@ class SystemProccessController extends Controller
                 $queuePid = self::start_queue_and_return_pid();
 
                 // update záznamu
-                SystemProccess::where('process_name', "queue_worker")->update(['pid' => $queuePid]);
+                SystemProccess::where('process_name', "queue_worker")->update(['pid' => intval($queuePid)]);
 
                 return;
             }
@@ -107,8 +107,8 @@ class SystemProccessController extends Controller
      */
     public static function start_queue_and_return_pid(): string
     {
-        $queuePid = shell_exec("nohup php artisan queue:work --daemon > /dev/null 2>&1 & echo $!; ");
+        $queuePid = shell_exec("nohup php artisan queue:work --sleep=0 --daemon > /dev/null 2>&1 & echo $!; ");
 
-        return $queuePid;
+        return intval($queuePid);
     }
 }
