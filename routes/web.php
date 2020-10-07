@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\StreamNotification;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\SystemController;
 use Illuminate\Http\Request;

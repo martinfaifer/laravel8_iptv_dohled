@@ -13,6 +13,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StreamNotification;
 use App\Jobs\FFprobeDiagnostic;
 use App\Models\AudioBitrate;
 use App\Models\Stream;

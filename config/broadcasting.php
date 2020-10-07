@@ -50,6 +50,11 @@ return [
             'driver' => 'log',
         ],
 
+        'larasocket' => [
+            'driver' => 'larasocket',
+            'token' => env('LARASOCKET_TOKEN'),
+        ],
+
         'null' => [
             'driver' => 'null',
         ],

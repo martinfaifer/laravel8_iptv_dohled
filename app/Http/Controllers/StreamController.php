@@ -321,7 +321,7 @@ class StreamController extends Controller
      *
      * @return array
      */
-    public function show_problematic_streams_as_alerts(): array
+    public static function show_problematic_streams_as_alerts(): array
     {
         if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->first()) {
             // neexistuje žádný stream, který má jinou hodnotu než success nebo waiting
@@ -332,7 +332,7 @@ class StreamController extends Controller
 
         // zpracování problematických streamů
         foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->get() as $problematicStream) {
-            $dataAboutStream[] = $this->sort_stream_status_by_data($problematicStream);
+            $dataAboutStream[] = self::sort_stream_status_by_data($problematicStream);
         }
 
         return $dataAboutStream;
