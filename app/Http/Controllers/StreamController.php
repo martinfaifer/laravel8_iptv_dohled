@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Stream;
 use App\Models\StreamAlert;
+use App\Models\StreamAudio;
+use App\Models\StreamCa;
 use App\Models\StreamHistory;
+use App\Models\StreamService;
+use App\Models\StreamVideo;
 use Illuminate\Http\Request;
 use Illuminate\Log\Logger;
 use React\EventLoop\Factory;
@@ -97,10 +101,10 @@ class StreamController extends Controller
     /**
      * funkce na killnutí procesu, který funguje na pozadí dle pidu
      *
-     * @param string $pid
+     * @param int $pid
      * @return void
      */
-    public static function stop_diagnostic_stream_from_backend(string $pid)
+    public static function stop_diagnostic_stream_from_backend($pid)
     {
         shell_exec("kill {$pid}");
     }
@@ -196,7 +200,9 @@ class StreamController extends Controller
                     // ukocení streamu
 
                     self::stop_diagnostic_stream_from_backend($streamWithProcessPid->process_pid);
-                    self::stop_diagnostic_stream_from_backend($streamWithProcessPid->ffmpeg_pid);
+                    if (!is_null($streamWithProcessPid->ffmpeg_pid)) {
+                        self::stop_diagnostic_stream_from_backend($streamWithProcessPid->ffmpeg_pid);
+                    }
 
                     // editace záznamu Stream
 
@@ -214,10 +220,11 @@ class StreamController extends Controller
                             'message' => "Diagnostika streamu přestala fungovat!"
                         ]);
 
-                        StreamHistory::create([
-                            'stream_id' => $streamWithProcessPid->id,
-                            'status' => "diagnostic_crash"
-                        ]);
+                        // zakázání kvuli tuně záznamů
+                        // StreamHistory::create([
+                        //     'stream_id' => $streamWithProcessPid->id,
+                        //     'status' => "diagnostic_crash"
+                        // ]);
                     }
                 }
             }
@@ -250,10 +257,11 @@ class StreamController extends Controller
                             'message' => "Vytváření náhledů u streamu přestalo fungovat!"
                         ]);
 
-                        StreamHistory::create([
-                            'stream_id' => $streamWithProcessPid->id,
-                            'status' => "diagnostic_crash"
-                        ]);
+                        // zakázání kvuli tuně záznamů
+                        // StreamHistory::create([
+                        //     'stream_id' => $streamWithProcessPid->id,
+                        //     'status' => "diagnostic_crash"
+                        // ]);
                     }
                 }
             }
@@ -276,7 +284,7 @@ class StreamController extends Controller
 
             foreach (Stream::where('process_pid', "!=", null)->get() as $streamProUkonceni) {
                 //  ukončení ffmpegu, pokud aktuálně funguje
-                if ($streamProUkonceni->ffmpeg_pid != null) {
+                if (!is_null($streamProUkonceni->ffmpeg_pid)) {
                     self::stop_diagnostic_stream_from_backend($streamProUkonceni->ffmpeg_pid);
                 }
                 self::stop_diagnostic_stream_from_backend($streamProUkonceni->process_pid);
@@ -321,7 +329,7 @@ class StreamController extends Controller
      *
      * @return array
      */
-    public static function show_problematic_streams_as_alerts(): array
+    public static function show_problematic_streams_as_alerts()
     {
         if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->first()) {
             // neexistuje žádný stream, který má jinou hodnotu než success nebo waiting
@@ -335,7 +343,7 @@ class StreamController extends Controller
             $dataAboutStream[] = self::sort_stream_status_by_data($problematicStream);
         }
 
-        return $dataAboutStream;
+        return response()->json($dataAboutStream);
     }
 
 
@@ -387,6 +395,105 @@ class StreamController extends Controller
                     'status' => "error",
                     'msg' => "Neznámí status streamu"
                 ];
+        }
+    }
+
+
+    /**
+     * funkce, která vrátí kanály v mozaice
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function streams_for_mozaiku(Request $request)
+    {
+
+        // if ($user->mozaikaAlphaBet == "true") {
+        //     return Channel::where('noMonitor', "mdi-check")->orderBy('nazev', 'asc')->paginate($user->pagination, ['id', 'nazev', 'img', 'Alert', 'audioLang', 'api', 'dohledVolume', 'dohledBitrate', 'dokumentaceUrl']);
+        // } else {
+
+        return Stream::paginate(21, ['id', 'image', 'nazev', 'status']);
+        // }
+
+    }
+
+
+    /**
+     * funkce, která získá odkaz na náhled, status kanálu
+     *
+     * @param Request $request->streamId
+     * @return void
+     */
+    public function stream_info_image(Request $request)
+    {
+        if ($stream = Stream::where('id', $request->streamId)->first()) {
+
+            // stream s id $request->streamId existuje
+            return [
+                'nazev' => $stream['nazev'],
+                'status' => $stream['status'],
+                'image' => $stream["image"]
+            ];
+        } else {
+
+            redirect(404);
+        }
+    }
+
+
+    /**
+     * funkce na získání detailních informací o streamu
+     *
+     * @param Request $request->streamId
+     * @return array | redirect
+     */
+    public function stream_info_detail(Request $request)
+    {
+        // overení zda existuje stream s tímto id
+        if (Stream::where('id', $request->streamId)->first()) {
+
+            return [
+                'audio' => StreamAudio::where('stream_id', $request->streamId)->first() ?? null,
+                'video' => StreamVideo::where('stream_id', $request->streamId)->first() ?? null,
+                'service' => StreamService::where('stream_id', $request->streamId)->first() ?? null,
+                'ca' => StreamCa::where('stream_id', $request->streamId)->first() ?? null,
+            ];
+        } else {
+            redirect(404);
+        }
+    }
+
+    /**
+     * funkce na získání informací z dokumentace pomocí api
+     * stream musí mít vyplněnou uri v poli dokumentaceUrl
+     *
+     * pokud stream nemá tuto informaci vyplněnou, vrátí se "none" string
+     *
+     * pokud stream neexistuje redirect 404
+     *
+     * @param Request $request
+     * @return array | redirect
+     */
+    public function stream_info_doku(Request $request)
+    {
+        // vyhledání zda existuje streamId
+        if ($stream = Stream::where('id', $request->streamId)->first()) {
+
+            if (is_null($stream['dokumentaceUrl'])) {
+                return [
+                    'status' => "none",
+                    'message' => "Stream nemá povolené API"
+                ];
+            }
+
+            // zavolání funkce z RemoteApiController
+            return;
+        } else {
+
+            return [
+                'status' => "none",
+                'message' => "Stream neexistuje"
+            ];
         }
     }
 }

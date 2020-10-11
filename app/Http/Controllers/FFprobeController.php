@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StreamNotification;
 use App\Models\Stream;
 use App\Models\StreamHistory;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class FFprobeController extends Controller
                     'stream_id' => $streamId,
                     'status' => "stream_error"
                 ]);
+                event(new StreamNotification());
             }
         } else {
             // byl nalezen klíc programs , stream nejspise funguje
@@ -50,6 +52,7 @@ class FFprobeController extends Controller
                     'stream_id' => $streamId,
                     'status' => "stream_ok"
                 ]);
+                event(new StreamNotification());
             }
         }
     }

@@ -1,9 +1,9 @@
 <template>
     <v-main>
-        <v-snackbar top color="success" multi-line v-model="status">
-            <p class="subtitle-2 text-center">
-                <strong>Nějaký text</strong>
-            </p>
+        <v-snackbar v-if="status != null" dense top color="success" v-model="status">
+            <div class="body-1 text-center">
+                Nějaký text
+            </div>
             <template v-slot:action="{ attrs }">
                 <v-btn color="blue" text v-bind="attrs"> </v-btn>
             </template>
@@ -21,6 +21,8 @@
                             </h1>
                             <v-form>
                                 <v-text-field
+                                    v-model="email"
+                                    :rules="mailRule"
                                     label="email"
                                     name="login"
                                     prepend-icon="mdi-account"
@@ -28,6 +30,8 @@
                                 ></v-text-field>
 
                                 <v-text-field
+                                    v-model="password"
+                                    :rules="passwordRule"
                                     label="heslo"
                                     name="password"
                                     prepend-icon="mdi-lock"
@@ -37,7 +41,7 @@
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn type="submit" color="success"
+                            <v-btn @click="login()" :disabled="password === '' || email === ''" type="submit" color="success"
                                 >Přihlášení</v-btn
                             >
                         </v-card-actions>
@@ -55,8 +59,49 @@ export default {
     },
     data() {
         return {
-            status: true
+            status: true,
+            email: null,
+            password: null,
+            status: null,
+
+            mailRule: [v => !!v || "chybí e-mailová adresa"],
+            passwordRule: [v => !!v || "chybí heslo"]
         };
+    },
+
+        created() {
+        // let currentObj = this;
+        // axios.get("/api/user/get").then(function(response) {
+        //     if (response.data.stat === "error") {
+        //         currentObj.status = response.data;
+        //     } else {
+        //         currentObj.$router.push("/");
+        //     }
+        // });
+    },
+    methods: {
+        login() {
+            let currentObj = this;
+            axios
+                .post("login", {
+                    email: this.email,
+                    password: this.password
+                })
+                .then(function(response) {
+                    currentObj.status = response.data;
+                    if (currentObj.status.status === "success") {
+                        currentObj.$router.push("/");
+                    }
+                })
+                .catch(function(error) {
+                    currentObj.chybaOdpovediServeru = true;
+                });
+        }
+    },
+    watch: {
+        status: function() {
+            setTimeout(() => (this.status = false), 3000);
+        }
     }
 };
 </script>

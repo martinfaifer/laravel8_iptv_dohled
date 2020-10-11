@@ -16,6 +16,7 @@ Vue.use(Chartkick.use(Chart));
 import LoginComponent from './components/LoginComponent'
 import NavigationComponent from './components/NavigationComponent'
 import MozaikaComponent from './components/Main/MozaikaComponent'
+import StreamInfoComponent from './components/Main/StreamInfo/StreamInfoComponent'
 
 let routes = [
     {
@@ -25,6 +26,10 @@ let routes = [
             {
                 path: '',
                 component: MozaikaComponent
+            },
+            {
+                path: 'stream/:id',
+                component: StreamInfoComponent
             }
         ]
     },

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StreamController;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 
-Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
-});
+// Broadcast::channel('stream-statuses', function ($user) {
+//     return $user;
+//     // return StreamController::show_problematic_streams_as_alerts();
+// });

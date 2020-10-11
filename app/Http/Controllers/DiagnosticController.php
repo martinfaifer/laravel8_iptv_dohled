@@ -490,6 +490,7 @@ class DiagnosticController extends Controller
                 // overení, ze kanál má hodnotu success
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
+                    event(new StreamNotification());
                 }
             } else {
                 Stream::where('id', $streamId)->update(['status' => "not_scrambled"]);
@@ -501,6 +502,7 @@ class DiagnosticController extends Controller
                 // overení, ze kanál má hodnotu success
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
+                    event(new StreamNotification());
                 }
             }
 
@@ -510,6 +512,7 @@ class DiagnosticController extends Controller
                 // overení, ze kanál má hodnotu success
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
+                    event(new StreamNotification());
                 }
             }
         }
@@ -551,6 +554,7 @@ class DiagnosticController extends Controller
         // pokud je hodnota jiná u invalidsyncs , scrambledpids , transporterrors jiná nez 0
         if ($invalidsyncs == "0" && $scrambledpids == "0" && $transporterrors == "0") {
             Stream::where('id', $streamId)->update(['status' => "success"]);
+            event(new StreamNotification());
 
             // overení zda existuje záznam v tabulce StreamAlert , pokud existuje, budou veskere záznamy s daným streamId odebrány
             if (StreamAlert::where('stream_id', $streamId)->first()) {
@@ -570,6 +574,7 @@ class DiagnosticController extends Controller
         } else {
             //  update statusu na issue
             Stream::where('id', $streamId)->update(['status' => "issue"]); // issue je , kdyz stream chybuje
+            event(new StreamNotification());
 
 
             // u kazdé hodnoty overení zda jiz existuje chyba
@@ -667,6 +672,7 @@ class DiagnosticController extends Controller
                 // update záznamu Stream z jiného statusu nez issue na issue
                 if (Stream::where('id', $streamId)->first()->status != "issue") {
                     Stream::where('id', $streamId)->update(['status', "issue"]);
+                    event(new StreamNotification());
 
                     //  ulození do tabulky StreamAlerts a StreamHistory
                     StreamHistory::create([
@@ -689,6 +695,7 @@ class DiagnosticController extends Controller
             // overení zda stream má status issue
             if (Stream::where('id', $streamId)->first()->status == "issue") {
                 Stream::where('id', $streamId)->update(['status', "success"]);
+                event(new StreamNotification());
             }
 
             // odebrání záznamu a vytvirení záamu do historie

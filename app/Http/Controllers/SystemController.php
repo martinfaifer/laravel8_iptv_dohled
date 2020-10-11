@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StreamNotification;
 use Illuminate\Http\Request;
 
 class SystemController extends Controller

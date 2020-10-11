@@ -1,7 +1,18 @@
 <template>
     <v-app>
         <v-app-bar color="transparent" flat fixed dense>
-            <v-toolbar-title>TS Analyzer</v-toolbar-title>
+            <div v-if="this.$route.path != '/'">
+                <v-btn
+                    link
+                    to="/"
+                    color="white"
+                    class="white--text"
+                    v-on="on"
+                    icon
+                >
+                    <v-icon>mdi-home</v-icon>
+                </v-btn>
+            </div>
             <v-spacer></v-spacer>
 
             <!-- user Part -->
@@ -20,11 +31,15 @@
                     <v-list width="250px" class="text-center subtitle-2">
                         <v-list-item link to="/user">
                             Editace <v-spacer></v-spacer
-                            ><v-icon color="grey" right small>mdi-account-cog-outline</v-icon>
+                            ><v-icon color="grey" right small
+                                >mdi-account-cog-outline</v-icon
+                            >
                         </v-list-item>
                         <v-list-item @click="">
                             Nastavení App<v-spacer></v-spacer
-                            ><v-icon color="grey" right small>mdi-settings</v-icon>
+                            ><v-icon color="grey" right small
+                                >mdi-settings</v-icon
+                            >
                         </v-list-item>
                         <v-divider></v-divider>
                         <v-list-item @click="LogOut()">
@@ -66,7 +81,7 @@
                     dense
                     border="left"
                     :type="alert.status"
-                    class="body-2 mt-2"
+                    class="body-2 mt-2 transition-fast-in-fast-out"
                 >
                     <strong>{{ alert.msg }}</strong>
                     <div v-show="alert.data">
@@ -83,16 +98,28 @@
                         </v-row>
                     </div>
                 </v-alert>
-                <!-- <v-alert dense outlined type="error">
-                    I'm a dense alert with the <strong>outlined</strong> prop
-                    and a <strong>type</strong> of error
-                </v-alert> -->
             </div>
         </v-navigation-drawer>
 
         <transition name="fade" mode="out-in">
             <router-view class="mt-1"> </router-view>
         </transition>
+
+        <v-snackbar
+            v-for="newNotification in newNotifications"
+            :key="newNotification.id"
+            class="mt-12"
+            top
+            color="error"
+            rounded="pill"
+            absolute
+            right
+            v-model="newNotifications"
+        >
+            <div class="text-center">
+                <strong>text</strong>
+            </div>
+        </v-snackbar>
     </v-app>
 </template>
 
@@ -102,11 +129,15 @@ export default {
         drawer: null,
         userMenu: null,
         alerts: [],
-        alertCount: ""
+        alertCount: "",
+        newNotifications: []
     }),
 
     created() {
         this.loadAlerts();
+        // Echo.channel("streamStatuses").listen("StreamNotification", e => {
+        //     console.log(e);
+        // });
     },
     methods: {
         loadAlerts() {
@@ -118,7 +149,10 @@ export default {
     },
 
     mounted() {
-        setInterval(() => this.loadAlerts(), 1000);
+        Echo.channel("stream-statuses").listen("StreamNotification", e => {
+            this.alerts = e.streamsStatuses.original;
+            this.alertCount = e.streamsStatuses.original.length;
+        });
     },
     watch: {}
 };
