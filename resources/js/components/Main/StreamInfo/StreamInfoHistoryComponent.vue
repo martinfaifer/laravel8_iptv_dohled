@@ -109,7 +109,16 @@ export default {
         }
     },
 
-    mounted() {},
+    mounted() {
+        // streamInfoTsHistory
+            Echo.channel("streamInfoTsHistory" + this.streamId).listen(
+            "StreamInfoHistory",
+            e => {
+                // console.log(e);
+                this.streamHistory = e;
+            }
+        );
+    },
     watch: {}
 };
 </script>

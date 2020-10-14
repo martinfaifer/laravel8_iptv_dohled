@@ -1,6 +1,8 @@
 <?php
 
+use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
+use App\Http\Controllers\FfmpegController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
 use App\Http\Controllers\SystemController;
@@ -35,11 +37,13 @@ Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->m
 
 Route::post('login', [UserController::class, 'loginUser'])->middleware('firewall');
 
+Route::get('logout', [UserController::class, 'logout'])->middleware('firewall');
+
+// získání informací o uživateli ( aktuálně přihlášeném )
+Route::get('user', [UserController::class, 'getLoggedUser'])->middleware('firewall');
 // systémové pozadavky
 Route::get('system', [SystemController::class, 'checkSystemUsage'])->middleware('firewall');
 
-// Route::get('event', function () {
-//     event(new StreamNotification());
-//     // StreamNotification::dispatch();
-//     return "odeslano";
-// });
+Route::get('test', function () {
+    return FfmpegController::find_image_if_exist_delete_and_create_new('1', "http://93.91.154.54:10224/udp/239.251.2.6:1234");
+});

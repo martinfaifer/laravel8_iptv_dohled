@@ -12,7 +12,7 @@ class start_realtime_diagnostic_and_return_pid extends Command
      *
      * @var string
      */
-    protected $signature = 'command:start_realtime_diagnostic_and_return_pid {streamurl} {streamId}';
+    protected $signature = 'command:start_realtime_diagnostic_and_return_pid {streamurl} {streamId} {--queue}';
 
     /**
      * The console command description.

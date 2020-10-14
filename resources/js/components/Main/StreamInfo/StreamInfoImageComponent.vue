@@ -43,11 +43,42 @@
                 </v-img>
 
                 <v-img
+                    v-else-if="stream.image == 'false'"
+                    :elevation="hover ? 24 : 0"
+                    class="transition-fast-in-fast-out"
+                >
+                    <v-row class="fill-height ma-0 mt-12" justify="center">
+                        <div class="ml-2">
+                            {{ stream.nazev }}
+                            <v-row
+                                v-if="
+                                    stream.status == 'success' ||
+                                        stream.status == 'issue' ||
+                                        stream.status == 'diagnostic_crash'
+                                "
+                            >
+                                <small class="ml-3 white--text">
+                                    <strong>
+                                        čeká se na vytvoření náhledu ...
+                                    </strong>
+                                </small>
+                            </v-row>
+                            <v-row v-if="stream.status == 'error'">
+                                <small class="ml-3 white--text">
+                                    <strong>
+                                        stream je ve výpadku ...
+                                    </strong>
+                                </small>
+                            </v-row>
+                        </div>
+                    </v-row>
+                </v-img>
+                <v-img
                     v-else
                     height="98%"
                     width="100%"
-                    lazy-src="/channelsImages/1.jpg"
-                    src="/channelsImages/1.jpg"
+                    :lazy-src="stream.image"
+                    :src="stream.image"
                     :aspect-ratio="16 / 9"
                 >
                 </v-img>
@@ -77,7 +108,13 @@ export default {
         }
     },
 
-    mounted() {},
+    mounted() {
+        // StreamImage
+        Echo.channel("StreamImage" + this.streamId).listen("StreamImage", e => {
+            console.log(e);
+            this.stream.image = e[0];
+        });
+    },
     watch: {}
 };
 </script>

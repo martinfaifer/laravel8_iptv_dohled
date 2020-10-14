@@ -29,6 +29,56 @@ class StreamController extends Controller
 
 
     /**
+     * funkce na overení a ulození pidu
+     *
+     * @param string $processPid
+     * @param string $streamToStartId
+     * @return void
+     */
+    public static function check_and_store_pid(string $processPid, string $streamToStartId): void
+    {
+
+        // ne vždy bude existovat ffmpegPid, takže s ním se nebude počítat protože se dohleduje v samostatném procesu
+        if (SystemController::check_if_process_running(intval($processPid)) == "running") {
+
+            // uložení pidu do tabulky k streamu
+
+            // pokud dorazil $processPid a ffmpegPid, uložení
+            Stream::where('id', $streamToStartId)->update(['process_pid' => intval($processPid), 'ffmpeg_pid' => $ffmpegPid ?? null]);
+            // vyhledání zda existuje záznam v tabulce stream_alerts se statusem start_error a stream_id streamu, co nyní spoustíme
+            if (StreamAlert::where('stream_id', $streamToStartId)->where('status', "start_error")->first()) {
+                // existuje záznam, dojde k jeho odebrání
+                StreamAlert::where('stream_id', $streamToStartId)->where('status', "start_error")->delete();
+            }
+        } else {
+
+            // sluzby nefungují jak by meli -> streamDiagnotika a tvorba náhledů
+            // do streamu ulozime chybu a do streamAlertu vytvorime zaznam se statusem start_error
+
+            Stream::where('id', $streamToStartId)->update(['status' => "start_error"]);
+
+            StreamAlert::create([
+                'stream_id' => $streamToStartId,
+                'status' => "start_error",
+                'msg' => "Nepodařilo se spustit stream"
+            ]);
+
+            // vyhledání, který pid nefunguje a killnutí pidu, který aktuálně funguje navíc, aby zbytečně nebral resourcess na serveru
+
+            if (SystemController::check_if_process_running(intval($processPid)) == "running") {
+                self::stop_diagnostic_stream_from_backend(intval($processPid));
+            }
+
+            if (isset($ffmpegPid)) {
+                if (SystemController::check_if_process_running(intval($ffmpegPid)) == "running") {
+                    self::stop_diagnostic_stream_from_backend(intval($ffmpegPid));
+                }
+            }
+        }
+    }
+
+
+    /**
      * funkce pro spustení vsech streamu, které se nediagnostikují ( chyby jim process_pid ==> null )
      *
      * @return void
@@ -44,55 +94,7 @@ class StreamController extends Controller
                 // spustení příkazu a vrácení pidu
                 $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToStart->stream_url} {$streamToStart->id}" . ' > /dev/null 2>&1 & echo $!; ');
 
-
-                // spustení ffmpegu a vrácení pidu, pokud je povolené vytváření náhledů
-                if ($streamToStart->vytvaretNahled == true) {
-                    if (file_exists(storage_path('app/public/channelsImages' . $streamToStart->id . 'jpg'))) {
-                        // Náhled existuje => odebrání náhledu z filesystemu
-                        unlink(storage_path('app/public/channelsImages' . $streamToStart->id . 'jpg'));
-
-                        $ffmpegPid = FfmpegController::find_if_exist_image_delete_and_create_new_image_loop($streamToStart->id, $streamToStart->stream_url);
-                    }
-                }
-
-
-                // ne vždy bude existovat ffmpegPid, takže s ním se nebude počítat protože se dohleduje v samostatném procesu
-                if (SystemController::check_if_process_running(intval($processPid)) == "running") {
-
-                    // uložení pidu do tabulky k streamu
-
-                    // pokud dorazil $processPid a ffmpegPid, uložení
-                    Stream::where('id', $streamToStart['id'])->update(['process_pid' => intval($processPid), 'ffmpeg_pid' => $ffmpegPid ?? null]);
-                    // vyhledání zda existuje záznam v tabulce stream_alerts se statusem start_error a stream_id streamu, co nyní spoustíme
-                    if (StreamAlert::where('stream_id', $streamToStart['id'])->where('status', "start_error")->first()) {
-                        // existuje záznam, dojde k jeho odebrání
-                        StreamAlert::where('stream_id', $streamToStart['id'])->where('status', "start_error")->delete();
-                    }
-                } else {
-
-                    // sluzby nefungují jak by meli -> streamDiagnotika a tvorba náhledů
-                    // do streamu ulozime chybu a do streamAlertu vytvorime zaznam se statusem start_error
-
-                    Stream::where('id', $streamToStart['id'])->update(['status' => "start_error"]);
-
-                    StreamAlert::create([
-                        'stream_id' => $streamToStart['id'],
-                        'status' => "start_error",
-                        'msg' => "Nepodařilo se spustit stream"
-                    ]);
-
-                    // vyhledání, který pid nefunguje a killnutí pidu, který aktuálně funguje navíc, aby zbytečně nebral resourcess na serveru
-
-                    if (SystemController::check_if_process_running(intval($processPid)) == "running") {
-                        self::stop_diagnostic_stream_from_backend(intval($processPid));
-                    }
-
-                    if (isset($ffmpegPid)) {
-                        if (SystemController::check_if_process_running(intval($ffmpegPid)) == "running") {
-                            self::stop_diagnostic_stream_from_backend(intval($ffmpegPid));
-                        }
-                    }
-                }
+                self::check_and_store_pid($processPid, $streamToStart->id);
             }
         }
     }
@@ -183,7 +185,7 @@ class StreamController extends Controller
 
 
     /**
-     * funknce, která ověřuje, že všechny streamy, které mají u sebe uložené pidy funguje korektně
+     * funkce, která ověřuje, že všechny streamy, které mají u sebe uložené pidy funguje korektně
      *
      * pokud pid není nalezen ==> ukončení veškerých dalších processů, které souvysí se streamem
      *
@@ -194,6 +196,10 @@ class StreamController extends Controller
 
         // Vyhledání zda funguje nějaký stream
         // nejdrive se vyhledají streamy, které nemají process_pid != null jelikož u ffmpeg_pid muze nastat situace, kdy bude hodnota null jelikož se u streamu může vytvořit výjimka, která nebude povololat vytvářet náhledy
+
+        // event loop
+        // $eventLoop = Factory::create();
+        // $timer = $eventLoop->addPeriodicTimer(5, function () {
         if (Stream::where('process_pid', "!=", null)->where('status', "!=", "error")->first()) {
             foreach (Stream::where('process_pid', "!=", null)->where('status', "!=", "error")->get() as $streamWithProcessPid) {
                 if (SystemController::check_if_process_running($streamWithProcessPid->process_pid) != "running") {
@@ -203,6 +209,12 @@ class StreamController extends Controller
                     if (!is_null($streamWithProcessPid->ffmpeg_pid)) {
                         self::stop_diagnostic_stream_from_backend($streamWithProcessPid->ffmpeg_pid);
                     }
+
+                    // // spustení streamu
+
+
+                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamWithProcessPid->stream_url} {$streamWithProcessPid->id}" . ' --queue > /dev/null 2>&1 & echo $!; ');
+                    self::check_and_store_pid($processPid, $streamWithProcessPid->id);
 
                     // editace záznamu Stream
 
@@ -229,7 +241,6 @@ class StreamController extends Controller
                 }
             }
         }
-
         // vyhledání zda existuje nejaký stream, který má povolené vytváření nahledu a zároven hodnota ffmpeg_pid není null
         if (Stream::where('image', "!=", "false")->where('ffmpeg_pid', "!=", null)->where('status', "!=", "error")->first()) {
 
@@ -240,6 +251,10 @@ class StreamController extends Controller
                     // ukoncení streamu
                     self::stop_diagnostic_stream_from_backend($streamWithFfmpegPid->process_pid);
                     self::stop_diagnostic_stream_from_backend($streamWithFfmpegPid->ffmpeg_pid);
+
+                    // spustení streamu
+                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamWithProcessPid->stream_url} {$streamWithProcessPid->id}" . ' --queue > /dev/null 2>&1 & echo $!; ');
+                    self::check_and_store_pid($processPid, $streamWithFfmpegPid->id);
 
                     // editace záznamu Stream
 
@@ -266,6 +281,9 @@ class StreamController extends Controller
                 }
             }
         }
+        // });
+
+        // $eventLoop->run();
     }
 
 
@@ -331,7 +349,7 @@ class StreamController extends Controller
      */
     public static function show_problematic_streams_as_alerts()
     {
-        if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->first()) {
+        if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->first()) {
             // neexistuje žádný stream, který má jinou hodnotu než success nebo waiting
 
             // vrací prázdné pole
@@ -339,7 +357,7 @@ class StreamController extends Controller
         }
 
         // zpracování problematických streamů
-        foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->get() as $problematicStream) {
+        foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->get() as $problematicStream) {
             $dataAboutStream[] = self::sort_stream_status_by_data($problematicStream);
         }
 
@@ -353,7 +371,7 @@ class StreamController extends Controller
      * @param array $stream
      * @return array
      */
-    public static function sort_stream_status_by_data($stream): array
+    public static function sort_stream_status_by_data($stream)
     {
         switch ($stream['status']) {
             case "error":
@@ -361,17 +379,8 @@ class StreamController extends Controller
 
                 return [
                     'status' => "error",
-                    'msg' => "{$stream["nazev"]} negunguje!"
+                    'msg' => "{$stream["nazev"]} nefunguje!"
                 ];
-                break;
-            case "diagnostic_crash":
-                // diagnostic_crash
-
-                return [
-                    'status' => "error",
-                    'msg' => "{$stream["nazev"]} negunguje!"
-                ];
-
                 break;
             case "not_scrambled":
                 // not_scrambled status

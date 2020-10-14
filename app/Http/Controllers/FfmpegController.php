@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StreamImage;
 use App\Models\Stream;
 use Illuminate\Http\Request;
 
@@ -16,16 +17,43 @@ class FfmpegController extends Controller
      *
      * pokud již obrázek existuje, dojde k jeho smazání a následně se vytvoří nový
      *
-     * vrátí $pid
      *
      * @param string $streamId
      * @param string $streamUrl
-     * @return int $pid
+     * @return void
      */
-    public static function find_if_exist_image_delete_and_create_new_image_loop(string $streamId, string $streamUrl)
+    public static function find_image_if_exist_delete_and_create_new(string $streamId, string $streamUrl, string $oldImage): void
     {
-        $pid = shell_exec("nohup ffmpeg -i {$streamUrl} -vf fps=fps=1/5 -update 1 storage/app/public/channelsImages/{$streamId}.jpg > /dev/null 2>&1 & echo $!;");
-        return intval($pid);
+
+        $newImgName = $streamId . microtime(true) . '.jpg';
+        // $imgName = $streamId . ".jpg";
+        $streamUrl = trim($streamUrl);
+        // vyhledání stávajícího náhledu, a případné smazání
+        if (file_exists(public_path($oldImage))) {
+            // Náhled existuje => odebrání náhledu z filesystemu
+            // return "existuje";
+            unlink(public_path($oldImage));
+
+            Stream::where('id', $streamId)->update(['image' => 'false']);
+        }
+
+        //  vytvoření náhledu
+        shell_exec("ffmpeg -i {$streamUrl} -vframes 1 storage/app/public/channelsImages/{$newImgName} -timeout 1 -timelimit 3");
+
+
+        // kontrola, zda se náhled zkutečně vytvořil
+
+        if (file_exists(public_path("storage/channelsImages/{$newImgName}"))) {
+            Stream::where('id', $streamId)->update(['image' => "storage/channelsImages/{$newImgName}"]);
+
+            // odeslání eventu do frontendu
+            event(new StreamImage($streamId, "storage/channelsImages/{$newImgName}"));
+        }
+
+        // pokud bude existoval, update záznamu, a spustení eventu, pro odeslání do frontendu do mozaiky
+
+
+
     }
 
     /**

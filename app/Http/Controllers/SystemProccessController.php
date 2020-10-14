@@ -72,29 +72,38 @@ class SystemProccessController extends Controller
     {
 
         // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
-        if (!SystemProccess::where('process_name', "queue_worker")->first()) {
-            $queuePid = self::start_queue_and_return_pid();
+        if (!SystemProccess::where('process_name', 'like', "%queue_worker%")->first()) {
+            for ($x = 0; $x <= 66;) {
 
-            // uložení pidu do db
-            SystemProccess::create([
-                'process_name' => "queue_worker",
-                'pid' => intval($queuePid)
-            ]);
-            return;
+
+                $queuePid = self::start_queue_and_return_pid();
+
+                // uložení pidu do db
+                SystemProccess::create([
+                    'process_name' => "queue_worker{$x}",
+                    'pid' => intval($queuePid)
+                ]);
+                $x++;
+            }
         } else {
             // záznam existuje, overuje se, zda pid existuje
 
-            if (SystemController::check_if_process_running(SystemProccess::where('process_name', "queue_worker")->first()->pid) == "running") {
-                // queue vypadá, že je v pořádku
-            } else {
+            foreach (SystemProccess::where('process_name', 'like', "%queue_worker%")->get() as $worker) {
 
-                // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
-                $queuePid = self::start_queue_and_return_pid();
+                if (SystemController::check_if_process_running($worker['pid']) == "running") {
+                    // queue vypadá, že je v pořádku
+                } else {
 
-                // update záznamu
-                SystemProccess::where('process_name', "queue_worker")->update(['pid' => intval($queuePid)]);
+                    // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
+                    $queuePid = self::start_queue_and_return_pid();
 
-                return;
+                    $pocetProcesu = SystemProccess::where('process_name', 'like', "%queue_worker")->get()->count();
+                    $pocetProcesu++;
+                    // update záznamu
+                    SystemProccess::where('process_name', "queue_worker{$pocetProcesu}")->update(['pid' => intval($queuePid)]);
+
+                    return;
+                }
             }
         }
     }
@@ -103,12 +112,121 @@ class SystemProccessController extends Controller
     /**
      * funkce na spustení queue na pozadí a vrácení pidu
      *
-     * @return string
+     * @return int
      */
-    public static function start_queue_and_return_pid(): string
+    public static function start_queue_and_return_pid()
     {
-        $queuePid = shell_exec("nohup php artisan queue:work --sleep=0 --daemon > /dev/null 2>&1 & echo $!; ");
+        $queuePid = shell_exec("nohup php artisan queue:work --sleep=3 --daemon > /dev/null 2>&1 & echo $!; ");
 
         return intval($queuePid);
+    }
+
+
+
+    /**
+     * funkce, která hlídá zda existuje websocket server
+     *
+     * pokud eistuje, overuje se pid => pokud pid je OK vse je OK , pokud pid neexistuje, spustí se nový worker a aktualizuje se záznam v db
+     *
+     * process_name = websocekt_server
+     *
+     * @return void
+     */
+    public static function check_if_running_websocekt_server_and_if_not_start_and_return_pid(): void
+    {
+
+        // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
+        if (!SystemProccess::where('process_name', "websocekt_server")->first()) {
+            $websocektPid = self::start_websocket_server_and_return_pid();
+
+            // uložení pidu do db
+            SystemProccess::create([
+                'process_name' => "websocekt_server",
+                'pid' => intval($websocektPid)
+            ]);
+            return;
+        } else {
+            // záznam existuje, overuje se, zda pid existuje
+
+            if (SystemController::check_if_process_running(SystemProccess::where('process_name', "websocekt_server")->first()->pid) == "running") {
+                // queue vypadá, že je v pořádku
+            } else {
+
+                // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
+                $websocektPid = self::start_websocket_server_and_return_pid();
+
+                // update záznamu
+                SystemProccess::where('process_name', "websocekt_server")->update(['pid' => intval($websocektPid)]);
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * funkce na spustení websocket serveru na pozadí a vrácení pidu
+     *
+     * @return int
+     */
+    public static function start_websocket_server_and_return_pid()
+    {
+        $websocketPid = shell_exec("nohup php artisan websockets:serve > /dev/null 2>&1 & echo $!; ");
+
+        return intval($websocketPid);
+    }
+
+
+    /**
+     * funkce na realtime overení, ze streamy funguji jak mají
+     * pid se uklada do db a každou minutu se kotnroluje zda fugnuje
+     *
+     * @return void
+     */
+    public static function check_if_streams_running_correctly()
+    {
+        // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
+        if (!SystemProccess::where('process_name', "stream_check")->first()) {
+            $pidStreamCheck = shell_exec('php artisan command:check_if_serverices_running > /dev/null 2>&1 & echo $!; ');
+
+            // uložení pidu do db
+            SystemProccess::create([
+                'process_name' => "stream_check",
+                'pid' => intval($pidStreamCheck)
+            ]);
+            return;
+        } else {
+            // záznam existuje, overuje se, zda pid existuje
+
+            if (SystemController::check_if_process_running(SystemProccess::where('process_name', "stream_check")->first()->pid) == "running") {
+                // queue vypadá, že je v pořádku
+            } else {
+
+                // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
+                $pidStreamCheck = shell_exec('php artisan command:check_if_serverices_running > /dev/null 2>&1 & echo $!; ');
+
+                // update záznamu
+                SystemProccess::where('process_name', "stream_check")->update(['pid' => intval($pidStreamCheck)]);
+
+                return;
+            }
+        }
+    }
+
+
+    /**
+     * fn pro killnutí vsech systémových procesů
+     *
+     * @return void
+     */
+    public static function kill_all_processes(): void
+    {
+
+        if (SystemProccess::first()) {
+            foreach (SystemProccess::all() as $process) {
+                StreamController::stop_diagnostic_stream_from_backend($process['pid']);
+
+                SystemProccess::where('id', $process['id'])->delete();
+            }
+        }
     }
 }

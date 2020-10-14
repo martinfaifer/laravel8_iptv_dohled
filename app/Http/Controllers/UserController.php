@@ -30,4 +30,40 @@ class UserController extends Controller
             ];
         }
     }
+
+
+    /**
+     * fn pro odhlášení uživatele z aplikace
+     *
+     * @return void
+     */
+    public function logout()
+    {
+        Auth::logout();
+        return [
+            'isAlert' => "isAlert",
+            'status' => "success",
+            'msg' => "Odhlášeno!",
+        ];
+    }
+
+
+    /**
+     * funkce na získání informací o přihlášeném uživateli
+     *
+     * @return array
+     */
+    public function getLoggedUser()
+    {
+        $user = Auth::user();
+        if (empty($user)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nejste přihlášen!",
+            ];
+        } else {
+            return $user;
+        }
+    }
 }

@@ -2,14 +2,7 @@
     <v-app>
         <v-app-bar color="transparent" flat fixed dense>
             <div v-if="this.$route.path != '/'">
-                <v-btn
-                    link
-                    to="/"
-                    color="white"
-                    class="white--text"
-                    v-on="on"
-                    icon
-                >
+                <v-btn link to="/" color="white" class="white--text" icon>
                     <v-icon>mdi-home</v-icon>
                 </v-btn>
             </div>
@@ -42,7 +35,7 @@
                             >
                         </v-list-item>
                         <v-divider></v-divider>
-                        <v-list-item @click="LogOut()">
+                        <v-list-item @click="logOut()">
                             Odhlásit se <v-spacer></v-spacer
                             ><v-icon color="grey" right small>mdi-lock</v-icon>
                         </v-list-item>
@@ -68,7 +61,7 @@
             right
             fixed
             temporary
-            width="15%"
+            width="18%"
             color="transparent"
         >
             <div
@@ -82,6 +75,7 @@
                     border="left"
                     :type="alert.status"
                     class="body-2 mt-2 transition-fast-in-fast-out"
+                    transition="scale-transition"
                 >
                     <strong>{{ alert.msg }}</strong>
                     <div v-show="alert.data">
@@ -130,20 +124,40 @@ export default {
         userMenu: null,
         alerts: [],
         alertCount: "",
-        newNotifications: []
+        newNotifications: [],
+
+        loggedUser: null
     }),
 
     created() {
         this.loadAlerts();
-        // Echo.channel("streamStatuses").listen("StreamNotification", e => {
-        //     console.log(e);
-        // });
+        this.loadUser();
     },
     methods: {
         loadAlerts() {
             window.axios.get("/streamAlerts").then(response => {
                 this.alerts = response.data;
                 this.alertCount = response.data.length;
+            });
+        },
+
+        logOut() {
+            let currentObj = this;
+            axios.get("logout").then(response => {
+                if (response.data.status === "success") {
+                    currentObj.$router.push("/login");
+                }
+            });
+        },
+
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                if (response.data.status == "error") {
+                    currentObj.$router.push("/login");
+                } else {
+                    this.loggedUser = response.data;
+                }
             });
         }
     },

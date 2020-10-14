@@ -24,11 +24,20 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // vytváření náhledů pro streamy
+        $schedule->command('command:create_thumbnail_from_stream')->everyThreeMinutes()->runInBackground();
+
         // overování zda sluzby fungují jak mají
         $schedule->command('command:check_if_serverices_running')->everyMinute()->runInBackground();
 
         // spustení všech diagnostic a náhledů, které ještě nefungují nebo z nějakého duvodu crashnuly a je zapotřebí je znovu spustit
         $schedule->command('command:start_all_streams_for_diagnostic')->everyMinute()->runInBackground();
+
+        // relatime kontrola, pomocná fn k start_all_streams_for_diagnostic
+        // $schedule->command('command:realtime_check_stream_runner')->everyMinute()->runInBackground();
+
+        // kontrola zda funguje websocekt server
+        $schedule->command('command:check_websocket')->everyMinute()->runInBackground();
 
         // kontrola zda funguje redis server
         $schedule->command('command:check_redis')->everyMinute()->runInBackground();

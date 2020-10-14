@@ -107,6 +107,27 @@
                     </v-progress-linear>
 
                     <br />
+                    <v-card
+                        v-show="videoBitrateChartArray.length > 1"
+                        color="transparent"
+                    >
+                        <div class="text-center">
+                            <span class="body-1">
+                                Graf video bitratu
+                            </span>
+                        </div>
+                        <v-sheet color="transparent">
+                            <v-sparkline
+                                :smooth="16"
+                                :gradient="['blue']"
+                                :line-width="1"
+                                :value="videoBitrateChartArray"
+                                auto-draw
+                                stroke-linecap="round"
+                            ></v-sparkline>
+                        </v-sheet>
+                    </v-card>
+                    <br />
                 </div>
 
                 <!-- video -->
@@ -114,7 +135,11 @@
                     <span>
                         Video bitrate:
                         <strong>
-                            {{ Math.round((stream.video.bitrate / 1048576)*100) /100 }}
+                            {{
+                                Math.round(
+                                    (stream.video.bitrate / 1048576) * 100
+                                ) / 100
+                            }}
                             Mbps
                         </strong>
                     </span>
@@ -193,6 +218,28 @@
                     >
                     </v-progress-linear>
 
+                    <br />
+
+                    <v-card
+                        v-show="audioBitrateChartArray.length > 1"
+                        color="transparent"
+                    >
+                        <div class="text-center">
+                            <span>
+                                Graf audio bitratu
+                            </span>
+                        </div>
+                        <v-sheet color="transparent">
+                            <v-sparkline
+                                :smooth="16"
+                                :gradient="['blue']"
+                                :line-width="1"
+                                :value="audioBitrateChartArray"
+                                auto-draw
+                                stroke-linecap="round"
+                            ></v-sparkline>
+                        </v-sheet>
+                    </v-card>
                     <br />
                 </div>
 
@@ -311,7 +358,10 @@
 export default {
     props: ["streamId"],
     data: () => ({
-        stream: []
+        stream: [],
+
+        videoBitrateChartArray: [],
+        audioBitrateChartArray: []
     }),
 
     created() {
@@ -329,7 +379,32 @@ export default {
         }
     },
 
-    mounted() {},
+    mounted() {
+        Echo.channel("streamInfoTsVideoBitrate" + this.streamId).listen(
+            "StreamInfoTsVideoBitrate",
+            e => {
+                this.stream.video.bitrate = e["bitrate"];
+                this.videoBitrateChartArray.push(parseInt(e["bitrate"]));
+                this.stream.video.pid = e["videoPid"];
+                this.stream.video.discontinuities = e["discontinuities"];
+                this.stream.video.scrambled = e["scrambled"];
+            }
+        );
+
+        Echo.channel("streamInfoTsAudioBitrate" + this.streamId).listen(
+            "StreamInfoAudioBitrate",
+            e => {
+                // console.log(e);
+                this.stream.audio.bitrate = e["bitrate"];
+                this.audioBitrateChartArray.push(parseInt(e["bitrate"]));
+                this.stream.audio.pid = e["audioPid"];
+                this.stream.audio.discontinuities = e["audioDiscontinuities"];
+                this.stream.audio.scrambled = e["audioScrambled"];
+                this.stream.audio.audioLanguage = e["audioLanguage"];
+                this.stream.audio.audioAccess = e["audioAccess"];
+            }
+        );
+    },
     watch: {}
 };
 </script>

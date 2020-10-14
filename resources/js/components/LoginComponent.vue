@@ -1,8 +1,16 @@
 <template>
     <v-main>
-        <v-snackbar v-if="status != null" dense top color="success" v-model="status">
-            <div class="body-1 text-center">
-                Nějaký text
+        <v-snackbar
+            v-if="status != null"
+            rounded="pill"
+            transition="scale-transition"
+            dense
+            top
+            color="warning"
+            v-model="status"
+        >
+            <div class="text-center">
+                <span class="subtitle-1"> {{ status.msg }} </span>
             </div>
             <template v-slot:action="{ attrs }">
                 <v-btn color="blue" text v-bind="attrs"> </v-btn>
@@ -41,7 +49,11 @@
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn @click="login()" :disabled="password === '' || email === ''" type="submit" color="success"
+                            <v-btn
+                                @click="login()"
+                                :disabled="password === null || email === null"
+                                type="submit"
+                                color="success"
                                 >Přihlášení</v-btn
                             >
                         </v-card-actions>
@@ -54,9 +66,6 @@
 
 <script>
 export default {
-    props: {
-        source: String
-    },
     data() {
         return {
             status: true,
@@ -69,15 +78,8 @@ export default {
         };
     },
 
-        created() {
-        // let currentObj = this;
-        // axios.get("/api/user/get").then(function(response) {
-        //     if (response.data.stat === "error") {
-        //         currentObj.status = response.data;
-        //     } else {
-        //         currentObj.$router.push("/");
-        //     }
-        // });
+    created() {
+        this.loadUser();
     },
     methods: {
         login() {
@@ -88,20 +90,27 @@ export default {
                     password: this.password
                 })
                 .then(function(response) {
-                    currentObj.status = response.data;
-                    if (currentObj.status.status === "success") {
+                    console.log(response.data);
+                    if (response.data.status === "success") {
                         currentObj.$router.push("/");
+                    } else {
+                        currentObj.status = response.data;
                     }
-                })
-                .catch(function(error) {
-                    currentObj.chybaOdpovediServeru = true;
                 });
+        },
+
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                if (response.data.status == "error") {
+                    // currentObj.$router.push("/login");
+                    // currentObj.status = response.data;
+                } else {
+                    currentObj.$router.push("/");
+                }
+            });
         }
     },
-    watch: {
-        status: function() {
-            setTimeout(() => (this.status = false), 3000);
-        }
-    }
+    watch: {}
 };
 </script>

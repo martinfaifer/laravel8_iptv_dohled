@@ -13,8 +13,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StreamInfoAudioBitrate;
+use App\Events\StreamInfoHistory;
+use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
 use App\Jobs\FFprobeDiagnostic;
+use App\Jobs\StreamInfoTsVideoBitrateJob;
 use App\Models\AudioBitrate;
 use App\Models\Stream;
 use App\Models\StreamAlert;
@@ -135,9 +139,8 @@ class DiagnosticController extends Controller
                 // kanál nyní označíme jako nefunkční, aktualizujeme status kanálu a následně uložíme do historie, pro budoucí výpis
                 // před aktualizací statusu, oveření zda kanál již posledním uloženým statusem není označen jako nefunkční
 
-
                 // dispatch FFprobe , pokud i ta selze => kanál nefunguje od verze 0.3
-                dispatch(new FFprobeDiagnostic($streamUrl, $streamId)); // QUEUE
+                dispatch(new FFprobeDiagnostic($streamUrl, $streamId, null)); // QUEUE
             }
 
             // stream funguje
@@ -154,7 +157,7 @@ class DiagnosticController extends Controller
                  * ---------------------------------------------------------------------------------------------------------------------------------------
                  */
 
-                $eventLoop = Factory::create();
+                // $eventLoop = Factory::create();
 
 
                 // zpracování pole
@@ -180,12 +183,16 @@ class DiagnosticController extends Controller
                     // Zpracování pidů
                     // od teto analýzy se odvíjí téměř veškeré informace o streamu
 
-                    self::analyze_pids_and_storeData($pids, $streamId);
+                    self::analyze_pids_and_storeData($pids, $streamId, $streamUrl);
                 }
 
 
-                $eventLoop->run(); // konec event loopu
+                // $eventLoop->run(); // konec event loopu
             }
+
+            // event do mozaiky
+
+
             sleep(3);
         } // end of loop
     }
@@ -212,7 +219,7 @@ class DiagnosticController extends Controller
      * @param string $streamId
      * @return void
      */
-    public static function analyze_pids_and_storeData(array $pids, string $streamId)
+    public static function analyze_pids_and_storeData(array $pids, string $streamId, string $streamUrl): void
     {
 
         // zpracování videa
@@ -235,6 +242,10 @@ class DiagnosticController extends Controller
             $videoPid = $pids['video']['pid'];
             $discontinuities = $pids['video']['discontinuities'];
             $scrambled = $pids['video']['scrambled'];
+
+            // event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate']));
+            // dispatch(new StreamInfoTsVideoBitrateJob($streamId, $pids['video']['bitrate'])); // QUEUE
+            event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate'], $videoPid, $discontinuities, $scrambled));
         }
 
 
@@ -355,6 +366,8 @@ class DiagnosticController extends Controller
 
             // kontrola zda existuje záznam v tabulce stream_audios
             // pokud nebude existovat záznam => založí se nový
+
+            event(new StreamInfoAudioBitrate($streamId, $pids['audio']['bitrate'], $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess));
 
             if ($streamAudioData = StreamAudio::where('stream_id', $streamId)->first()) {
                 // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
@@ -491,6 +504,7 @@ class DiagnosticController extends Controller
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
                     event(new StreamNotification());
+                    event(new StreamInfoHistory($streamId));
                 }
             } else {
                 Stream::where('id', $streamId)->update(['status' => "not_scrambled"]);
@@ -503,6 +517,7 @@ class DiagnosticController extends Controller
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
                     event(new StreamNotification());
+                    event(new StreamInfoHistory($streamId));
                 }
             }
 
@@ -513,9 +528,14 @@ class DiagnosticController extends Controller
                 if ($streamData->status != 'success') {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
                     event(new StreamNotification());
+                    event(new StreamInfoHistory($streamId));
                 }
             }
         }
+
+
+        dispatch(new FFprobeDiagnostic($streamUrl, $streamId, "checkAV")); // QUEUE
+
     }
 
 
@@ -555,6 +575,7 @@ class DiagnosticController extends Controller
         if ($invalidsyncs == "0" && $scrambledpids == "0" && $transporterrors == "0") {
             Stream::where('id', $streamId)->update(['status' => "success"]);
             event(new StreamNotification());
+            event(new StreamInfoHistory($streamId));
 
             // overení zda existuje záznam v tabulce StreamAlert , pokud existuje, budou veskere záznamy s daným streamId odebrány
             if (StreamAlert::where('stream_id', $streamId)->first()) {
@@ -575,6 +596,7 @@ class DiagnosticController extends Controller
             //  update statusu na issue
             Stream::where('id', $streamId)->update(['status' => "issue"]); // issue je , kdyz stream chybuje
             event(new StreamNotification());
+            event(new StreamInfoHistory($streamId));
 
 
             // u kazdé hodnoty overení zda jiz existuje chyba
@@ -673,6 +695,7 @@ class DiagnosticController extends Controller
                 if (Stream::where('id', $streamId)->first()->status != "issue") {
                     Stream::where('id', $streamId)->update(['status', "issue"]);
                     event(new StreamNotification());
+                    event(new StreamInfoHistory($streamId));
 
                     //  ulození do tabulky StreamAlerts a StreamHistory
                     StreamHistory::create([
@@ -696,6 +719,7 @@ class DiagnosticController extends Controller
             if (Stream::where('id', $streamId)->first()->status == "issue") {
                 Stream::where('id', $streamId)->update(['status', "success"]);
                 event(new StreamNotification());
+                event(new StreamInfoHistory($streamId));
             }
 
             // odebrání záznamu a vytvirení záamu do historie
@@ -769,7 +793,7 @@ class DiagnosticController extends Controller
                 // overeni zda existuje stream s tsid_warning
                 if (!StreamAlert::where('stream_id', $streamId)->where('status', "tsid_warning")->first()) {
                     // create
-                    StreamAlert::cerate([
+                    StreamAlert::create([
                         'stream_id' => $streamId,
                         'status' => "tsid_warning",
                         'message' => "Změnilo se Transport Stream id!!"
@@ -790,7 +814,7 @@ class DiagnosticController extends Controller
 
                 if (!StreamAlert::where('stream_id', $streamId)->where('status', "pmtpid_warning")->first()) {
                     // create
-                    StreamAlert::cerate([
+                    StreamAlert::create([
                         'stream_id' => $streamId,
                         'status' => "pmtpid_warning",
                         'message' => "Změnil se pmt pid!!"
@@ -811,7 +835,7 @@ class DiagnosticController extends Controller
 
                 if (!StreamAlert::where('stream_id', $streamId)->where('status', "pcrpid_warning")->first()) {
                     // create
-                    StreamAlert::cerate([
+                    StreamAlert::create([
                         'stream_id' => $streamId,
                         'status' => "pcrpid_warning",
                         'message' => "Změnil se pcr pid!!"

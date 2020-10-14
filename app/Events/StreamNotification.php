@@ -36,12 +36,6 @@ class StreamNotification implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        // return $this->streamsStatuses;
         return new Channel('stream-statuses');
     }
-
-    // public function broadcastWith()
-    // {
-    //     return StreamController::show_problematic_streams_as_alerts();;
-    // }
 }

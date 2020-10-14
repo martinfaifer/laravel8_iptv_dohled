@@ -16,16 +16,18 @@ class FFprobeDiagnostic implements ShouldQueue
 
     protected $streamUrl;
     protected $streamId;
+    protected $audioVideoCheck;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($streamUrl, $streamId)
+    public function __construct($streamUrl, $streamId, $audioVideoCheck)
     {
         $this->streamUrl = $streamUrl;
         $this->streamId = $streamId;
+        $this->audioVideoCheck = $audioVideoCheck;
     }
 
     /**
@@ -35,6 +37,6 @@ class FFprobeDiagnostic implements ShouldQueue
      */
     public function handle()
     {
-        FFprobeController::ffprobe_diagnostic($this->streamUrl, $this->streamId);
+        FFprobeController::ffprobe_diagnostic($this->streamUrl, $this->streamId, $this->audioVideoCheck);
     }
 }
