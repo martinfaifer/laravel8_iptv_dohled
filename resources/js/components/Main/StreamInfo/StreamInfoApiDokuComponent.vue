@@ -44,7 +44,11 @@ export default {
     },
 
     mounted() {},
-    watch: {}
+    watch: {
+        $route(to, from) {
+            this.getStreamDokuInfo();
+        }
+    }
 };
 </script>
 

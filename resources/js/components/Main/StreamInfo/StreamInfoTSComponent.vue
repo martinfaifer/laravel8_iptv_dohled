@@ -405,6 +405,10 @@ export default {
             }
         );
     },
-    watch: {}
+     watch: {
+        $route(to, from) {
+            this.getStreamDetailInfo();
+        }
+    }
 };
 </script>

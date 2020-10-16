@@ -4,21 +4,18 @@
             <!-- náhled na kanál -> komponent img -->
             <v-row no-gutters>
                 <v-col class="col-3">
-                    <img-component :streamId="$route.params.id"></img-component>
-                    <doku-component :streamId="$route.params.id"></doku-component>
-
+                    <img-component :streamId="id"></img-component>
+                    <doku-component :streamId="id"></doku-component>
                 </v-col>
 
                 <!-- konec náhledu na kanál -->
                 <v-spacer></v-spacer>
                 <v-col class="col-5">
-                    <ts-component :streamId="$route.params.id"></ts-component>
+                    <ts-component :streamId="id"></ts-component>
                 </v-col>
                 <v-spacer></v-spacer>
                 <v-col class="col-4">
-                    <history-component
-                        :streamId="$route.params.id"
-                    ></history-component
+                    <history-component :streamId="id"></history-component
                 ></v-col>
             </v-row>
         </v-container>
@@ -28,20 +25,35 @@
 import ImgComponent from "./StreamInfoImageComponent";
 import TsComponent from "./StreamInfoTSComponent";
 import HistoryComponent from "./StreamInfoHistoryComponent";
-import DokuComponent from "./StreamInfoApiDokuComponent"
+import DokuComponent from "./StreamInfoApiDokuComponent";
 export default {
-    data: () => ({}),
+    data() {
+        return {
+            id: ""
+        };
+    },
 
-    created() {},
+    created() {
+        this.loadId();
+    },
     components: {
         "img-component": ImgComponent,
         "ts-component": TsComponent,
         "history-component": HistoryComponent,
-        'doku-component': DokuComponent
+        "doku-component": DokuComponent
     },
-    methods: {},
+    methods: {
+        loadId() {
+            let currentObj = this;
+            this.id = currentObj.$route.params.id
+        }
+    },
 
     mounted() {},
-    watch: {}
+    watch: {
+        $route(to, from) {
+            this.loadId();
+        }
+    }
 };
 </script>

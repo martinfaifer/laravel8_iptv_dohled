@@ -19,6 +19,10 @@ class CreateUsersTable extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role_id')->index()->default('view');
+            $table->string('mozaika')->default('default');
+            $table->text('customData')->nullable();
+            $table->string('pagination')->default('24');
             $table->rememberToken();
             $table->timestamps();
         });

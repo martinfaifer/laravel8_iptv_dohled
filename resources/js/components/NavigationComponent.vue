@@ -1,11 +1,33 @@
 <template>
     <v-app>
-        <v-app-bar color="transparent" flat fixed dense>
+        <v-app-bar color="transparent" fixed dense>
             <div v-if="this.$route.path != '/'">
                 <v-btn link to="/" color="white" class="white--text" icon>
                     <v-icon>mdi-home</v-icon>
                 </v-btn>
             </div>
+            <v-spacer></v-spacer>
+
+            <v-autocomplete
+                v-model="model"
+                :items="items"
+                :loading="isLoading"
+                :search-input.sync="search"
+                color="white"
+                hide-no-data
+                dense
+                filled
+                rounded
+                class="mt-6"
+                hide-selected
+                item-text="result"
+                item-value="url"
+                placeholder="Vyhledejte v aplikaci ... "
+                prepend-inner-icon="mdi-database-search"
+                return-object
+            >
+            </v-autocomplete>
+
             <v-spacer></v-spacer>
 
             <!-- user Part -->
@@ -22,13 +44,13 @@
                         </v-btn>
                     </template>
                     <v-list width="250px" class="text-center subtitle-2">
-                        <v-list-item link to="/user">
+                        <v-list-item link to="/user/prehled">
                             Editace <v-spacer></v-spacer
                             ><v-icon color="grey" right small
                                 >mdi-account-cog-outline</v-icon
                             >
                         </v-list-item>
-                        <v-list-item @click="">
+                        <v-list-item v-show="userRole != '4'" @click="">
                             Nastavení App<v-spacer></v-spacer
                             ><v-icon color="grey" right small
                                 >mdi-settings</v-icon
@@ -74,8 +96,7 @@
                     dense
                     border="left"
                     :type="alert.status"
-                    class="body-2 mt-2 transition-fast-in-fast-out"
-                    transition="scale-transition"
+                    class="body-2 mt-2"
                 >
                     <strong>{{ alert.msg }}</strong>
                     <div v-show="alert.data">
@@ -125,9 +146,30 @@ export default {
         alerts: [],
         alertCount: "",
         newNotifications: [],
+        userRole: null,
 
-        loggedUser: null
+        loggedUser: null,
+
+        descriptionLimit: 60,
+        entries: [],
+        isLoading: false,
+        model: null,
+        search: null,
+        items: []
     }),
+
+    computed: {
+        fields() {
+            if (!this.model) return [];
+
+            return Object.keys(this.model).map(key => {
+                return {
+                    key,
+                    value: this.model[key] || "n/a"
+                };
+            });
+        }
+    },
 
     created() {
         this.loadAlerts();
@@ -156,18 +198,49 @@ export default {
                 if (response.data.status == "error") {
                     currentObj.$router.push("/login");
                 } else {
-                    this.loggedUser = response.data;
+                    currentObj.$store.state.loggedUser = currentObj.loggedUser =
+                        response.data;
+                    currentObj.userRole = response.data.role_id;
                 }
             });
         }
     },
 
     mounted() {
-        Echo.channel("stream-statuses").listen("StreamNotification", e => {
-            this.alerts = e.streamsStatuses.original;
-            this.alertCount = e.streamsStatuses.original.length;
-        });
+        setInterval(
+            function() {
+                try {
+                    this.loadAlerts();
+                } catch (error) {}
+            }.bind(this),
+            2000
+        );
     },
-    watch: {}
+    watch: {
+        search() {
+            if (this.items.length > 0) return;
+
+            this.isLoading = true;
+
+            let currentObj = this;
+            window.axios
+                .post("search", {
+                    search: this.search
+                })
+                .then(function(response) {
+                    currentObj.items = response.data;
+                })
+                .finally(() => (this.isLoading = false));
+        },
+        model() {
+            if (this.model == undefined) {
+                // nic
+            } else {
+                this.$router.push("/" + this.model.url);
+                this.model = null;
+                this.items = [];
+            }
+        }
+    }
 };
 </script>

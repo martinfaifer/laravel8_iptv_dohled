@@ -30,7 +30,8 @@
                             <div v-if="stream.status == 'stream_ok'">
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{stream.created_at}} => Stream je v pořádku
+                                        {{ stream.created_at }} => Stream je v
+                                        pořádku
                                     </strong>
                                 </small>
                             </div>
@@ -41,7 +42,8 @@
                             >
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{stream.created_at}} => změněno pořadí Pidů
+                                        {{ stream.created_at }} => změněno
+                                        pořadí Pidů
                                     </strong>
                                 </small>
                             </div>
@@ -52,7 +54,8 @@
                             >
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{stream.created_at}} => Objevily se TS chyby
+                                        {{ stream.created_at }} => Objevily se
+                                        TS chyby
                                     </strong>
                                 </small>
                             </div>
@@ -60,7 +63,8 @@
                             <div v-else-if="stream.status == 'stream_error'">
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{stream.created_at}} => Stream nefunguje
+                                        {{ stream.created_at }} => Stream
+                                        nefunguje
                                     </strong>
                                 </small>
                             </div>
@@ -69,7 +73,16 @@
                             >
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{stream.created_at}} => Problém s diagnostikou
+                                        {{ stream.created_at }} => Problém s
+                                        diagnostikou
+                                    </strong>
+                                </small>
+                            </div>
+                            <div v-else-if="stream.status == 'no_audio'">
+                                <small :class="`${stream.color}--text`">
+                                    <strong>
+                                        {{ stream.created_at }} => Nepodařilo se
+                                        detekovat audio
                                     </strong>
                                 </small>
                             </div>
@@ -111,14 +124,21 @@ export default {
 
     mounted() {
         // streamInfoTsHistory
-            Echo.channel("streamInfoTsHistory" + this.streamId).listen(
+        Echo.channel("streamInfoTsHistory" + this.streamId).listen(
             "StreamInfoHistory",
             e => {
                 // console.log(e);
-                this.streamHistory = e;
+                if (e[0].length > 0) {
+                    // console.log(e[0]);
+                    this.streamHistory = e[0];
+                }
             }
         );
     },
-    watch: {}
+    watch: {
+        $route(to, from) {
+            this.getStreamHistory();
+        }
+    }
 };
 </script>

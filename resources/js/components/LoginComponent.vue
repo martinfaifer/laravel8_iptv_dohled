@@ -90,7 +90,6 @@ export default {
                     password: this.password
                 })
                 .then(function(response) {
-                    console.log(response.data);
                     if (response.data.status === "success") {
                         currentObj.$router.push("/");
                     } else {

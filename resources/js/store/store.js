@@ -1,28 +1,18 @@
-import Vue from 'vue';
+import Vue from "vue";
 
-import Vuex from 'vuex';
+import Vuex from "vuex";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
     state: {
-        userData: [],
-        alerts: [],
+        loggedUser: []
     },
-    actions: {
-
-    },
+    actions: {},
     mutations: {
-      update (state, user) {
-        state.userData = user;
-      },
-
-      update (state, alert) {
-        state.alerts = alert;
-      },
-
+        update(state, user) {
+            state.loggedUser = user;
+        }
     },
-    getters: {
-
-    }
+    getters: {}
 });

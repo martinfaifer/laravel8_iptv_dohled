@@ -115,6 +115,10 @@ export default {
             this.stream.image = e[0];
         });
     },
-    watch: {}
+    watch: {
+        $route(to, from) {
+            this.getStreamImage();
+        }
+    }
 };
 </script>

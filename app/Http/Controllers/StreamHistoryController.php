@@ -46,7 +46,7 @@ class StreamHistoryController extends Controller
      * funkce pro výpis posledních 10 záznamů do timeline v streamInfo
      *
      * @param string streamId
-     * @return void
+     * @return array
      */
     public static function stream_info_history_ten_for_events($streamId)
     {
@@ -72,7 +72,7 @@ class StreamHistoryController extends Controller
             }
             return $historie;
         } else {
-            return "none";
+            return [];
         }
     }
 }

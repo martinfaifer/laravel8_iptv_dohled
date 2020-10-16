@@ -2,6 +2,9 @@
     <v-main class="mt-12">
         <v-container fluid>
             <v-row>
+                <!-- načtení komponentu pro statickou část mozaiky -->
+                <staticmozaika-component v-if="loggedUser.mozaika == 'custom'" :usermozaika="loggedUser.customData"></staticmozaika-component>
+
                 <v-row class="mx-auto mt-1 ma-1 mr-1">
                     <v-col
                         v-for="stream in streams"
@@ -127,16 +130,24 @@
 </template>
 
 <script>
+import StaticMozaika from "./MozaikaStatic/MozaikaStaticComponent";
 export default {
+    computed: {
+        loggedUser() {
+            return this.$store.state.loggedUser;
+        }
+    },
     data: () => ({
         streams: null,
-
         streamWeb: "",
         pagination: {
             current: 1,
             total: 0
         }
     }),
+    components: {
+        "staticmozaika-component": StaticMozaika,
+    },
 
     created() {
         this.getStreams();

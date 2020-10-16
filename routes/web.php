@@ -3,10 +3,13 @@
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
 use App\Http\Controllers\FfmpegController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserDetailController;
+use App\Http\Controllers\UserHistoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +35,12 @@ Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->m
 
 
 /**
+ * VYHKEDÁVÁNÍ NAPŘÍČ APP
+ */
+
+Route::post('search', [SearchController::class, 'search_in_app'])->middleware('firewall');
+
+/**
  * USER BLOK
  */
 
@@ -39,11 +48,33 @@ Route::post('login', [UserController::class, 'loginUser'])->middleware('firewall
 
 Route::get('logout', [UserController::class, 'logout'])->middleware('firewall');
 
+// Editace jmena a mailu
+Route::post('user/obecne/edit', [UserController::class, 'obecne_edit'])->middleware('firewall');
+
+// Editace hesla uzivatele
+Route::post('user/heslo/edit', [UserController::class, 'user_password_edit'])->middleware('firewall');
+
+// Editace detailnich informaci o uzivately  / pripadne zalození novych nebo odebrání
+Route::post('user/detail/edit', [UserDetailController::class, 'user_detail_edit'])->middleware('firewall');
+
 // získání informací o uživateli ( aktuálně přihlášeném )
 Route::get('user', [UserController::class, 'getLoggedUser'])->middleware('firewall');
+
+// informace o userovi, pro userComponent
+Route::get('user/detail', [UserController::class, 'userDetail'])->middleware('firewall');
+
+// informace o historii daného uzivatele
+Route::post('user/history', [UserHistoryController::class, 'user_history'])->middleware('firewall');
+
+// získání všech streamu pro statické kanály
+Route::get('user/streams', [UserController::class, 'user_streams'])->middleware('firewall');
+
+// editace / odebrání statických streamů
+Route::post('user/streams/set', [UserController::class, 'user_streams_set'])->middleware('firewall');
+
 // systémové pozadavky
 Route::get('system', [SystemController::class, 'checkSystemUsage'])->middleware('firewall');
 
-Route::get('test', function () {
-    return FfmpegController::find_image_if_exist_delete_and_create_new('1', "http://93.91.154.54:10224/udp/239.251.2.6:1234");
-});
+// Route::get('test', function () {
+//     return FfmpegController::find_image_if_exist_delete_and_create_new('1', "http://93.91.154.54:10224/udp/239.251.2.6:1234");
+// });

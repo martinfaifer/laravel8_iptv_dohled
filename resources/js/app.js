@@ -17,6 +17,7 @@ import LoginComponent from './components/LoginComponent'
 import NavigationComponent from './components/NavigationComponent'
 import MozaikaComponent from './components/Main/MozaikaComponent'
 import StreamInfoComponent from './components/Main/StreamInfo/StreamInfoComponent'
+import UserComponent from './components/UserSettings/UserComponent'
 
 let routes = [
     {
@@ -30,6 +31,10 @@ let routes = [
             {
                 path: 'stream/:id',
                 component: StreamInfoComponent
+            },
+            {
+                path: "user/:id",
+                component: UserComponent
             }
         ]
     },

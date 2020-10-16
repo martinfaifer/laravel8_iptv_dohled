@@ -16,8 +16,14 @@ class User extends Authenticatable
      *
      * @var array
      */
+
+
+    /**
+     * mozaika -> default, custom
+     */
+
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password', 'role_id', 'mozaika', 'customData', 'pagination'
     ];
 
     /**
