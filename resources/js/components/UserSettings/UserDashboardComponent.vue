@@ -11,7 +11,7 @@
                 <v-row>
                     <v-hover v-slot:default="{ hover }">
                         <v-card
-                            :elevation="hover ? 24 : 0"
+                            :elevation="hover ? 3 : 0"
                             height="100%"
                             width="40em"
                             class="text-center pl-10 pr-10 transition-fast-in-fast-out ml-12"
@@ -97,7 +97,7 @@
                 <v-row>
                     <v-hover v-slot:default="{ hover }">
                         <v-card
-                            :elevation="hover ? 24 : 0"
+                            :elevation="hover ? 3 : 0"
                             height="100%"
                             width="40em"
                             class="text-center pl-10 pr-10 transition-fast-in-fast-out ml-12 mr-12"
@@ -156,7 +156,7 @@
             <v-row class="mt-8">
                 <v-hover v-slot:default="{ hover }">
                     <v-card
-                        :elevation="hover ? 24 : 0"
+                        :elevation="hover ? 3 : 0"
                         height="100%"
                         width="100%"
                         class="text-center pl-10 pr-10 transition-fast-in-fast-out"

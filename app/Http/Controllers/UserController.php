@@ -78,17 +78,17 @@ class UserController extends Controller
 
                 // customData obsahuje id statických streamů
 
-                $streamsId = explode(",", $user->customData);
-
+                // $streamsId = explode(",", $user->customData);
+                $streamsId = json_decode($user->customData, true);
                 // ['id', 'image', 'nazev', 'status']
 
                 foreach ($streamsId as $streamId) {
                     $streamData = Stream::where('id', $streamId)->first();
                     $customData[] = array(
                         'id' => $streamId,
+                        'status' => $streamData->status,
                         'image' => $streamData->image,
                         'nazev' => $streamData->nazev,
-                        'status' => $streamData->status
                     );
                 }
             }
@@ -120,14 +120,17 @@ class UserController extends Controller
         } else {
 
             if (!is_null($user->customData)) {
-                $customData = explode(",", $user->customData);
+                // $customData = explode(",", $user->customData);
 
 
                 // ['id', 'image', 'nazev', 'status']
-
+                $customData = json_decode($user->customData, true);
                 foreach ($customData as $streamId) {
                     $streamData = Stream::where('id', $streamId)->first();
-                    $staticChannels[] = $streamData->nazev;
+                    $staticChannels[] = array(
+                        'nazev' => $streamData->nazev,
+                        'id' => $streamData->id
+                    );
                 }
             } else {
                 $customData = $user->customData;

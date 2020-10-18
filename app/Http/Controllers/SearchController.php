@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Stream;
+use App\Models\Uri;
 use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-
 
     /**
      * funkce na vyhledání napříč celou aplikací
@@ -30,7 +30,7 @@ class SearchController extends Controller
             return [];
         }
 
-
+        // return [Uri::where('popis', "like", "%" . $request->search . "%")->first()];
         // pokus o vyhledání napříč kanály, vyhledání v názvu nebo v url
 
         if (Stream::where('nazev', "like", "%" . $request->search . "%")->first()) {
@@ -42,6 +42,18 @@ class SearchController extends Controller
             }
 
             // pole musí obsahovat název a url
+            unset($request);
+            return $output;
+        }
+
+        if (Uri::where('popis', "like", "%" . $request->search . "%")->first()) {
+            foreach (Uri::where('popis', "like", "%" . $request->search . "%")->get() as $stream) {
+                $output[] = array(
+                    'result' => $stream->popis,
+                    'url' => $stream->uri
+                );
+            }
+            unset($request);
             return $output;
         } else {
             return [

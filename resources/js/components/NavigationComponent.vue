@@ -223,14 +223,16 @@ export default {
             this.isLoading = true;
 
             let currentObj = this;
-            window.axios
-                .post("search", {
-                    search: this.search
-                })
-                .then(function(response) {
-                    currentObj.items = response.data;
-                })
-                .finally(() => (this.isLoading = false));
+            setTimeout(() => {
+                window.axios
+                    .post("search", {
+                        search: this.search
+                    })
+                    .then(function(response) {
+                        currentObj.items = response.data;
+                    })
+                    .finally(() => (this.isLoading = false));
+            }, 500);
         },
         model() {
             if (this.model == undefined) {

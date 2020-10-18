@@ -350,7 +350,7 @@ class StreamController extends Controller
      */
     public static function show_problematic_streams_as_alerts()
     {
-        if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->first()) {
+        if (!Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->where('dohledovano', false)->first()) {
             // neexistuje žádný stream, který má jinou hodnotu než success nebo waiting
 
             // vrací prázdné pole
@@ -358,7 +358,7 @@ class StreamController extends Controller
         }
 
         // zpracování problematických streamů
-        foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->get() as $problematicStream) {
+        foreach (Stream::where('status', "!=", "success")->where('status', "!=", "waiting")->where('status', "!=", 'diagnostic_crash')->where('dohledovano', true)->get() as $problematicStream) {
             $dataAboutStream[] = self::sort_stream_status_by_data($problematicStream);
         }
 
