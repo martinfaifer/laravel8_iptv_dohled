@@ -138,11 +138,10 @@
                                     <ul>
                                         <li
                                             v-for="staticChannel in user.staticChannels"
-                                            :key="staticChannel"
                                             class="ml-3"
                                         >
                                             <strong>
-                                                {{ staticChannel }}
+                                                {{ staticChannel.nazev }}
                                             </strong>
                                         </li>
                                     </ul>

@@ -49,6 +49,9 @@ class Kernel extends ConsoleKernel
         // pokud je mále cpu, tak se nespoustejí dostatatecne rychle queues a zbytecne se hromadí tabulky , implementace od verze jádra 0.4
         // cistení probehne kazdou druhou minutu
         $schedule->command('queue:clear')->everyTwoMinutes()->runInBackground();
+
+        // odeslání email notifikace o nefunkčním mailu
+        $schedule->command('command:SendErrorStreamEmail')->everyMinute()->runInBackground();
     }
 
     /**

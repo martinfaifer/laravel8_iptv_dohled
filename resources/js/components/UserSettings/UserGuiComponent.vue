@@ -1,6 +1,9 @@
 <template>
     <v-main>
-        <alert-component :status="status"></alert-component>
+        <alert-component
+            v-if="status != null"
+            :status="status"
+        ></alert-component>
         <v-row>
             <span class="headline">Nastavení prostředí</span>
         </v-row>
@@ -35,7 +38,8 @@
                         <v-switch
                             v-model="customMozaika"
                             label="vytvoření statických kanálů v mozaice"
-                        ></v-switch> </v-col>
+                        ></v-switch>
+                    </v-col>
                 </v-card>
             </v-row>
             <v-row v-show="customMozaika === true">
@@ -46,7 +50,7 @@
                 >
                     <v-col cols="4" sm="12" md="12">
                         <v-autocomplete
-                            v-model="user.staticChannels"
+                            v-model="staticChannels"
                             :items="streams"
                             item-text="nazev"
                             item-value="id"
@@ -57,6 +61,19 @@
                     </v-col>
                 </v-card>
             </v-row>
+            <v-row>
+                <v-spacer></v-spacer>
+                <v-row>
+                    <v-btn
+                        @click="GuiEdit()"
+                        small
+                        class="mr-12"
+                        color="success"
+                    >
+                        Editovat
+                    </v-btn>
+                </v-row>
+            </v-row>
         </v-container>
     </v-main>
 </template>
@@ -65,6 +82,7 @@ import AlertComponent from "../AlertComponent";
 export default {
     props: ["user"],
     data: () => ({
+        staticChannels: [],
         status: null,
         customMozaika: "",
         streams: []
@@ -90,20 +108,38 @@ export default {
             } else {
                 this.customMozaika = false;
             }
+        },
+        GuiEdit() {
+            let currentObj = this;
+            axios
+                .post("user/gui/edit", {
+                    pagination: this.user.pagination,
+                    customMozaika: this.customMozaika,
+                    staticChannels: this.staticChannels
+                })
+                .then(function(response) {
+                    currentObj.status = response.data.status;
+                    currentObj.$store.commit("update", response.data.data);
+
+                    setTimeout(function() {
+                        currentObj.status = null;
+                    }, 5000);
+                });
+        },
+        getStaticChannels() {
+            user.staticChannels = this.staticChannels;
         }
     },
     mounted() {
         this.CustomMozaikaFn();
-    },
-
-    watch: {
-        status() {
-            if (this.status != null) {
-                setTimeout(function() {
-                    this.status = null;
-                }, 5000);
-            }
-        }
     }
+
+    // mutations: {
+    //     status() {
+    //         setTimeout(function() {
+    //             this.status = null;
+    //         }, 5000);
+    //     }
+    // }
 };
 </script>

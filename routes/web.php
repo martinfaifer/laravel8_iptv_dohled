@@ -2,7 +2,10 @@
 
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
+use App\Http\Controllers\EmailNotificationController;
 use App\Http\Controllers\FfmpegController;
+use App\Http\Controllers\FirewallController;
+use App\Http\Controllers\FirewallLogController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
@@ -32,6 +35,9 @@ Route::post('streamInfo/history/10', [StreamHistoryController::class, 'stream_in
 // StreamInfo -> Výpis z dokumentace pomocí api
 Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->middleware('firewall');
 
+// % streamů, které fungují
+Route::get('working/streams', [StreamController::class, 'percent_working_streams'])->middleware('firewall');
+
 
 
 /**
@@ -57,6 +63,9 @@ Route::post('user/heslo/edit', [UserController::class, 'user_password_edit'])->m
 // Editace detailnich informaci o uzivately  / pripadne zalození novych nebo odebrání
 Route::post('user/detail/edit', [UserDetailController::class, 'user_detail_edit'])->middleware('firewall');
 
+// Editace GUI, ktere si user nastavuje, dle sebe ( staticke kanaly, pocet kanalu v mozaice )
+Route::post('user/gui/edit', [UserController::class, 'user_gui_edit'])->middleware('firewall');
+
 // získání informací o uživateli ( aktuálně přihlášeném )
 Route::get('user', [UserController::class, 'getLoggedUser'])->middleware('firewall');
 
@@ -72,9 +81,39 @@ Route::get('user/streams', [UserController::class, 'user_streams'])->middleware(
 // editace / odebrání statických streamů
 Route::post('user/streams/set', [UserController::class, 'user_streams_set'])->middleware('firewall');
 
+// Výpis všech userů v systému
+Route::get('users', [UserController::class, 'users'])->middleware('firewall');
+
+
+/**
+ * Systém blok
+ */
+
 // systémové pozadavky
 Route::get('system', [SystemController::class, 'checkSystemUsage'])->middleware('firewall');
 
-// Route::get('test', function () {
-//     return FfmpegController::find_image_if_exist_delete_and_create_new('1', "http://93.91.154.54:10224/udp/239.251.2.6:1234");
-// });
+Route::get('cpu', [SystemController::class, 'cpu'])->middleware('firewall');
+Route::get('ram', [SystemController::class, 'ram'])->middleware('firewall');
+Route::get('swap', [SystemController::class, 'swap'])->middleware('firewall');
+Route::get('hdd', [SystemController::class, 'hdd'])->middleware('firewall');
+Route::get('uptime', [SystemController::class, 'get_uptime'])->middleware('firewall');
+Route::get('server/satatus', [SystemController::class, 'server_status'])->middleware('firewall');
+Route::get('firewall/status', [FirewallController::class, 'check_status'])->middleware('firewall');
+
+/**
+ * Nastavení Streamů
+ */
+Route::get("streams", [StreamController::class, 'get_streams'])->middleware('firewall');
+Route::post("stream/edit", [StreamController::class, 'edit_stream'])->middleware('firewall');
+Route::post("stream/delete", [StreamController::class, 'delete_stream'])->middleware('firewall');
+
+
+/**
+ * FIREWALL
+ */
+Route::get("firewall/logs", [FirewallLogController::class, 'get_logs'])->middleware('firewall');
+
+/**
+ * TESTS
+ */
+// Route::get('test/mail', [EmailNotificationController::class, 'notify_crashed_stream']);

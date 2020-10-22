@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserDetail;
 use App\Models\UserRole;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -23,11 +24,20 @@ class UserController extends Controller
     public function loginUser(Request $request): array
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Úspěšně přihlášeno",
-            ];
+            if (Auth::user()->status == "active") {
+                return [
+                    'isAlert' => "isAlert",
+                    'status' => "success",
+                    'msg' => "Úspěšně přihlášeno",
+                ];
+            } else {
+                Auth::logout();
+                return [
+                    'isAlert' => "isAlert",
+                    'status' => "error",
+                    'msg' => "Uživatel je zablokován!",
+                ];
+            }
         } else {
             return [
                 'isAlert' => "isAlert",
@@ -246,5 +256,93 @@ class UserController extends Controller
                 'msg' => "Nepodařilo se editovat"
             ];
         }
+    }
+
+    /**
+     * funkce na uoravu zobrazení mozaiky
+     *
+     * @param Request $request->pagination, $request->customMozaika, $request->staticChannels
+     * @return void
+     */
+    public function user_gui_edit(Request $request)
+    {
+
+        // ovření vstupů
+        if ($request->customMozaika == true) {
+            $mozaika = "custom";
+            if (!empty($request->staticChannels)) {
+                $customData = json_encode($request->staticChannels, true);
+            } else {
+                // status , msg
+                return [
+                    "status" => array(
+                        'status' => "issue",
+                        'msg' => "Je nutné vybrat kanály, které mají být statické!"
+                    )
+                ];
+            }
+        } else {
+            $mozaika = "default";
+            $customData = null;
+        }
+
+        // uložení k uživateli
+        try {
+            $user = Auth::user();
+            User::where('id', $user->id)->update(['mozaika' => $mozaika, 'customData' => $customData, 'pagination' => $request->pagination]);
+            return [
+                "status" => array(
+                    'status' => "success",
+                    'msg' => "Editace byla úspěšná!"
+                ),
+                "data" => Auth::user()
+            ];
+        } catch (\Throwable $th) {
+            return [
+                "status" => array(
+                    'status' => "error",
+                    'msg' => "Nepodařilo se editovat!"
+                )
+            ];
+        }
+    }
+
+    /**
+     * funkce na výpis všech uuživatelů
+     *
+     * @return array
+     */
+    public function users(): array
+    {
+
+        if (!Auth::user()) {
+            return [
+                'status' => "User not logged"
+            ];
+        }
+        foreach (User::get() as $user) {
+
+            if (!is_null($user->customData)) {
+                $staticChannels = array();
+                $customData = json_decode($user->customData, true);
+                foreach ($customData as $streamId) {
+                    $streamData = Stream::where('id', $streamId)->first();
+                    $staticChannels[] = $streamData->nazev;
+                }
+                $staticChannels = implode(",", $staticChannels);
+            }
+
+            $output[] = array(
+                'name' => $user->name,
+                'email' => $user->email,
+                'role_id' => UserRole::where('id', $user->role_id)->first()->role_name,
+                'mozaika' => $user->mozaika,
+                'customData' => $staticChannels ?? null,
+                'pagination' => $user->pagination,
+                'status' => $user->status
+            );
+            unset($staticChannels);
+        }
+        return $output;
     }
 }

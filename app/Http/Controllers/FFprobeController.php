@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\StreamNotification;
+use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\Stream;
 use App\Models\StreamAlert;
 use App\Models\StreamHistory;
@@ -24,9 +25,12 @@ class FFprobeController extends Controller
     public static function ffprobe_diagnostic($streamUrl, $streamId, $audioVideoCheck = null): void
     {
 
-        $ffprobeOutput = shell_exec("ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 1");
+        $ffprobeOutput = shell_exec("timeout --foreground 10s ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 10");
 
         $ffprobeJsonOutput = json_decode($ffprobeOutput, true);
+
+        // získání informací o streamu
+        $streamInfoData = Stream::where('id', $streamId)->first();
 
         if (!is_null($audioVideoCheck)) {
 
@@ -40,31 +44,52 @@ class FFprobeController extends Controller
             // pokud $ffprobeJsonOutput neobsahuje klíč "programs" => stream nefunguje ===> ukládá se error
             if (!array_key_exists("programs", $ffprobeJsonOutput)) {
 
-                Stream::where('id', $streamId)->update(['status' => "error"]);
+                if ($streamInfoData->status != 'error') {
+                    Stream::where('id', $streamId)->update(['status' => "error"]);
+
+                    // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
+                    if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                        // odebrání záznamu z tabulky
+                        ChannelsWhichWaitingForNotification::create([
+                            'stream_id' => $streamId
+                        ]);
+                    }
 
 
-                if (!StreamHistory::where('stream_id', $streamId)->where('status', "stream_error")->orderBy('created_at', 'asc')->first()) {
-                    // poslední status u kanálu není stream_error ( nefunkční ), založí se nový status
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "stream_error"
-                    ]);
-                    event(new StreamNotification());
+                    if (!StreamHistory::where(['stream_id', $streamId], ['status', "stream_error"])->orderBy('created_at', 'asc')->first()) {
+                        // poslední status u kanálu není stream_error ( nefunkční ), založí se nový status
+                        StreamHistory::create([
+                            'stream_id' => $streamId,
+                            'status' => "stream_error"
+                        ]);
+                    }
                 }
+                event(new StreamNotification());
             } else {
                 // byl nalezen klíc programs , stream nejspise funguje
 
                 // v teto fázy zatím jen ulozit stav success , zatím se nehledají žádné chyby a pod...
-                Stream::where('id', $streamId)->update(['status' => "success"]);
-                event(new StreamNotification());
-                if (!StreamHistory::where('stream_id', $streamId)->where('status', "stream_ok")->orderBy('created_at', 'asc')->first()) {
-                    // poslední status u kanálu není stream_stream_okerror ( funkční ), založí se nový status
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "stream_ok"
-                    ]);
+                if ($streamInfoData->status != 'success') {
+
+                    Stream::where('id', $streamId)->update(['status' => "success"]);
+
+                    // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+                    if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                        // odeslání mail notifikace pokud je zapotřebí
+                        EmailNotificationController::notify_success_stream($streamId);
+
+                        // odebrání záznamu z tabulky
+                        ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
+                    }
+
+                    if (!StreamHistory::where('stream_id', $streamId)->where('status', "stream_ok")->orderBy('created_at', 'asc')->first()) {
+                        // poslední status u kanálu není stream_stream_okerror ( funkční ), založí se nový status
+                        StreamHistory::create([
+                            'stream_id' => $streamId,
+                            'status' => "stream_ok"
+                        ]);
+                    }
                     event(new StreamNotification());
-                    return;
                 }
             }
         }
@@ -100,7 +125,7 @@ class FFprobeController extends Controller
                     // pokud pcr_pid neexsituje, stav streamu se mění na issue, nejspíše je resync audio / video , tudíž záznam do stream_alerts a stream_histories
                     if ($streamInfo->status == "success") {
                         Stream::where('id', $streamId)->update(['status' => "issue"]);
-                        if (!StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                        if (!StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                             // vytvorení záznamu do stream_alerts
                             StreamAlert::create([
                                 'stream_id' => $streamId,
@@ -136,7 +161,7 @@ class FFprobeController extends Controller
                             // pokud pcr_pid neexsituje, stav streamu se mění na issue, nejspíše je resync audio / video , tudíž záznam do stream_alerts a stream_histories
                             if ($streamInfo->status == "success") {
                                 Stream::where('id', $streamId)->update(['status' => "issue"]);
-                                if (!StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                                if (!StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                                     // vytvorení záznamu do stream_alerts
                                     StreamAlert::create([
                                         'stream_id' => $streamId,
@@ -184,9 +209,9 @@ class FFprobeController extends Controller
                         // vse je v pořádku, hodnoty jsou totožné, kontrola , zda stream má hodnotu success, pripadně smazání alertu
                         if ($streamInfo->status != "success") {
                             Stream::where('id', $streamId)->update(['status' => "success"]);
-                            if (StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                            if (StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                                 // odebrání záznamu ze stream_alerts
-                                StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->delete();
+                                StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->delete();
 
                                 // ulozeni do historie, že kanál je ynnyí OK
                                 StreamHistory::create([
@@ -208,9 +233,9 @@ class FFprobeController extends Controller
                             // vse je v pořádku, hodnoty jsou totožné, kontrola , zda stream má hodnotu success, pripadně smazání alertu
                             if ($streamInfo->status != "success") {
                                 Stream::where('id', $streamId)->update(['status' => "success"]);
-                                if (StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                                if (StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                                     // odebrání záznamu ze stream_alerts
-                                    StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->delete();
+                                    StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->delete();
 
                                     // ulozeni do historie, že kanál je ynnyí OK
                                     StreamHistory::create([
@@ -233,9 +258,9 @@ class FFprobeController extends Controller
                                 // vse je v pořádku, hodnoty jsou totožné, kontrola , zda stream má hodnotu success, pripadně smazání alertu
                                 if ($streamInfo->status != "success") {
                                     Stream::where('id', $streamId)->update(['status' => "success"]);
-                                    if (StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                                    if (StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                                         // odebrání záznamu ze stream_alerts
-                                        StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->delete();
+                                        StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->delete();
 
                                         // ulozeni do historie, že kanál je ynnyí OK
                                         StreamHistory::create([
@@ -253,7 +278,7 @@ class FFprobeController extends Controller
 
                         if ($streamInfo->status == "success") {
                             Stream::where('id', $streamId)->update(['status' => "issue"]);
-                            if (!StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                            if (!StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                                 // vytvorení záznamu do stream_alerts
                                 StreamAlert::create([
                                     'stream_id' => $streamId,
@@ -277,9 +302,9 @@ class FFprobeController extends Controller
                 // vse je v pořádku, hodnoty jsou totožné, kontrola , zda stream má hodnotu success, pripadně smazání alertu
                 if ($streamInfo->status != "success") {
                     Stream::where('id', $streamId)->update(['status' => "success"]);
-                    if (StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                    if (StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                         // odebrání záznamu ze stream_alerts
-                        StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->delete();
+                        StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->delete();
 
                         // ulozeni do historie, že kanál je ynnyí OK
                         StreamHistory::create([
@@ -294,7 +319,7 @@ class FFprobeController extends Controller
 
                 if ($streamInfo->status == "success") {
                     Stream::where('id', $streamId)->update(['status' => "issue"]);
-                    if (!StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
+                    if (!StreamAlert::where(['stream_id', $streamId], ['status', "invalidSync_warning"])->first()) {
                         // vytvorení záznamu do stream_alerts
                         StreamAlert::create([
                             'stream_id' => $streamId,

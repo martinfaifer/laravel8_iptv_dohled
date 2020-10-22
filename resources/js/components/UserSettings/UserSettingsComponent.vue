@@ -148,7 +148,11 @@
                                     ></v-text-field>
                                 </v-col>
                                 <v-card-actions>
-                                    <v-btn @click="DetailEdit()" type="submit" small color="success"
+                                    <v-btn
+                                        @click="DetailEdit()"
+                                        type="submit"
+                                        small
+                                        color="success"
                                         >Editovat</v-btn
                                     >
                                 </v-card-actions>
@@ -181,6 +185,9 @@ export default {
                 })
                 .then(response => {
                     this.status = response.data;
+                    setTimeout(function() {
+                        this.status = null;
+                    }, 5000);
                 });
         },
 
@@ -192,6 +199,9 @@ export default {
                 })
                 .then(response => {
                     this.status = response.data;
+                    setTimeout(function() {
+                        this.status = null;
+                    }, 5000);
                 });
         },
 
@@ -204,17 +214,20 @@ export default {
                 })
                 .then(response => {
                     this.status = response.data;
+                    setTimeout(function() {
+                        this.status = null;
+                    }, 5000);
                 });
         }
-    },
-    watch: {
-        status() {
-            if (this.status != null) {
-                setTimeout(function() {
-                    this.status = null;
-                }, 5000);
-            }
-        }
     }
+    // watch: {
+    //     status() {
+    //         if (this.status != null) {
+    //             setTimeout(function() {
+    //                 this.status = null;
+    //             }, 5000);
+    //         }
+    //     }
+    // }
 };
 </script>

@@ -12,6 +12,18 @@
     /* margin-top: -10%; */
     position: relative;
 }
+
+
+#link {
+    text-decoration: none;
+    cursor: pointer;
+    color: #979797;
+}
+#link:hover {
+    text-decoration: none;
+    cursor: pointer;
+    color: #a1a0a0;
+}
 /*
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ANIMACE

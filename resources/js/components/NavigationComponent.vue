@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-app-bar color="transparent" fixed dense>
+        <v-app-bar color="#121212" fixed dense>
             <div v-if="this.$route.path != '/'">
                 <v-btn link to="/" color="white" class="white--text" icon>
                     <v-icon>mdi-home</v-icon>
@@ -50,7 +50,11 @@
                                 >mdi-account-cog-outline</v-icon
                             >
                         </v-list-item>
-                        <v-list-item v-show="userRole != '4'" @click="">
+                        <v-list-item
+                            v-show="userRole != '4'"
+                            link
+                            to="/settings/prehled"
+                        >
                             Nastavení App<v-spacer></v-spacer
                             ><v-icon color="grey" right small
                                 >mdi-settings</v-icon
@@ -61,10 +65,21 @@
                             Odhlásit se <v-spacer></v-spacer
                             ><v-icon color="grey" right small>mdi-lock</v-icon>
                         </v-list-item>
+
+                        <v-divider v-show="isIptvDoku == 'success'"></v-divider>
+                        <v-list-item
+                            v-show="isIptvDoku == 'success'"
+                            href="http://iptvdoku.grapesc.cz/#/"
+                            target="_blink"
+                        >
+                            IPTV Dokumentace<v-spacer></v-spacer
+                            ><v-icon color="grey" right small
+                                >mdi-television</v-icon
+                            >
+                        </v-list-item>
                     </v-list>
                 </v-menu>
             </template>
-
             <!-- end User Part -->
             <v-badge
                 bordered
@@ -135,12 +150,31 @@
                 <strong>text</strong>
             </div>
         </v-snackbar>
+        <!-- iptv doku -->
+        <v-snackbar
+            v-if="iptvDokuStatus != null"
+            :value="iptvDokuStatus"
+            color="primary"
+            absolute
+            right
+            rounded="pill"
+            bottom
+        >
+            <span class="ml-12" v-if="iptvDokuStatus == 'success'">
+                Připojeno k IPTV dokumentaci
+            </span>
+            <span class="ml-12" v-if="iptvDokuStatus == 'error'">
+                Nepodařilo se připojit k IPTV dokumentaci
+            </span>
+        </v-snackbar>
     </v-app>
 </template>
 
 <script>
 export default {
     data: () => ({
+        iptvDokuStatus: null,
+        isIptvDoku: null,
         drawer: null,
         userMenu: null,
         alerts: [],
@@ -174,8 +208,21 @@ export default {
     created() {
         this.loadAlerts();
         this.loadUser();
+        this.testConnectionToIptvDoku();
     },
     methods: {
+        testConnectionToIptvDoku() {
+            window.axios.get("/api/iptvdoku/testConnection").then(response => {
+                this.$store.state.iptvDokuConnectionStatus = response.data;
+                if (this.isIptvDoku != "success") {
+                    this.isIptvDoku = response.data;
+                    this.iptvDokuStatus = response.data;
+                    setTimeout(function() {
+                        this.iptvDokuStatus = null;
+                    }, 5000);
+                }
+            });
+        },
         loadAlerts() {
             window.axios.get("/streamAlerts").then(response => {
                 this.alerts = response.data;
@@ -215,6 +262,21 @@ export default {
             }.bind(this),
             2000
         );
+
+        setInterval(
+            function() {
+                try {
+                    this.loadUser();
+                } catch (error) {}
+            }.bind(this),
+            2000
+        );
+
+        setInterval(function() {
+            try {
+                this.testConnectionToIptvDoku;
+            } catch (error) {}
+        }, 60000);
     },
     watch: {
         search() {

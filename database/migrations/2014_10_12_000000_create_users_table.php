@@ -23,6 +23,7 @@ class CreateUsersTable extends Migration
             $table->string('mozaika')->default('default');
             $table->text('customData')->nullable();
             $table->string('pagination')->default('24');
+            $table->string('status')->default('active');
             $table->rememberToken();
             $table->timestamps();
         });

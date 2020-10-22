@@ -18,7 +18,6 @@
                         <v-card
                             link
                             :to="'stream/' + stream.id"
-                            target="_blank"
                             :elevation="hover ? 24 : 0"
                             class="mx-auto ma-0 transition-fast-in-fast-out"
                             height="180"

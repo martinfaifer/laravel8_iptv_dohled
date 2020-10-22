@@ -1,23 +1,28 @@
-require('./bootstrap');
+require("./bootstrap");
 
-window.Vue = require('vue');
+window.Vue = require("vue");
 
-import Chartkick from 'vue-chartkick'
-import Chart from 'chart.js'
-import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
-import { store } from './store/store';
+import Chartkick from "vue-chartkick";
+import Chart from "chart.js";
+import Vuetify from "vuetify";
+import VueRouter from "vue-router";
+import { store } from "./store/store";
 
 Vue.use(Vuetify);
 Vue.use(VueRouter);
 Vue.use(Chartkick.use(Chart));
 
+import LoginComponent from "./components/LoginComponent";
+import NavigationComponent from "./components/NavigationComponent";
+import MozaikaComponent from "./components/Main/MozaikaComponent";
+import StreamInfoComponent from "./components/Main/StreamInfo/StreamInfoComponent";
+import UserComponent from "./components/UserSettings/UserComponent";
 
-import LoginComponent from './components/LoginComponent'
-import NavigationComponent from './components/NavigationComponent'
-import MozaikaComponent from './components/Main/MozaikaComponent'
-import StreamInfoComponent from './components/Main/StreamInfo/StreamInfoComponent'
-import UserComponent from './components/UserSettings/UserComponent'
+import SettingsComponent from "./components/Settings/SettingsComponent";
+import SettingsPrehledComponent from "./components/Settings/SettingsPrehledComponent";
+import StreamsComponent from "./components/Settings/StreamsComponent";
+import UsersComponent from "./components/Settings/UsersComponent";
+import FirewallComponent from './components/Settings/FirewallComponent';
 
 let routes = [
     {
@@ -25,23 +30,45 @@ let routes = [
         component: NavigationComponent,
         children: [
             {
-                path: '',
+                path: "",
                 component: MozaikaComponent
             },
             {
-                path: 'stream/:id',
+                path: "stream/:id",
                 component: StreamInfoComponent
             },
             {
                 path: "user/:id",
                 component: UserComponent
+            },
+            {
+                path: "/settings/prehled",
+                component: SettingsComponent,
+                children: [
+                    {
+                        path: "",
+                        component: SettingsPrehledComponent
+                    },
+                    {
+                        path: "/settings/streams",
+                        component: StreamsComponent
+                    },
+                    {
+                        path: "/settings/users",
+                        component: UsersComponent
+                    },
+                    {
+                        path: "/settings/firewall",
+                        component: FirewallComponent
+                    }
+                ]
             }
         ]
     },
     {
-        path: '/login',
+        path: "/login",
         component: LoginComponent
-    },
+    }
     // {
     //     path: '*',
     //     component: PageNotFoundComponent
@@ -51,17 +78,17 @@ let routes = [
 // definice konstant
 const router = new VueRouter({
     routes
-})
-const opts = {}
+});
+const opts = {};
 
 //module.export
 const app = new Vue({
-    el: '#app',
+    el: "#app",
     store,
     router,
     vuetify: new Vuetify({
         theme: {
-            dark: true,
+            dark: true
         },
         opts
     })

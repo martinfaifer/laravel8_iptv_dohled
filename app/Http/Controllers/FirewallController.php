@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Firewall;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 
 class FirewallController extends Controller
@@ -31,5 +32,25 @@ class FirewallController extends Controller
 
             return "ko";
         }
+    }
+
+    /**
+     * funkce na vrácení statusu firewallu
+     * vrací status => running
+     *       status => stopped
+     *
+     * @return array
+     */
+    public static function check_status(): array
+    {
+        if (!SystemSetting::where('modul', "firewall")->where('stav', "aktivni")->first()) {
+            return [
+                'status' => "stopped"
+            ];
+        }
+
+        return [
+            'status' => "running"
+        ];
     }
 }

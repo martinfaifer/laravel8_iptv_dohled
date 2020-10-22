@@ -6,7 +6,7 @@
  * DIAGNOSTICKÉ JÁDRO, KTERÉ ZODPOVÍDÁ ZA KONTROLU KANÁLŮ , POUŽÍVÁ SE PRIMÁRNĚ TSDUCK PRO DIAGNOSTIKU A FFPROBE PRO ZÍSKÁNÍ LOW LEVEL INFORMACÍ
  * --------------------------------------------------------------------------------------------------------------------------------------------
  *
- * JÁDRO VERZE 0.4
+ * JÁDRO VERZE 0.8
  *
  *
  */
@@ -18,8 +18,10 @@ use App\Events\StreamInfoHistory;
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
 use App\Jobs\FFprobeDiagnostic;
+use App\Jobs\SendSuccessEmail;
 use App\Jobs\StreamInfoTsVideoBitrateJob;
 use App\Models\AudioBitrate;
+use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\Stream;
 use App\Models\StreamAlert;
 use App\Models\StreamAudio;
@@ -124,13 +126,16 @@ class DiagnosticController extends Controller
     {
         $loop = "start";
         while ($loop == "start") {
+            // získání informací o streamu
+            $streamInfoData = Stream::where('id', $streamId)->first();
+
             // $eventLoop_for_TransportStream_Global_Service = Factory::create();
             // $eventLoop_for_TransportStream_Global_Service->addPeriodicTimer(5, function () {
             // $tsDuckData = shell_exec("tsp -I http {$streamUrl} -P until -s 1 -P analyze --normalized -O drop");
             // });
 
             // spuštění tsducku pro diagnostiku kanálu
-            $tsDuckData = shell_exec("tsp -I http {$streamUrl} -P until -s 1 -P analyze --normalized -O drop");
+            $tsDuckData = shell_exec("timeout --foreground 2s tsp -I http {$streamUrl} -P until -s 1 -P analyze --normalized -O drop");
 
             // ověření zda analýza selhala či nikoliv
             if (empty($tsDuckData)) {
@@ -150,6 +155,12 @@ class DiagnosticController extends Controller
             else {
                 // fn pro převedení stringu do pole
                 $tsduckArr = self::convert_tsduck_string_to_array($tsDuckData);
+
+                // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+                if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                    // odebrání záznamu z tabulky
+                    ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
+                }
 
                 /**
                  * ---------------------------------------------------------------------------------------------------------------------------------------
@@ -171,7 +182,7 @@ class DiagnosticController extends Controller
 
                 // kontrola, zda pid není roven 0 , pokud ano, vypadá to, že stream je bez audia
                 // vytvoření podminky, kdy se nemá kontrolovat zvuk u videa
-                if (Stream::where('id', $streamId)->first()->dohledVolume == true) {
+                if ($streamInfoData->dohledVolume == true) {
                     if (array_key_exists('global', $tsduckArr)) {
                         // pokud je vse v poradku vraci pole "status" => "success"
                         // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
@@ -204,10 +215,10 @@ class DiagnosticController extends Controller
                 // $eventLoop->run(); // konec event loopu
             }
 
-            // analyzování výstupu z jednotlivýcg podruzných funkcí
+            // analyzování výstupu z jednotlivých podruzných funkcí
             if ($ts_data["status"] == "issue" || $global_data["status"] == "issue" || $pids_data["status"] == "issue") {
                 // update záznamu na issue
-                if (Stream::where('id', $streamId)->first()->status != "issue") {
+                if ($streamInfoData->status != "issue") {
                     Stream::where('id', $streamId)->update(["status" => "issue"]);
                 }
 
@@ -308,7 +319,7 @@ class DiagnosticController extends Controller
             } else {
 
                 // stream má status success
-                if (Stream::where('id', $streamId)->first()->status != "success") {
+                if ($streamInfoData->status != "success") {
                     Stream::where('id', $streamId)->update(["status" => "success"]);
                     // odebrání alertů
                     if (StreamAlert::where('stream_id',  $streamId)->first()) {
@@ -319,7 +330,11 @@ class DiagnosticController extends Controller
                 }
             }
 
-
+            // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+            if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                // odeslání mail notifikace pokud je zapotřebí
+                dispatch(new SendSuccessEmail($streamId));
+            }
             // event do mozaiky
             // event(new StreamNotification());
             event(new StreamInfoHistory($streamId));
@@ -374,8 +389,6 @@ class DiagnosticController extends Controller
             $discontinuities = $pids['video']['discontinuities'];
             $scrambled = $pids['video']['scrambled'];
 
-            // event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate']));
-            // dispatch(new StreamInfoTsVideoBitrateJob($streamId, $pids['video']['bitrate'])); // QUEUE
             event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate'], $videoPid, $discontinuities, $scrambled));
         }
 
@@ -693,10 +706,6 @@ class DiagnosticController extends Controller
 
         // pokud je hodnota jiná u invalidsyncs , scrambledpids , transporterrors jiná nez 0
         if ($invalidsyncs == "0" && $scrambledpids == "0" && $transporterrors == "0") {
-            // Stream::where('id', $streamId)->update(['status' => "success"]);
-
-            // event(new StreamNotification());
-            // event(new StreamInfoHistory($streamId));
 
             // overení zda existuje záznam v tabulce StreamAlert , pokud existuje, budou veskere záznamy s daným streamId odebrány
             if (StreamAlert::where('stream_id', $streamId)->first()) {
@@ -704,12 +713,6 @@ class DiagnosticController extends Controller
                     // odebrání záznamů z tabulky
                     StreamAlert::where('id', $streamAlert['id'])->delete();
                 }
-
-                //  aktualizace Historie
-                // StreamHistory::create([
-                //     'stream_id' => $streamId,
-                //     'status' => "stream_ok"
-                // ]);
             }
 
             return [
@@ -718,10 +721,6 @@ class DiagnosticController extends Controller
         } else {
 
             //  update statusu na issue
-            // Stream::where('id', $streamId)->update(['status' => "issue"]); // issue je , kdyz stream chybuje
-            // event(new StreamNotification());
-            // event(new StreamInfoHistory($streamId));
-
 
             // u kazdé hodnoty overení zda jiz existuje chyba
             // pokud chyba bude existovat , vynechá se
@@ -734,20 +733,6 @@ class DiagnosticController extends Controller
                     'status' => "invalidSync_warning",
                     'message' => "Desynchronizace Audia / videa"
                 );
-
-                //     if (!StreamAlert::where('stream_id', $streamId)->where('status', "invalidSync_warning")->first()) {
-                //         StreamAlert::create([
-                //             'stream_id' => $streamId,
-                //             'status' => "invalidSync_warning",
-                //             'message' => "Desynchronizace Audia / videa"
-                //         ]);
-
-                //         //  ulození do historie
-                //         StreamHistory::create([
-                //             'stream_id' => $streamId,
-                //             'status' => "invalidSync_warning"
-                //         ]);
-                //     }
             }
 
             if ($scrambledpids != "0") {
@@ -757,20 +742,6 @@ class DiagnosticController extends Controller
                     'status' => "scrambledPids_warning",
                     'message' => "Problémy s Pidy"
                 );
-
-                // if (!StreamAlert::where('stream_id', $streamId)->where('status', "scrambledPids_warning")->first()) {
-                //     StreamAlert::create([
-                //         'stream_id' => $streamId,
-                //         'status' => "scrambledPids_warning",
-                //         'message' => "Problémy s Pidy"
-                //     ]);
-
-                //     //  ulození do historie
-                //     StreamHistory::create([
-                //         'stream_id' => $streamId,
-                //         'status' => "scrambledPids_warning"
-                //     ]);
-                // }
             }
 
             if ($transporterrors != "0") {
@@ -779,19 +750,6 @@ class DiagnosticController extends Controller
                     'status' => "transporterrors_warning",
                     'message' => "Zobrazila se TS chyba"
                 );
-                // if (!StreamAlert::where('stream_id', $streamId)->where('status', "transporterrors_warning")->first()) {
-                //     StreamAlert::create([
-                //         'stream_id' => $streamId,
-                //         'status' => "transporterrors_warning",
-                //         'message' => "Zobrazila se TS chyba"
-                //     ]);
-
-                //     //  ulození do historie
-                //     StreamHistory::create([
-                //         'stream_id' => $streamId,
-                //         'status' => "transporterrors_warning"
-                //     ]);
-                // }
             }
 
             return [
@@ -799,16 +757,6 @@ class DiagnosticController extends Controller
                 "dataAlert" => $outputErrStats
             ];
         }
-
-
-        // uložení TS dat do stream_t_sdatas
-
-        // StreamTSdata::create([
-        //     'stream_id' => $streamId,
-        //     'invalidsyncs' => $invalidsyncs,
-        //     'scrambledpids' => $scrambledpids,
-        //     'transporterrors' => $transporterrors
-        // ]);
     }
 
     /**
@@ -837,32 +785,12 @@ class DiagnosticController extends Controller
             // oveření zda pid je nebo není roven 0
             if ($globalPid == "0") {
                 // stream je nejspíše bez audia
-                // update záznamu Stream z jiného statusu nez issue na issue
-                // if (Stream::where('id', $streamId)->first()->status != "issue") {
-                //     Stream::where('id', $streamId)->update(['status' => "issue"]);
-                // event(new StreamNotification());
-                // event(new StreamInfoHistory($streamId));
-
-                //  ulození do tabulky StreamAlerts a StreamHistory
-                // StreamHistory::create([
-                //     'stream_id' => $streamId,
-                //     'status' => "no_audio"
-                // ]);
-
-                // StreamAlert::create([
-                //     'stream_id' => $streamId,
-                //     'status' => "no_audio",
-                //     'message' => "Stream bez zvuku"
-                // ]);
-
-
-                // }
                 return [
                     'status' => "issue",
                     'dataAlert' => array([
                         'stream_id' => $streamId,
                         'status' => "no_audio",
-                        'message' => "Stream bez zvuku"
+                        'message' => "Nepodařilo se detekovat audio"
                     ])
                 ];
             } else {
@@ -871,25 +799,6 @@ class DiagnosticController extends Controller
                     'status' => "success"
                 ];
             }
-
-            // overeni zda stream nemel hodnotu issue , záznam v StreamAlert a vytvori se záznam do StreamHistory
-            // Stream nemá chyby
-            // overení zda stream má status issue
-            // if (Stream::where('id', $streamId)->first()->status == "issue") {
-            //     Stream::where('id', $streamId)->update(['status' => "success"]);
-            //     // event(new StreamNotification());
-            //     // event(new StreamInfoHistory($streamId));
-            // }
-
-            // odebrání záznamu a vytvirení záamu do historie
-            // if (StreamAlert::where('stream_id', $streamId)->where('status', "no_audio")->first()) {
-            //     // smazání,
-            //     StreamAlert::where('stream_id', $streamId)->where('status', "no_audio")->delete();
-            //     StreamHistory::create([
-            //         'stream_id' => $streamId,
-            //         'status' => "audio_OK"
-            //     ]);
-            // }
         }
     }
 

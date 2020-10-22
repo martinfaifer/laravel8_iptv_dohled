@@ -6,7 +6,7 @@
             transition="scale-transition"
             dense
             top
-            color="warning"
+            :color="status.status"
             v-model="status"
         >
             <div class="text-center">

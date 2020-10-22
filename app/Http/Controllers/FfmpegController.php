@@ -38,7 +38,7 @@ class FfmpegController extends Controller
         }
 
         //  vytvoření náhledu
-        shell_exec("ffmpeg -i {$streamUrl} -vframes 1 storage/app/public/channelsImages/{$newImgName} -timeout 1 -timelimit 3");
+        shell_exec("timeout --foreground 10s ffmpeg -i {$streamUrl} -vframes 3 storage/app/public/channelsImages/{$newImgName} -timeout 10 -timelimit 9");
 
 
         // kontrola, zda se náhled zkutečně vytvořil

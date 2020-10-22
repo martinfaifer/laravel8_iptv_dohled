@@ -1,7 +1,8 @@
 <template>
     <div>
         <v-snackbar
-            v-if="status != null"
+            v-if="status.status"
+            class="text-center"
             rounded="pill"
             transition="scale-transition"
             dense
@@ -23,9 +24,18 @@
 export default {
     props: ["status"],
     data: () => ({
-        timeout: 4000
+        timeout: 4000,
     }),
 
     methods: {},
+    // watch: {
+    //     status() {
+    //         if (this.status != null) {
+    //             setTimeout(function() {
+    //                 this.status = null;
+    //             }, 5000);
+    //         }
+    //     }
+    // }
 };
 </script>
