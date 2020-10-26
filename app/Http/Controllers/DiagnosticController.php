@@ -384,6 +384,7 @@ class DiagnosticController extends Controller
             }
 
             // získání hodnoty bitrate
+            // pokud bude video bitrate = 0 nejspíše chyba
             $videoBitrate = (int)$pids['video']['bitrate'];
             $videoPid = $pids['video']['pid'];
             $discontinuities = $pids['video']['discontinuities'];

@@ -9,6 +9,57 @@ class SystemProccessController extends Controller
 {
 
     /**
+     * funkce, která spustí self diagnostiku a navrátí Pid pro uložení do db
+     *
+     * @return integer
+     */
+    public static function start_self_check_and_return_pid(): int
+    {
+
+        $selfCheckPid = shell_exec("nohup php artisan command:selfCheck > /dev/null 2>&1 & echo $!; ");
+
+        return intval($selfCheckPid);
+    }
+
+    /**
+     * funkce na kontrolu selfcheck funkce
+     *
+     * @return void
+     */
+    public static function check_if_self_check_running(): void
+    {
+        // pokud existuje process_name redis_server , kontrola existence pidu
+        // pokud neexistuje start redis_serveru a ulozeni pidu do db
+        if (!SystemProccess::where('process_name', "self_check")->first()) {
+            // process neexistuje
+            $selfCheckPid = self::start_self_check_and_return_pid();
+
+            // ulození pidu do db
+            SystemProccess::create([
+                'process_name' => "self_check",
+                'pid' => intval($selfCheckPid)
+            ]);
+            return;
+        } else {
+
+            // záznam existuje, overuje se, zda pid existuje
+
+            if (SystemController::check_if_process_running(SystemProccess::where('process_name', "self_check")->first()->pid) == "running") {
+                // redis server vypadá, že je v pořádku
+            } else {
+
+                // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
+                $selfCheckPid = self::start_self_check_and_return_pid();
+
+                // update záznamu
+                SystemProccess::where('process_name', "self_check")->update(['pid' => intval($selfCheckPid)]);
+
+                return;
+            }
+        }
+    }
+
+    /**
      * funkce pro start redis serveru a navrácení pidu
      *
      * @return integer
@@ -18,7 +69,6 @@ class SystemProccessController extends Controller
         $redisPid = shell_exec("redis-server --daemonize yes > /dev/null 2>&1 & echo $!; ");
         return intval($redisPid);
     }
-
 
     /**
      * Funkce na kontrolu funkčnosti redis serveru a případné spuštění

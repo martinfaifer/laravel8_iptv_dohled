@@ -48,11 +48,14 @@ class FFprobeController extends Controller
                     Stream::where('id', $streamId)->update(['status' => "error"]);
 
                     // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
-                    if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-                        // odebrání záznamu z tabulky
-                        ChannelsWhichWaitingForNotification::create([
-                            'stream_id' => $streamId
-                        ]);
+                    // overení, zda stream má povolenou notifikaci
+                    if ($streamInfoData->sendMailAlert == true) {
+                        if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                            // odebrání záznamu z tabulky
+                            ChannelsWhichWaitingForNotification::create([
+                                'stream_id' => $streamId
+                            ]);
+                        }
                     }
 
 

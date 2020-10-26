@@ -112,8 +112,23 @@ Route::post("stream/delete", [StreamController::class, 'delete_stream'])->middle
  * FIREWALL
  */
 Route::get("firewall/logs", [FirewallLogController::class, 'get_logs'])->middleware('firewall');
+// změna stavu firewallu
+Route::post("firewall/settings", [FirewallController::class, 'change_status'])->middleware('firewall');
+// výpis povolených IP
+Route::get('firewall/ips', [FirewallController::class, 'return_allowd_ips'])->middleware('firewall');
+// odebrání povolené IP
+Route::post('firewall/ip/delete', [FirewallController::class, 'delete_allowed_ip'])->middleware('firewall');
+
+
 
 /**
- * TESTS
+ * ALERTING SETTINGS
  */
-// Route::get('test/mail', [EmailNotificationController::class, 'notify_crashed_stream']);
+Route::get("notifications/mails", [EmailNotificationController::class, 'return_emails'])->middleware('firewall');
+
+
+
+/**
+ * TESTING
+ */
+// Route::get("certifikate", [SystemController::class, 'check_web_certificate']);

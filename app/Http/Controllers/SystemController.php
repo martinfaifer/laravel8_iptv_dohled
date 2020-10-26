@@ -217,4 +217,32 @@ class SystemController extends Controller
 
         ];
     }
+
+    /**
+     * funkce na ověření platnosti certifikatu
+     *
+     * @return void
+     */
+    public static function check_web_certificate()
+    {
+        // $url = env("APP_URL");
+        $url = "https://portal.grapesc.cz";
+        $orignal_parse = parse_url($url, PHP_URL_HOST);
+        $get = stream_context_create(array("ssl" => array("capture_peer_cert" => TRUE)));
+        $read = stream_socket_client(
+            "ssl://" . $orignal_parse . ":443",
+            $errno,
+            $errstr,
+            30,
+            STREAM_CLIENT_CONNECT,
+            $get
+        );
+        $cert = stream_context_get_params($read);
+        $certinfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
+
+        // dd(date(DATE_ATOM, time())); // nyní
+        dd(date(DATE_ATOM, $certinfo["validTo_time_t"])); // expirace certifikatu
+        // dd($certinfo["validTo_time_t"]);
+        // validTo_time_t
+    }
 }

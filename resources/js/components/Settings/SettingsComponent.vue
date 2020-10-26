@@ -67,10 +67,10 @@
                                                     '/settings/users'
                                             "
                                             color="teal"
-                                            >mdi-account-multiple</v-icon
+                                            >mdi-account-multiple-outline</v-icon
                                         >
                                         <v-icon v-else
-                                            >mdi-account-multiple</v-icon
+                                            >mdi-account-multiple-outline</v-icon
                                         >
                                     </v-btn>
                                 </template>
@@ -94,9 +94,9 @@
                                                     '/settings/alerts'
                                             "
                                             color="teal"
-                                            >mdi-bell</v-icon
+                                            >mdi-bell-outline</v-icon
                                         >
-                                        <v-icon v-else>mdi-bell</v-icon>
+                                        <v-icon v-else>mdi-bell-outline</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>Nastavení Alertingu</span>

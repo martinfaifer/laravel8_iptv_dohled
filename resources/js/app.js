@@ -23,6 +23,7 @@ import SettingsPrehledComponent from "./components/Settings/SettingsPrehledCompo
 import StreamsComponent from "./components/Settings/StreamsComponent";
 import UsersComponent from "./components/Settings/UsersComponent";
 import FirewallComponent from './components/Settings/FirewallComponent';
+import AlertComponent from './components/Settings/AlertComponent'
 
 let routes = [
     {
@@ -60,6 +61,10 @@ let routes = [
                     {
                         path: "/settings/firewall",
                         component: FirewallComponent
+                    },
+                    {
+                        path: "/settings/alerts",
+                        component: AlertComponent
                     }
                 ]
             }

@@ -169,4 +169,21 @@ class EmailNotificationController extends Controller
             }
         }
     }
+
+
+    /**
+     * funkce na vypsání všech imalových adres na které se budou zasílat alerty / pokud nic neexistuje vrácí pole se statusem empty
+     *
+     * @return void
+     */
+    public function return_emails()
+    {
+        if (!EmailNotification::first()) {
+            return [
+                'status' => "empty"
+            ];
+        }
+
+        return EmailNotification::get();
+    }
 }

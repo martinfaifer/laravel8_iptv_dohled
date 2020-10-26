@@ -25,7 +25,7 @@ class FirewallController extends Controller
             return "ok";
         }
 
-        if (Firewall::where('allowed_ip', $clientAddress)) {
+        if (Firewall::where('allowed_ip', $clientAddress)->first()) {
 
             return "ok";
         } else {
@@ -51,6 +51,70 @@ class FirewallController extends Controller
 
         return [
             'status' => "running"
+        ];
+    }
+
+
+    /**
+     * funkce na změnu stavu firewallu ( aktivní / neaktivní)
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function change_status(Request $request)
+    {
+
+        if ($request->firewallStatus == false) {
+            SystemSetting::where('modul', "firewall")->update(['stav' => "neaktivni"]);
+
+            return [
+
+                'status' => "success",
+                'msg' => "Změnněno"
+
+            ];
+        }
+
+        SystemSetting::where('modul', "firewall")->update(['stav' => "aktivni"]);
+
+        return [
+
+            'status' => "success",
+            'msg' => "Změnněno"
+
+        ];
+    }
+
+    /**
+     * funkce na vrácení povolených IP nebo prázdého pole
+     *
+     * @return void
+     */
+    public function return_allowd_ips()
+    {
+        if (!Firewall::first()) {
+            return [
+                'status' => "empty"
+            ];
+        }
+
+        return Firewall::get();
+    }
+
+
+    /**
+     * odebrání povoleé IP ze systému
+     *
+     * @param Request $request->allowedIPid
+     * @return void
+     */
+    public function delete_allowed_ip(Request $request)
+    {
+        Firewall::where('id', $request->allowedIPid)->delete();
+
+        return [
+            'status' => "success",
+            'msg' => "Adresa byla odebrána"
         ];
     }
 }

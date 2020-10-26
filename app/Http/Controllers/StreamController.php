@@ -489,7 +489,11 @@ class StreamController extends Controller
                 'msg' => "Chybí vyplnit data!"
             ];
         }
-
+        if ($request->dohledovano) {
+            $status = "success";
+        } else {
+            $status = "stop";
+        }
         // self::stop_diagnostic_stream_from_backend(intval($request->streamId));
 
         Stream::where('id', $request->streamId)->update([
@@ -500,7 +504,7 @@ class StreamController extends Controller
             'vytvaretNahled' => $request->vytvaretNahled ?? 0,
             'sendMailAlert' => $request->sendMailAlert ?? 0,
             'sendSmsAlert' => $request->sendSmsAlert ?? 0,
-            'status' => "stop"
+            'status' => $status
         ]);
 
         return [

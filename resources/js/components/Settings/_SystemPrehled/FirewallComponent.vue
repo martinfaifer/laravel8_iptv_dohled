@@ -33,7 +33,7 @@ export default {
     methods: {
         loadFirewallStatus() {
             window.axios.get("firewall/status").then(response => {
-                this.firewallStatus = response.data;
+                this.firewallStatus = response.data.status;
             });
         }
     },
@@ -42,7 +42,7 @@ export default {
             function() {
                 this.loadFirewallStatus();
             }.bind(this),
-            60000
+            20000
         );
     },
     beforeDestroy: function() {

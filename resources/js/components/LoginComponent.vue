@@ -25,7 +25,7 @@
                                 <v-icon color="error" large>
                                     mdi-television-play
                                 </v-icon>
-                                <strong>TS Analyzator</strong>
+                                <strong>IPTV Dohled</strong>
                             </h1>
                             <v-form>
                                 <v-text-field

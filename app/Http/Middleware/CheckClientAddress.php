@@ -22,6 +22,7 @@ class CheckClientAddress
         // overení, ze je firewall aktivní
         if (SystemSetting::where('modul', "firewall")->where('stav', "aktivni")->first()) {
             if (FirewallController::check_if_is_ip_allowed($_SERVER['REMOTE_ADDR']) == "ok") {
+
                 return $next($request);
             } else {
 
@@ -30,9 +31,10 @@ class CheckClientAddress
                     'ip' => $_SERVER['REMOTE_ADDR']
                 ]);
 
-                redirect(null, 404);
+                return abort(404);
             }
+        } else {
+            return $next($request);
         }
-        return $next($request);
     }
 }
