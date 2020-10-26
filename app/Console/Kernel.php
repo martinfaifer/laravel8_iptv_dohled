@@ -24,6 +24,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        /**
+         * mazání záznamů z tabukly telescope
+         */
+        // $schedule->command('telescope:prune')->daily();
+
         // vytváření náhledů pro streamy
         $schedule->command('command:create_thumbnail_from_stream')->everyThreeMinutes()->runInBackground();
 

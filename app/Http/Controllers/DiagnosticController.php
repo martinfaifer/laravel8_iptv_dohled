@@ -17,6 +17,7 @@ use App\Events\StreamInfoAudioBitrate;
 use App\Events\StreamInfoHistory;
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
+use App\Jobs\Diagnostic_Status_Update;
 use App\Jobs\FFprobeDiagnostic;
 use App\Jobs\SendSuccessEmail;
 use App\Jobs\StreamInfoTsVideoBitrateJob;
@@ -228,30 +229,33 @@ class DiagnosticController extends Controller
                     foreach ($ts_data["dataAlert"] as $tsDataAlert) {
                         // uložení pokud již neexistují
 
-                        if (!StreamAlert::where('stream_id', $streamId)->where('status', $tsDataAlert['status'])->first()) {
-                            // ulození alertu
-                            StreamAlert::create([
-                                'stream_id' => $streamId,
-                                'status' => $tsDataAlert['status'],
-                                'message' => $tsDataAlert['message']
-                            ]);
+                        // execute JOB
+                        dispatch(new Diagnostic_Status_Update($streamId, $tsDataAlert['status'], $tsDataAlert['message']));
 
-                            // uložení záznamu do historie, pokud poslední zaznam není $streamAlertGlobal['status']
-                            if (StreamHistory::where('stream_id', $streamId)->first()) {
-                                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $tsDataAlert['status']) {
-                                    StreamHistory::create([
-                                        'stream_id' => $streamId,
-                                        'status' => $tsDataAlert['status']
-                                    ]);
-                                }
-                            } else {
+                        // if (!StreamAlert::where('stream_id', $streamId)->where('status', $tsDataAlert['status'])->first()) {
+                        //     // ulození alertu
+                        //     StreamAlert::create([
+                        //         'stream_id' => $streamId,
+                        //         'status' => $tsDataAlert['status'],
+                        //         'message' => $tsDataAlert['message']
+                        //     ]);
 
-                                StreamHistory::create([
-                                    'stream_id' => $streamId,
-                                    'status' => $tsDataAlert['status']
-                                ]);
-                            }
-                        }
+                        //     // uložení záznamu do historie, pokud poslední zaznam není $streamAlertGlobal['status']
+                        //     if (StreamHistory::where('stream_id', $streamId)->first()) {
+                        //         if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $tsDataAlert['status']) {
+                        //             StreamHistory::create([
+                        //                 'stream_id' => $streamId,
+                        //                 'status' => $tsDataAlert['status']
+                        //             ]);
+                        //         }
+                        //     } else {
+
+                        //         StreamHistory::create([
+                        //             'stream_id' => $streamId,
+                        //             'status' => $tsDataAlert['status']
+                        //         ]);
+                        //     }
+                        // }
                     }
                 }
 
@@ -259,30 +263,8 @@ class DiagnosticController extends Controller
                     foreach ($pids_data["dataAlert"] as $streamDataAlert) {
                         // uložení pokud již neexistují
 
-                        if (!StreamAlert::where('stream_id', $streamId)->where('status', $streamDataAlert['status'])->first()) {
-                            // ulození alertu
-                            StreamAlert::create([
-                                'stream_id' => $streamId,
-                                'status' => $streamDataAlert['status'],
-                                'message' => $streamDataAlert['message']
-                            ]);
-
-                            // uložení záznamu do historie, pokud poslední zaznam není $streamAlertGlobal['status']
-                            if (StreamHistory::where('stream_id', $streamId)->first()) {
-                                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamDataAlert['status']) {
-                                    StreamHistory::create([
-                                        'stream_id' => $streamId,
-                                        'status' => $streamDataAlert['status']
-                                    ]);
-                                }
-                            } else {
-
-                                StreamHistory::create([
-                                    'stream_id' => $streamId,
-                                    'status' => $streamDataAlert['status']
-                                ]);
-                            }
-                        }
+                        // execute JOB
+                        dispatch(new Diagnostic_Status_Update($streamId, $tsDataAlert['status'], $tsDataAlert['message']));
                     }
                 }
 
@@ -290,30 +272,8 @@ class DiagnosticController extends Controller
                     foreach ($global_data["dataAlert"] as $streamAlertGlobal) {
                         // uložení pokud již neexistují
 
-                        if (!StreamAlert::where('stream_id', $streamId)->where('status', $streamAlertGlobal['status'])->first()) {
-                            // ulození alertu
-                            StreamAlert::create([
-                                'stream_id' => $streamId,
-                                'status' => $streamAlertGlobal['status'],
-                                'message' => $streamAlertGlobal['message']
-                            ]);
-
-                            // uložení záznamu do historie, pokud poslední zaznam není $streamAlertGlobal['status']
-                            if (StreamHistory::where('stream_id', $streamId)->first()) {
-                                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamAlertGlobal['status']) {
-                                    StreamHistory::create([
-                                        'stream_id' => $streamId,
-                                        'status' => $streamAlertGlobal['status']
-                                    ]);
-                                }
-                            } else {
-
-                                StreamHistory::create([
-                                    'stream_id' => $streamId,
-                                    'status' => $streamAlertGlobal['status']
-                                ]);
-                            }
-                        }
+                        // execute JOB
+                        dispatch(new Diagnostic_Status_Update($streamId, $tsDataAlert['status'], $tsDataAlert['message']));
                     }
                 }
             } else {
@@ -449,23 +409,31 @@ class DiagnosticController extends Controller
                 // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
                 // streamVideoData obsahuje pole
 
-                if ($streamVideoData['pid'] != (int) $videoPid) {
-                    StreamVideo::where('stream_id', $streamId)->update(['pid' => $videoPid]);
-                }
+                // if ($streamVideoData['pid'] != (int) $videoPid) {
+                StreamVideo::where('stream_id', $streamId)->update(
+                    [
+                        'pid' => $videoPid,
+                        'access' => $videoAccess,
+                        'discontinuities' => $discontinuities,
+                        'scrambled' => $scrambled,
+                        'bitrate' => $videoBitrate
+                    ]
+                );
+                // }
 
-                if ($streamVideoData['access'] != $videoAccess) {
-                    StreamVideo::where('stream_id', $streamId)->update(['access' => $videoAccess]);
-                }
+                // if ($streamVideoData['access'] != $videoAccess) {
+                //     StreamVideo::where('stream_id', $streamId)->update(['access' => $videoAccess]);
+                // }
 
-                if ($streamVideoData['discontinuities'] != $discontinuities) {
-                    StreamVideo::where('stream_id', $streamId)->update(['discontinuities' => $discontinuities]);
-                }
+                // if ($streamVideoData['discontinuities'] != $discontinuities) {
+                //     StreamVideo::where('stream_id', $streamId)->update(['discontinuities' => $discontinuities]);
+                // }
 
-                if ($streamVideoData['scrambled'] != $scrambled) {
-                    StreamVideo::where('stream_id', $streamId)->update(['scrambled' => $scrambled]);
-                }
+                // if ($streamVideoData['scrambled'] != $scrambled) {
+                //     StreamVideo::where('stream_id', $streamId)->update(['scrambled' => $scrambled]);
+                // }
 
-                StreamVideo::where('stream_id', $streamId)->update(['bitrate' => $videoBitrate]);
+                // StreamVideo::where('stream_id', $streamId)->update(['bitrate' => $videoBitrate]);
             } else {
 
                 // uložení záznamu bez
@@ -496,21 +464,29 @@ class DiagnosticController extends Controller
             if ($streamAudioData = StreamAudio::where('stream_id', $streamId)->first()) {
                 // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
                 // streamVideoData obsahuje pole
-                if ($streamAudioData['pid'] != (int) $audioPid) {
-                    StreamAudio::where('stream_id', $streamId)->update(['pid' => $audioPid]);
-                }
+                // if ($streamAudioData['pid'] != (int) $audioPid) {
+                StreamAudio::where('stream_id', $streamId)->update(
+                    [
+                        'pid' => $audioPid,
+                        'access' => $audioAccess,
+                        'discontinuities' => $audioDiscontinuities,
+                        'scrambled' => $audioScrambled,
+                        'bitrate' => $audioBitrate
+                    ]
+                );
+                // }
 
-                if ($streamAudioData['access'] != $audioAccess) {
-                    StreamAudio::where('stream_id', $streamId)->update(['access' => $audioAccess]);
-                }
+                // if ($streamAudioData['access'] != $audioAccess) {
+                //     StreamAudio::where('stream_id', $streamId)->update(['access' => $audioAccess]);
+                // }
 
-                if ($streamAudioData['discontinuities'] != $audioDiscontinuities) {
-                    StreamAudio::where('stream_id', $streamId)->update(['discontinuities' => $audioDiscontinuities]);
-                }
+                // if ($streamAudioData['discontinuities'] != $audioDiscontinuities) {
+                //     StreamAudio::where('stream_id', $streamId)->update(['discontinuities' => $audioDiscontinuities]);
+                // }
 
-                if ($streamAudioData['scrambled'] != $audioScrambled) {
-                    StreamAudio::where('stream_id', $streamId)->update(['scrambled' => $audioScrambled]);
-                }
+                // if ($streamAudioData['scrambled'] != $audioScrambled) {
+                //     StreamAudio::where('stream_id', $streamId)->update(['scrambled' => $audioScrambled]);
+                // }
 
                 //  pokud se změní jazyková stopa ==> ALERT jelikož se mění výstup i uživatelům do TV
                 if ($streamAudioData['language'] != $audioLanguage) {
@@ -528,7 +504,7 @@ class DiagnosticController extends Controller
                     }
                 }
 
-                StreamAudio::where('stream_id', $streamId)->update(['bitrate' => $audioBitrate]);
+                // StreamAudio::where('stream_id', $streamId)->update(['bitrate' => $audioBitrate]);
             } else {
 
                 // uložení záznamu bez bitrate
@@ -559,19 +535,25 @@ class DiagnosticController extends Controller
 
             if ($streamCaData = StreamCa::where('stream_id', $streamId)->first()) {
                 // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
-                if ($streamCaData['access'] != $caAccess) {
-                    // update access
-                    StreamCa::where('stream_id', $streamId)->update(['access' => $caAccess]);
-                }
-                if ($streamCaData['description'] != $caDescription) {
-                    // update description
-                    StreamCa::where('stream_id', $streamId)->update(['description' => $caDescription ?? null]);
-                }
+                // if ($streamCaData['access'] != $caAccess) {
+                // update access
+                StreamCa::where('stream_id', $streamId)->update(
+                    [
+                        'access' => $caAccess,
+                        'description' => $caDescription ?? null,
+                        'scrambled' => $caScrambled
+                    ]
+                );
+                // }
+                // if ($streamCaData['description'] != $caDescription) {
+                //     // update description
+                //     StreamCa::where('stream_id', $streamId)->update(['description' => $caDescription ?? null]);
+                // }
 
-                if ($streamCaData['scrambled'] != $caScrambled) {
-                    // update scrambled
-                    StreamCa::where('stream_id', $streamId)->update(['scrambled' => $caScrambled]);
-                }
+                // if ($streamCaData['scrambled'] != $caScrambled) {
+                //     // update scrambled
+                //     StreamCa::where('stream_id', $streamId)->update(['scrambled' => $caScrambled]);
+                // }
             } else {
 
                 // uložení záznamu bez bitrate

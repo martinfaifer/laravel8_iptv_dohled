@@ -18,6 +18,42 @@ use React\EventLoop\Factory;
 class StreamController extends Controller
 {
 
+    /**
+     * funkce na aktualizaci záznamu, vytvoření alertu, zaznamu do istorie a pod.
+     * případně odebrání alertu
+     *
+     * @param string $streamId
+     * @param string $streamSatus
+     * @param string $message
+     * @return void
+     */
+    public static function queue_diagnostic_update_status_and_create_more_information_about_strea(string $streamId, string $streamSatus, string $message): void
+    {
+        if (!StreamAlert::where('stream_id', $streamId)->where('status', $streamSatus)->first()) {
+            // ulození alertu
+            StreamAlert::create([
+                'stream_id' => $streamId,
+                'status' => $streamSatus,
+                'message' => $message
+            ]);
+
+            // uložení záznamu do historie, pokud poslední zaznam není $streamSatus
+            if (StreamHistory::where('stream_id', $streamId)->first()) {
+                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamSatus) {
+                    StreamHistory::create([
+                        'stream_id' => $streamId,
+                        'status' => $streamSatus
+                    ]);
+                }
+            } else {
+
+                StreamHistory::create([
+                    'stream_id' => $streamId,
+                    'status' => $streamSatus
+                ]);
+            }
+        }
+    }
 
     /**
      * funkce pro spuštění jednoho určitého streamu, který spustí admin ručně
