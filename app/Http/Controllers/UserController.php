@@ -238,6 +238,14 @@ class UserController extends Controller
     public function user_password_edit(Request $request): array
     {
 
+        if (empty($request->password)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Heslo nesmí být prázdné"
+            ];
+        }
+
         $user = Auth::user();
 
 
@@ -333,6 +341,7 @@ class UserController extends Controller
             }
 
             $output[] = array(
+                'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'role_id' => UserRole::where('id', $user->role_id)->first()->role_name,
@@ -344,5 +353,171 @@ class UserController extends Controller
             unset($staticChannels);
         }
         return $output;
+    }
+
+
+    /**
+     * funkce na výpis uživatelských oprávnění
+     *
+     * @return array
+     */
+    public function user_roles()
+    {
+        return UserRole::get();
+    }
+
+
+    /**
+     * funkce na vygenervání hesla pro užovatele
+     *
+     * @return string
+     */
+    public function generate_password(): string
+    {
+        $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        $password = substr(str_shuffle($chars), 0, 8);
+        return $password;
+    }
+
+
+    /**
+     * funkce na založení nového uživatele,
+     * po uspesnem zalození queue, na zaslání notifikačního emailu novému uživately
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function user_create(Request $request): array
+    {
+
+        // overení vsech inputů
+        if (is_null($request->jmeno) || is_null($request->email) || is_null($request->role_id)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Není vše řádně vyplněno"
+            ];
+        }
+
+        if (is_null($request->password)) {
+            if (is_null($request->generatedPassword)) {
+                return [
+                    'isAlert' => "isAlert",
+                    'status' => "warning",
+                    'msg' => "Není vyplněno heslo"
+                ];
+            } else {
+                // generovane heslo
+                $password = $request->generatedPassword;
+            }
+        } else {
+
+            // uživatelem definovano
+            $password = $request->password;
+        }
+
+        // overení, že jiz neexistuje emailová adresa
+        if (User::where('email', $request->email)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Emailová adresa je již založena"
+            ];
+        }
+
+        try {
+            User::create([
+                'name' => $request->jmeno,
+                'email' => $request->email,
+                'role_id' => $request->role_id,
+                'status' => "active",
+                'password' =>  Hash::make($password),
+            ]);
+            EmailNotificationController::send_welcome_message_to_new_user($request->email, $password, env("APP_URL"));
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Založeno, byla odeslána notifikace novému uživateli"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se založit uživatele"
+            ];
+        }
+    }
+
+
+    /**
+     * funkce na editaci uživatele z nastavení, bez editace hesla
+     *
+     * @param Request $request
+     * @return array
+     */
+    public static function user_edit(Request $request): array
+    {
+
+        if (!User::where('id',  $request->userId)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se vyhledat uživatele"
+            ];
+        }
+
+        // vyhledání, zda není nejaka hodnota empty
+        if (empty($request->jmeno) || empty($request->email) || empty($request->role_id)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Není vše vyplněno"
+            ];
+        }
+
+        User::where('id', $request->userId)->update([
+            'name' => $request->jmeno,
+            'email' => $request->email,
+            'role_id' => $request->role_id
+        ]);
+        return [
+            'isAlert' => "isAlert",
+            'status' => "success",
+            'msg' => "Uživatel byl upraven"
+        ];
+    }
+
+
+
+    /**
+     * odebrání uzivatele dle id
+     *
+     * @param Request $request->userId
+     * @return array
+     */
+    public function user_delete(Request $request): array
+    {
+        $user = Auth::user();
+        if ($request->userId == $user->id) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Uživatel nemůže smazat sám sebe"
+            ];
+        }
+        try {
+            User::where('id', $request->userId)->delete();
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Uživatel byl odebrán"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se odebrat uživatele"
+            ];
+        }
     }
 }

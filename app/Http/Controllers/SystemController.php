@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\StreamNotification;
 use App\Jobs\SystemMailAlert;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Probe\ProviderFactory;
 use React\EventLoop\Factory;
 
@@ -122,7 +123,8 @@ class SystemController extends Controller
         $totalSwap = $provider->getTotalSwap() / 1073741824;
         $usedSwap = $provider->getUsedSwap() / 1073741824;
 
-        return $result = ($usedSwap * 100) / $totalSwap;
+        $result = ($usedSwap * 100) / $totalSwap;
+        return round($result);
     }
 
     public static function hdd()
@@ -244,5 +246,11 @@ class SystemController extends Controller
         dd(date(DATE_ATOM, $certinfo["validTo_time_t"])); // expirace certifikatu
         // dd($certinfo["validTo_time_t"]);
         // validTo_time_t
+    }
+
+
+    public static function clear_jobs_failed_table()
+    {
+        DB::delete('delete from failed_jobs');
     }
 }

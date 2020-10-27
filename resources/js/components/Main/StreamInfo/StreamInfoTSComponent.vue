@@ -108,6 +108,7 @@
 
                     <br />
                     <v-card
+                        flat
                         v-show="videoBitrateChartArray.length > 1"
                         color="transparent"
                     >
@@ -127,6 +128,27 @@
                             ></v-sparkline>
                         </v-sheet>
                     </v-card>
+                    <v-card
+                        v-if="ccErorrs.status === 'exist'"
+                        flat
+                        color="transparent"
+                        class="elevation-0"
+                    >
+                        <br />
+                        <div class="text-center body-2">
+                            <span>
+                                Audio CC Erory
+                            </span>
+                        </div>
+                        <column-chart
+                            :colors="['#ff3333']"
+                            height="100px"
+                            v-if="ccErorrs.status === 'exist'"
+                            :stacked="true"
+                            :data="ccErorrs.audio"
+                        ></column-chart>
+                    </v-card>
+
                     <br />
                 </div>
 
@@ -221,6 +243,7 @@
                     <br />
 
                     <v-card
+                        flat
                         v-show="audioBitrateChartArray.length > 1"
                         color="transparent"
                     >
@@ -239,6 +262,26 @@
                                 stroke-linecap="round"
                             ></v-sparkline>
                         </v-sheet>
+                    </v-card>
+                    <v-card
+                        v-if="ccErorrs.status === 'exist'"
+                        flat
+                        color="transparent"
+                        class="elevation-0"
+                    >
+                        <br />
+                        <div class="text-center body-2">
+                            <span>
+                                Video CC Erory
+                            </span>
+                        </div>
+                        <column-chart
+                            :colors="['#ff3333']"
+                            height="100px"
+                            v-if="ccErorrs.status === 'exist'"
+                            :stacked="true"
+                            :data="ccErorrs.video"
+                        ></column-chart>
                     </v-card>
                     <br />
                 </div>
@@ -361,13 +404,30 @@ export default {
         stream: [],
 
         videoBitrateChartArray: [],
-        audioBitrateChartArray: []
+        audioBitrateChartArray: [],
+
+        ccErorrs: []
     }),
 
     created() {
         this.getStreamDetailInfo();
+        this.loadCCError();
     },
     methods: {
+        loadCCError() {
+            window.axios
+                .post("streamInfo/ccError", {
+                    streamId: this.streamId
+                })
+                .then(response => {
+                    if (response.data.status === "exist") {
+                        this.ccErorrs.audio = response.data.audio;
+                        this.ccErorrs.video = response.data.video;
+                    }
+                    this.ccErorrs = response.data;
+                });
+        },
+
         getStreamDetailInfo() {
             window.axios
                 .post("streamInfo/detail", {
@@ -404,10 +464,20 @@ export default {
                 this.stream.audio.audioAccess = e["audioAccess"];
             }
         );
+
+        setInterval(
+            function() {
+                try {
+                    this.loadCCError();
+                } catch (error) {}
+            }.bind(this),
+            5000
+        );
     },
-     watch: {
+    watch: {
         $route(to, from) {
             this.getStreamDetailInfo();
+            this.loadCCError();
         }
     }
 };

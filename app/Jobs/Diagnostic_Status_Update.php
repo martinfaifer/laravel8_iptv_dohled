@@ -15,19 +15,17 @@ class Diagnostic_Status_Update implements ShouldQueue
 
 
     protected $streamId;
-    protected $streamStatus;
-    protected $message;
+    protected $arrData;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($streamId, $streamStatus, $message)
+    public function __construct($streamId, $arrData)
     {
         $this->streamId = $streamId;
-        $this->streamStatus = $streamStatus;
-        $this->message = $message;
+        $this->arrData = $arrData;
     }
 
     /**
@@ -39,6 +37,6 @@ class Diagnostic_Status_Update implements ShouldQueue
     {
         //   EmailNotificationController::notify_success_stream($this->streamId);
         // funkce na zpracování a update zaznamů
-        StreamController::queue_diagnostic_update_status_and_create_more_information_about_strea($this->streamId, $this->streamStatus, $this->message);
+        StreamController::queue_diagnostic_update_status_and_create_more_information_about_strea($this->streamId, $this->arrData);
     }
 }

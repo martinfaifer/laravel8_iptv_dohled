@@ -20,8 +20,8 @@ class ChannelsWhichWaitingForNotificationController extends Controller
     public static function return_streams_witch_waiting_for_notify(): array
     {
         // oznamují se kanály, které nefungují dele jak 5 min
-        if (ChannelsWhichWaitingForNotification::where('notified', "false")->whereDate('updated_at', '>=', Carbon::now()->second(300))->first()) {
-            foreach (ChannelsWhichWaitingForNotification::where('notified', "false")->whereDate('updated_at', '>=', Carbon::now()->second(300))->get() as $streamId) {
+        if (ChannelsWhichWaitingForNotification::where('notified', "false")->where('whenToNotify', date("Y-m-d H:i"))->first()) {
+            foreach (ChannelsWhichWaitingForNotification::where('notified', "false")->where('whenToNotify', date("Y-m-d H:i"))->get() as $streamId) {
                 $outup[] = $streamId['stream_id'];
             }
             return [

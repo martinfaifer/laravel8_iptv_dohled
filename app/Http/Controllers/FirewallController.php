@@ -117,4 +117,44 @@ class FirewallController extends Controller
             'msg' => "Adresa byla odebrána"
         ];
     }
+
+    /**
+     * funkce na zalození nove IP pro povolení do systemu, pri aktivnim FW
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function create_allowed_ip(Request $request): array
+    {
+
+        if (Firewall::where('allowed_ip', $request->ip)->first()) {
+            return [
+                'status' => "error",
+                'msg' => "Adresa již existuje"
+            ];
+        }
+
+        // validace IP
+        if (!filter_var($request->ip, FILTER_VALIDATE_IP)) {
+            return [
+                'status' => "error",
+                'msg' => "Neplatný formát IPv4"
+            ];
+        }
+
+        try {
+            Firewall::create([
+                'allowed_ip' => $request->ip
+            ]);
+            return [
+                'status' => "success",
+                'msg' => "Adresa byla přidána"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "Nepodařilo se přidat adresu"
+            ];
+        }
+    }
 }

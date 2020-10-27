@@ -70,6 +70,18 @@
                                 single-line
                                 hide-details
                             ></v-text-field>
+                            <v-spacer></v-spacer>
+                            <v-btn
+                                :loading="loadingCreateBtn"
+                                @click="OpenCreateDialog()"
+                                small
+                                color="success"
+                            >
+                                <v-icon left dark>
+                                    mdi-plus
+                                </v-icon>
+                                Přidat
+                            </v-btn>
                         </v-card-title>
                         <v-data-table
                             v-if="firewallAllowedIps == null"
@@ -178,6 +190,48 @@
                 </v-card>
             </v-dialog>
         </v-row>
+
+        <!-- create dialog -->
+
+        <v-row justify="center">
+            <v-dialog v-model="createDialog" persistent max-width="600px">
+                <v-card>
+                    <v-card-title> </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-text-field
+                                        autofocus
+                                        v-model="ip"
+                                        label="Přidat povolenou IPv4"
+                                        required
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            @click="closeCreateDialog()"
+                            color="red darken-1"
+                            text
+                        >
+                            Zavřít
+                        </v-btn>
+                        <v-btn
+                            @click="createNewIP()"
+                            color="green darken-1"
+                            text
+                        >
+                            Vytvořit
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </v-row>
+        <!-- end create dialog -->
         <!-- end dialogs -->
     </div>
 </template>
@@ -187,6 +241,9 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            ip: null,
+            createDialog: false,
+            loadingCreateBtn: false,
             deleteDialog: false,
             allowedIPid: null,
             searchAllowedIp: "",
@@ -273,6 +330,29 @@ export default {
                 .then(function(response) {
                     currentObj.status = response.data;
                     currentObj.deleteDialog = false;
+                    currentObj.loadFirewallAllowedIps();
+
+                    setTimeout(function() {
+                        currentObj.status = null;
+                    }, 5000);
+                });
+        },
+        OpenCreateDialog() {
+            this.createDialog = true;
+        },
+        closeCreateDialog() {
+            this.createDialog = false;
+            this.ip = null;
+        },
+        createNewIP() {
+            let currentObj = this;
+            axios
+                .post("firewall/ip/create", {
+                    ip: this.ip
+                })
+                .then(function(response) {
+                    currentObj.status = response.data;
+                    currentObj.createDialog = false;
                     currentObj.loadFirewallAllowedIps();
 
                     setTimeout(function() {

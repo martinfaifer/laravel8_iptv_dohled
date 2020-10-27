@@ -1,7 +1,10 @@
 <template>
     <div>
         <div>
-            <alert-component v-if="status != null" :status="status"></alert-component>
+            <alert-component
+                v-if="status != null"
+                :status="status"
+            ></alert-component>
         </div>
         <v-container>
             <v-card color="transparent" class="elevation-0 body-2">
@@ -14,6 +17,18 @@
                         single-line
                         hide-details
                     ></v-text-field>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        :loading="loadingCreateBtn"
+                        @click="OpenCreateDialog()"
+                        small
+                        color="success"
+                    >
+                        <v-icon left dark>
+                            mdi-plus
+                        </v-icon>
+                        Přidat
+                    </v-btn>
                 </v-card-title>
                 <v-data-table
                     dense
@@ -122,6 +137,115 @@
         </v-container>
 
         <!-- dialogs -->
+
+        <!-- create dialog -->
+        <v-row justify="center">
+            <v-dialog v-model="createDialog" persistent max-width="600px">
+                <v-card>
+                    <v-card-title> </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row
+                                v-if="channelsFromDoku != null"
+                                cols="12"
+                                sm="12"
+                                md="12"
+                                class="mt-2"
+                            >
+                                <v-autocomplete
+                                    v-model="streamUrl"
+                                    :items="channelsFromDoku"
+                                    item-value="url"
+                                    item-text="nazev"
+                                    dense
+                                    label="Vyberte kanál, který chcete aby se dohledoval"
+                                ></v-autocomplete>
+                            </v-row>
+                            <v-row v-if="channelsFromDoku == null">
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-text-field
+                                        autofocus
+                                        v-model="stream_nazev"
+                                        label="Název kanálu"
+                                        required
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-text-field
+                                        v-model="streamUrl"
+                                        label="Url"
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="12" sm="6" md="12">
+                                    <v-switch
+                                        v-model="dohled"
+                                        label="
+                                            Dohled kanálu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row v-if="dohled == true">
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-switch
+                                        v-model="audioDohled"
+                                        label="
+                                            Dohled audia
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-switch
+                                        v-model="vytvareniNahledu"
+                                        label="
+                                            Vytváření náhledu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row v-if="dohled == true">
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-switch
+                                        v-model="emailAlert"
+                                        label="
+                                            Zasílání e-mail alertu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                                <v-col cols="12" sm="6" md="6">
+                                    <v-switch
+                                        v-model="smsAlert"
+                                        label="
+                                            Zasílání sms alertu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            @click="closeCreateDialog()"
+                            color="red darken-1"
+                            text
+                        >
+                            Zavřít
+                        </v-btn>
+                        <v-btn
+                            @click="createStream()"
+                            color="green darken-1"
+                            text
+                        >
+                            Vytvořit
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </v-row>
+        <!-- end create dialog -->
 
         <!-- edit dialog -->
         <v-row justify="center">
@@ -261,6 +385,10 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            streamUrl: null,
+            loadingCreateBtn: false,
+            channelsFromDoku: null,
+            createDialog: false,
             deleteDialog: false,
             status: null,
             streamId: null,
@@ -297,7 +425,71 @@ export default {
     created() {
         this.loadStreams();
     },
+
+    computed: {
+        iptvDokuConnectionStatus() {
+            return this.$store.state.iptvDokuConnectionStatus;
+        }
+    },
     methods: {
+        OpenCreateDialog() {
+            this.loadingCreateBtn = true;
+            if (this.iptvDokuConnectionStatus === "success") {
+                window.axios
+                    .get("api/iptvdoku/get/streams_for_monitoring")
+                    .then(response => {
+                        this.channelsFromDoku = response.data;
+                        this.createDialog = true;
+                        this.loadingCreateBtn = false;
+                        this.dohled = false;
+                        this.audioDohled = false;
+                        this.vytvareniNahledu = false;
+                        this.emailAlert = false;
+                        this.smsAlert = false;
+                    });
+            } else {
+                this.createDialog = true;
+                this.loadingCreateBtn = false;
+                this.dohled = false;
+                this.audioDohled = false;
+                this.vytvareniNahledu = false;
+                this.emailAlert = false;
+                this.smsAlert = false;
+            }
+        },
+        closeCreateDialog() {
+            this.createDialog = false;
+            this.channelsFromDoku = null;
+        },
+        createStream() {
+            let currentObj = this;
+            axios
+                .post("stream/add", {
+                    stream_nazev: this.stream_nazev,
+                    streamUrl: this.streamUrl,
+                    dohled: this.dohled,
+                    audioDohled: this.audioDohled,
+                    vytvareniNahledu: this.vytvareniNahledu,
+                    emailAlert: this.emailAlert,
+                    smsAlert: this.smsAlert
+                })
+                .then(function(response) {
+                    if (response.data.status == "success") {
+                        currentObj.status = response.data;
+                        currentObj.createDialog = false;
+                        currentObj.returnToDefalt();
+                        currentObj.loadStreams();
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    } else {
+                        currentObj.status = response.data;
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    }
+                });
+        },
         loadStreams() {
             // get req
             window.axios.get("streams").then(response => {
@@ -309,6 +501,7 @@ export default {
             (this.streamId = null),
                 (this.stream_nazev = null),
                 (this.stream_url = null),
+                (this.streamUrl = null),
                 (this.dohled = null),
                 (this.audioDohled = null),
                 (this.vytvareniNahledu = null),
@@ -373,6 +566,17 @@ export default {
                         currentObj.status = null;
                     }, 5000);
                 });
+        }
+    },
+    watch: {
+        // vyhledání názvu streamu
+        streamUrl() {
+            let currentObj = this;
+            this.channelsFromDoku.forEach(function(element) {
+                if (element.url == currentObj.streamUrl) {
+                    return (currentObj.stream_nazev = element.nazev);
+                }
+            });
         }
     }
 };

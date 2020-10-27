@@ -2,6 +2,7 @@
 
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
+use App\Http\Controllers\CcErrorController;
 use App\Http\Controllers\EmailNotificationController;
 use App\Http\Controllers\FfmpegController;
 use App\Http\Controllers\FirewallController;
@@ -13,7 +14,10 @@ use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDetailController;
 use App\Http\Controllers\UserHistoryController;
+use App\Jobs\add_ccError;
+use App\Jobs\Diagnostic_Status_Update;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 
@@ -34,6 +38,9 @@ Route::post('streamInfo/detail', [StreamController::class, 'stream_info_detail']
 Route::post('streamInfo/history/10', [StreamHistoryController::class, 'stream_info_history_ten'])->middleware('firewall');
 // StreamInfo -> Výpis z dokumentace pomocí api
 Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->middleware('firewall');
+// StreamInfo -> Výpis CC Erorru do grafu
+Route::post('streamInfo/ccError', [CcErrorController::class, 'get_ccErrors_for_current_stream'])->middleware('firewall');
+
 
 // % streamů, které fungují
 Route::get('working/streams', [StreamController::class, 'percent_working_streams'])->middleware('firewall');
@@ -83,6 +90,16 @@ Route::post('user/streams/set', [UserController::class, 'user_streams_set'])->mi
 
 // Výpis všech userů v systému
 Route::get('users', [UserController::class, 'users'])->middleware('firewall');
+// výpis uživatelských oprávnění
+Route::get('user/roles', [UserController::class, 'user_roles'])->middleware('firewall');
+// generator hesel
+Route::get('user/password/generator', [UserController::class, 'generate_password'])->middleware('firewall');
+// vytvoření nového uživatele
+Route::post('user/create', [UserController::class, 'user_create'])->middleware('firewall');
+// Editace uživatele, bez editace hesla, tu at si uzivatel edituje sám
+Route::post('user/edit', [UserController::class, 'user_edit'])->middleware('firewall');
+// Odebrání uživatele
+Route::post('user/delete', [UserController::class, 'user_delete'])->middleware('firewall');
 
 
 /**
@@ -106,6 +123,7 @@ Route::get('firewall/status', [FirewallController::class, 'check_status'])->midd
 Route::get("streams", [StreamController::class, 'get_streams'])->middleware('firewall');
 Route::post("stream/edit", [StreamController::class, 'edit_stream'])->middleware('firewall');
 Route::post("stream/delete", [StreamController::class, 'delete_stream'])->middleware('firewall');
+Route::post("stream/add", [StreamController::class, 'create_stream'])->middleware('firewall');
 
 
 /**
@@ -118,6 +136,8 @@ Route::post("firewall/settings", [FirewallController::class, 'change_status'])->
 Route::get('firewall/ips', [FirewallController::class, 'return_allowd_ips'])->middleware('firewall');
 // odebrání povolené IP
 Route::post('firewall/ip/delete', [FirewallController::class, 'delete_allowed_ip'])->middleware('firewall');
+// vytvoření nové IP
+Route::post('firewall/ip/create', [FirewallController::class, 'create_allowed_ip'])->middleware('firewall');
 
 
 
@@ -125,10 +145,17 @@ Route::post('firewall/ip/delete', [FirewallController::class, 'delete_allowed_ip
  * ALERTING SETTINGS
  */
 Route::get("notifications/mails", [EmailNotificationController::class, 'return_emails'])->middleware('firewall');
-
+// zalození noveho emailu pro zasilani alertu
+Route::post('notifications/create', [EmailNotificationController::class, 'create_email'])->middleware('firewall');
+// odebrání emalové adresy pro notifikaci
+Route::post('notifications/delete', [EmailNotificationController::class, 'delete_email'])->middleware('firewall');
+// editace emailove adresy
+Route::post('notifications/edit', [EmailNotificationController::class, 'edit_email'])->middleware('firewall');
 
 
 /**
  * TESTING
  */
+
 // Route::get("certifikate", [SystemController::class, 'check_web_certificate']);
+// Route::get('prum', [CcErrorController::class, 'prum_every_two_hours']);

@@ -19,6 +19,18 @@
                         single-line
                         hide-details
                     ></v-text-field>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        :loading="loadingCreateBtn"
+                        @click="OpenCreateDialog()"
+                        small
+                        color="success"
+                    >
+                        <v-icon left dark>
+                            mdi-plus
+                        </v-icon>
+                        Přidat
+                    </v-btn>
                 </v-card-title>
                 <v-data-table
                     dense
@@ -29,7 +41,11 @@
                     <template v-slot:item.Akce="{ item }">
                         <!-- edit -->
                         <v-icon
-                            @click="openEditDialog((emailId = item.id))"
+                            @click="
+                                openEditDialog(),
+                                    (emailId = item.id),
+                                    (email = item.email)
+                            "
                             small
                             color="green"
                             class="mr-2"
@@ -37,7 +53,7 @@
                         >
                         <!-- delete -->
                         <v-icon
-                            @click="openDeleteDialog((emailId = item.id))"
+                            @click="deleteNotification(item.id)"
                             small
                             color="red"
                             >mdi-delete</v-icon
@@ -48,36 +64,120 @@
         </v-container>
 
         <!-- dialogs -->
+        <!-- create dialog -->
 
         <v-row justify="center">
-            <v-dialog v-model="deleteDialog" persistent max-width="600px">
+            <v-dialog v-model="createDialog" persistent max-width="600px">
                 <v-card>
-                    <v-card-title>
-                        <span class="headline text-center"
-                            >Odebrat E-mailovou adresu?</span
-                        >
-                    </v-card-title>
+                    <v-card-title> </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-text-field
+                                        autofocus
+                                        v-model="email"
+                                        label="Emailová adresa"
+                                        required
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="streamAlerts"
+                                        label="Zasílání alertů na kanály"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="systemAlerts"
+                                        label="Zasílání alertů na při problémů se systémem"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
                         <v-btn
                             color="red darken-1"
                             text
-                            @click="closeDeleteDialog()"
+                            @click="closeCreateDialog()"
                         >
                             Zavřít
                         </v-btn>
                         <v-btn
                             color="green darken-1"
                             text
-                            @click="sendDelete()"
+                            @click="sendCreate()"
                         >
-                            Smazat
+                            Vytvořit
                         </v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
         </v-row>
-        <!-- end dialogs -->
+        <!-- konec create dialogu -->
+
+        <!-- edit dialog -->
+
+        <v-row justify="center">
+            <v-dialog v-model="editDialog" persistent max-width="600px">
+                <v-card>
+                    <v-card-title> </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-text-field
+                                        autofocus
+                                        v-model="email"
+                                        label="Emailová adresa"
+                                        required
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="streamAlerts"
+                                        label="Zasílání alertů na kanály"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="systemAlerts"
+                                        label="Zasílání alertů na při problémů se systémem"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="red darken-1"
+                            text
+                            @click="closeEditDialog()"
+                        >
+                            Zavřít
+                        </v-btn>
+                        <v-btn color="green darken-1" text @click="sendEdit()">
+                            Upravit
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </v-row>
+
+        <!-- konec edit dialogu -->
     </div>
 </template>
 
@@ -86,6 +186,13 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            editDialog: false,
+            alertId: null,
+            email: null,
+            streamAlerts: false,
+            systemAlerts: false,
+            createDialog: false,
+            loadingCreateBtn: false,
             emailId: null,
             deleteDialog: false,
             emails: [],
@@ -115,6 +222,103 @@ export default {
             window.axios.get("notifications/mails").then(response => {
                 this.emails = response.data;
             });
+        },
+        OpenCreateDialog() {
+            this.createDialog = true;
+        },
+        CloseCreateDialog() {
+            this.createDialog = false;
+            this.email = false;
+            this.streamAlerts = false;
+            this.systemAlerts = false;
+        },
+        sendCreate() {
+            let currentObj = this;
+            axios
+                .post("notifications/create", {
+                    email: this.email,
+                    streamAlerts: this.streamAlerts,
+                    systemAlerts: this.systemAlerts
+                })
+                .then(function(response) {
+                    if (response.data.status == "success") {
+                        currentObj.status = response.data;
+                        currentObj.createDialog = false;
+                        // currentObj.returnToDefalt();
+                        currentObj.loadEmails();
+                        (currentObj.email = null),
+                            (currentObj.streamAlerts = false),
+                            (currentObj.systemAlerts = false);
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    } else {
+                        currentObj.status = response.data;
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    }
+                });
+        },
+        closeCreateDialog() {
+            this.createDialog = false;
+            (this.email = null),
+                (this.streamAlerts = false),
+                (this.systemAlerts = false);
+        },
+        deleteNotification(id) {
+            let currentObj = this;
+            axios
+                .post("notifications/delete", {
+                    emailId: id
+                })
+                .then(function(response) {
+                    if (response.data.status == "success") {
+                        currentObj.status = response.data;
+                        currentObj.createDialog = false;
+                        currentObj.loadEmails();
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    } else {
+                        currentObj.status = response.data;
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    }
+                });
+        },
+        openEditDialog() {
+            this.editDialog = true;
+        },
+        closeCreateDialog() {
+            this.editDialog = false;
+            this.email = null;
+        },
+        sendEdit() {
+             let currentObj = this;
+            axios
+                .post("notifications/edit", {
+                    emailId: this.emailId,
+                    email: this.email,
+                    streamAlerts: this.streamAlerts,
+                    systemAlerts: this.systemAlerts
+                })
+                .then(function(response) {
+                    if (response.data.status == "success") {
+                        currentObj.status = response.data;
+                        currentObj.editDialog = false;
+                        currentObj.loadEmails();
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    } else {
+                        currentObj.status = response.data;
+                        setTimeout(function() {
+                            currentObj.status = null;
+                        }, 5000);
+                    }
+                });
         }
     }
 };

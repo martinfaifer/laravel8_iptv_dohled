@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Stream;
+use App\Models\User;
 use App\Models\StreamAlert;
 use App\Models\StreamAudio;
 use App\Models\StreamCa;
@@ -19,38 +20,63 @@ class StreamController extends Controller
 {
 
     /**
+     * update statusu u streamu
+     *
+     * @param string $streamId
+     * @param string $status
+     * @return void
+     */
+    public static function queue_diagnostic_update_stream_status(string $streamId, string $status): void
+    {
+        Stream::where('id', $streamId)->update(["status" => $status]);
+
+
+        // pokus strean je success => odebrání záznamu z alertu
+        if ($status == "success") {
+            if (StreamAlert::where('stream_id',  $streamId)->first()) {
+                foreach (StreamAlert::where('stream_id',  $streamId)->get() as $alertToDelete) {
+                    StreamAlert::where('id', $alertToDelete["id"])->delete();
+                }
+            }
+        }
+    }
+
+    /**
      * funkce na aktualizaci záznamu, vytvoření alertu, zaznamu do istorie a pod.
      * případně odebrání alertu
      *
-     * @param string $streamId
-     * @param string $streamSatus
-     * @param string $message
+     * @param [string] $streamId
+     * @param [string] $streamSatus
+     * @param [string] $message
      * @return void
      */
-    public static function queue_diagnostic_update_status_and_create_more_information_about_strea(string $streamId, string $streamSatus, string $message): void
+    public static function queue_diagnostic_update_status_and_create_more_information_about_strea($streamId, $arrData): void
     {
-        if (!StreamAlert::where('stream_id', $streamId)->where('status', $streamSatus)->first()) {
-            // ulození alertu
-            StreamAlert::create([
-                'stream_id' => $streamId,
-                'status' => $streamSatus,
-                'message' => $message
-            ]);
+        foreach ($arrData as $streamAlertData) {
+            // uložení pokud již neexistují
 
-            // uložení záznamu do historie, pokud poslední zaznam není $streamSatus
-            if (StreamHistory::where('stream_id', $streamId)->first()) {
-                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamSatus) {
+            if (!StreamAlert::where('stream_id', $streamId)->where('status', $streamAlertData['status'])->first()) {
+                // ulození alertu
+                StreamAlert::create([
+                    'stream_id' => $streamId,
+                    'status' => $streamAlertData['status'],
+                    'message' => $streamAlertData['message']
+                ]);
+
+                if (StreamHistory::where('stream_id', $streamId)->first()) {
+                    if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamAlertData['status']) {
+                        StreamHistory::create([
+                            'stream_id' => $streamId,
+                            'status' => $streamAlertData['status']
+                        ]);
+                    }
+                } else {
+
                     StreamHistory::create([
                         'stream_id' => $streamId,
-                        'status' => $streamSatus
+                        'status' => $streamAlertData['status']
                     ]);
                 }
-            } else {
-
-                StreamHistory::create([
-                    'stream_id' => $streamId,
-                    'status' => $streamSatus
-                ]);
             }
         }
     }
@@ -591,5 +617,58 @@ class StreamController extends Controller
             'status' => "success",
             'msg' => "Stream byl odebrán!"
         ];
+    }
+
+
+    /**
+     * statická funkce na založení nového stremu pro dohled
+     *
+     * Slouží i jako přístup po API, kdy dokumentace, zasle req pro založení
+     *
+     * @param Request $request
+     * @return array
+     */
+    public static function create_stream(Request $request): array
+    {
+        // overení, že není empty $request->streamUrl a $request->stream_nazev
+        if (empty($request->streamUrl) || empty($request->stream_nazev)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Není vše řádně vyplněno"
+            ];
+        }
+
+        if (Stream::where('stream_url', $request->streamUrl)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Tato URL se již dohleduje"
+            ];
+        }
+
+        try {
+            Stream::create([
+                'nazev' => $request->stream_nazev,
+                'stream_url' => $request->streamUrl,
+                'status' => "waiting",
+                'dohledovano' => $request->dohled,
+                'dohledVolume' => $request->audioDohled,
+                'vytvaretNahled' => $request->vytvareniNahledu,
+                'sendMailAlert' => $request->emailAlert,
+                'sendSmsAlert' => $request->smsAlert
+            ]);
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Úspěšně založeno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se založit"
+            ];
+        }
     }
 }

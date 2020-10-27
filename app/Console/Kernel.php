@@ -24,10 +24,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        /**
-         * mazání záznamů z tabukly telescope
-         */
-        // $schedule->command('telescope:prune')->daily();
+        // cistení záznamu z tabulky cc_errors
+        $schedule->command('command:prum_CC_errors')->everyMinute()->runInBackground();
+
+        // čistení tabulky failed_jobs
+        $schedule->command('command:delete_failed_jobs_table')->everyMinute()->runInBackground();
 
         // vytváření náhledů pro streamy
         $schedule->command('command:create_thumbnail_from_stream')->everyThreeMinutes()->runInBackground();
@@ -56,7 +57,7 @@ class Kernel extends ConsoleKernel
         // cistení queue tabulky, kvuli performance issues,
         // pokud je mále cpu, tak se nespoustejí dostatatecne rychle queues a zbytecne se hromadí tabulky , implementace od verze jádra 0.4
         // cistení probehne kazdou druhou minutu
-        $schedule->command('queue:clear')->everyTwoMinutes()->runInBackground();
+        $schedule->command('queue:clear')->everyMinute()->runInBackground();
 
         // odeslání email notifikace o nefunkčním mailu
         $schedule->command('command:SendErrorStreamEmail')->everyMinute()->runInBackground();

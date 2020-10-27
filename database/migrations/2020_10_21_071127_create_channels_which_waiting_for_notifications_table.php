@@ -17,6 +17,7 @@ class CreateChannelsWhichWaitingForNotificationsTable extends Migration
             $table->id();
             $table->foreignId('stream_id')->index();
             $table->string('notified')->default("false");
+            $table->string('whenToNotify');
             $table->timestamps();
         });
     }

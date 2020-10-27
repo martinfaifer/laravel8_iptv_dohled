@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Mail\SendErrorStream;
 use App\Mail\SendSuccessStream;
 use App\Mail\SendSystemWarningAlert;
+use App\Mail\SendUserNotificationWelcomeMessage;
 use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\EmailNotification;
 use App\Models\Stream;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class EmailNotificationController extends Controller
@@ -170,9 +172,22 @@ class EmailNotificationController extends Controller
         }
     }
 
+    /**
+     * funkce na odeslání uvítacího mailu, pro nového uzivatele
+     *
+     * @param [type] $email
+     * @param [type] $password
+     * @param [type] $url
+     * @return void
+     */
+    public static function send_welcome_message_to_new_user($email, $password, $url): void
+    {
+        Mail::to($email)->queue(new SendUserNotificationWelcomeMessage($email, $password, $url));
+    }
+
 
     /**
-     * funkce na vypsání všech imalových adres na které se budou zasílat alerty / pokud nic neexistuje vrácí pole se statusem empty
+     * funkce na vypsání všech emailových adres na které se budou zasílat alerty / pokud nic neexistuje vrácí pole se statusem empty
      *
      * @return void
      */
@@ -185,5 +200,144 @@ class EmailNotificationController extends Controller
         }
 
         return EmailNotification::get();
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function create_email(Request $request): array
+    {
+        $user = Auth::user();
+        if (EmailNotification::where('email', $request->email)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Tento email je již založen"
+            ];
+        }
+
+
+        // overeni ,ze je to emialova adredsa
+        if (!filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Neplatný formát emailové adresy"
+            ];
+        }
+
+        if ($request->streamAlerts == false) {
+            $streamAlert = "no";
+        } else {
+            $streamAlert = "yes";
+        }
+        if ($request->systemAlerts == false) {
+            $systemAlerts = "no";
+        } else {
+            $systemAlerts = "yes";
+        }
+
+
+        try {
+            EmailNotification::create([
+                'email' => $request->email,
+                'belongsTo' => $user->id,
+                'channels' => $streamAlert,
+                'system' => $systemAlerts
+            ]);
+
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Založeno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se založit"
+            ];
+        }
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request->emailId
+     * @return array
+     */
+    public function delete_email(Request $request): array
+    {
+        if (!EmailNotification::where('id', $request->emailId)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se vyhledat email ke smazání"
+            ];
+        }
+
+
+        try {
+            EmailNotification::where('id', $request->emailId)->delete();
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Email byl odebrán"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se odebrat email"
+            ];
+        }
+    }
+
+    /**
+     * funkce na editaci emalové adresy
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function edit_email(Request $request): array
+    {
+        if (!EmailNotification::where('id', $request->emailId)->first()) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se vyhledat email ke smazání"
+            ];
+        }
+
+        if ($request->streamAlerts == false) {
+            $streamAlert = "no";
+        } else {
+            $streamAlert = "yes";
+        }
+        if ($request->systemAlerts == false) {
+            $systemAlerts = "no";
+        } else {
+            $systemAlerts = "yes";
+        }
+
+        try {
+            EmailNotification::where('id', $request->emailId)->update(['email' => "email", 'channels' => $streamAlert, 'system' => $systemAlerts]);
+
+            return [
+                'isAlert' => "isAlert",
+                'status' => "success",
+                'msg' => "Editováno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "error",
+                'msg' => "Nepodařilo se editovat"
+            ];
+        }
     }
 }

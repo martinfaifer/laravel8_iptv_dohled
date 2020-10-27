@@ -123,7 +123,7 @@ class SystemProccessController extends Controller
 
         // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
         if (!SystemProccess::where('process_name', 'like', "%queue_worker%")->first()) {
-            for ($x = 0; $x <= 66;) {
+            for ($x = 0; $x <= 80;) {
 
 
                 $queuePid = self::start_queue_and_return_pid();

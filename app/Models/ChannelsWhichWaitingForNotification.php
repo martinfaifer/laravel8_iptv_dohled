@@ -12,5 +12,6 @@ class ChannelsWhichWaitingForNotification extends Model
     protected $fillable = [
         'stream_id',
         'notified',
+        'whenToNotify',
     ];
 }

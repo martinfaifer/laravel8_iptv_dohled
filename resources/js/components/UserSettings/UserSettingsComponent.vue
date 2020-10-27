@@ -1,6 +1,6 @@
 <template>
     <v-main>
-        <alert-component :status="status"></alert-component>
+        <alert-component v-if="status != null" :status="status"></alert-component>
         <v-row>
             <span class="headline">Nastavení</span>
         </v-row>
@@ -194,7 +194,7 @@ export default {
         ZmenaHesla() {
             window.axios
                 .post("user/heslo/edit", {
-                    password: this.upassword,
+                    password: this.password,
                     passwordCheck: this.passwordCheck
                 })
                 .then(response => {
