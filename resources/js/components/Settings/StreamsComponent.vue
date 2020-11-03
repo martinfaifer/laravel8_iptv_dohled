@@ -140,7 +140,7 @@
 
         <!-- create dialog -->
         <v-row justify="center">
-            <v-dialog v-model="createDialog" persistent max-width="600px">
+            <v-dialog v-model="createDialog" persistent max-width="1000px">
                 <v-card>
                     <v-card-title> </v-card-title>
                     <v-card-text>
@@ -185,6 +185,53 @@
                                             Dohled kanálu
                                         "
                                     ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row v-if="dohled == true">
+                                <v-col cols="12" sm="6" md="12">
+                                    <v-switch
+                                        v-model="streamIssues"
+                                        label="
+                                           Notifikace problémových stavu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row
+                                v-if="streamIssues == true && dohled == true"
+                            >
+                                <!-- read only video bitrate -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        disabled
+                                        v-model="videoBitrateZero"
+                                        type="number"
+                                        label="alerting pokud je nulový bitrate na videu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- video_discontinuities -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="video_discontinuities"
+                                        type="number"
+                                        label="Počet CCR erroru ve videu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- audio_discontinuities -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="audio_discontinuities"
+                                        type="number"
+                                        label="Počet CCR erroru v audiu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- audio_scrambled -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="audio_scrambled"
+                                        type="number"
+                                        label="Počet scrambled packetů v audiu"
+                                    ></v-text-field>
                                 </v-col>
                             </v-row>
                             <v-row v-if="dohled == true">
@@ -249,7 +296,7 @@
 
         <!-- edit dialog -->
         <v-row justify="center">
-            <v-dialog v-model="editDialog" persistent max-width="600px">
+            <v-dialog v-model="editDialog" persistent max-width="1000px">
                 <v-card>
                     <v-card-title>
                         <span class="headline text-center"
@@ -282,6 +329,53 @@
                                             Dohled kanálu
                                         "
                                     ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row v-if="dohled == true">
+                                <v-col cols="12" sm="6" md="12">
+                                    <v-switch
+                                        v-model="streamIssues"
+                                        label="
+                                           Notifikace problémových stavu
+                                        "
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row
+                                v-if="streamIssues == true && dohled == true"
+                            >
+                                <!-- read only video bitrate -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        disabled
+                                        v-model="videoBitrateZero"
+                                        type="number"
+                                        label="alerting pokud je nulový bitrate na videu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- video_discontinuities -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="video_discontinuities"
+                                        type="number"
+                                        label="Počet CCR erroru ve videu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- audio_discontinuities -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="audio_discontinuities"
+                                        type="number"
+                                        label="Počet CCR erroru v audiu"
+                                    ></v-text-field>
+                                </v-col>
+                                <!-- audio_scrambled -->
+                                <v-col cols="12" sm="6" md="3">
+                                    <v-text-field
+                                        v-model="audio_scrambled"
+                                        type="number"
+                                        label="Počet scrambled packetů v audiu"
+                                    ></v-text-field>
                                 </v-col>
                             </v-row>
                             <v-row v-if="dohled == true">
@@ -385,6 +479,11 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            videoBitrateZero: 0,
+            video_discontinuities: 2,
+            audio_discontinuities: 2,
+            audio_scrambled: 2,
+            streamIssues: null,
             streamUrl: null,
             loadingCreateBtn: false,
             channelsFromDoku: null,
@@ -471,7 +570,12 @@ export default {
                     audioDohled: this.audioDohled,
                     vytvareniNahledu: this.vytvareniNahledu,
                     emailAlert: this.emailAlert,
-                    smsAlert: this.smsAlert
+                    smsAlert: this.smsAlert,
+
+                    video_discontinuities: this.video_discontinuities,
+                    audio_discontinuities: this.audio_discontinuities,
+                    audio_scrambled: this.audio_scrambled,
+                    streamIssues: this.streamIssues
                 })
                 .then(function(response) {
                     if (response.data.status == "success") {
@@ -511,7 +615,25 @@ export default {
 
         // fn pro otevření dialogu pro editaci streamu + načtení informací o daném streamu
         openEditDialog(nazev, streamUrl) {
-            this.editDialog = true;
+            window.axios
+                .post("stream/issues", {
+                    streamId: this.streamId
+                })
+                .then(response => {
+                    this.editDialog = true;
+                    if (response.data.status == "empty") {
+                        this.streamIssues = false;
+                    } else {
+                        this.streamIssues = true;
+                        this.video_discontinuities =
+                            response.data.video_discontinuities;
+                        this.audio_discontinuities =
+                            response.data.audio_discontinuities;
+                        this.audio_scrambled = response.data.audio_scrambled;
+                        this.video_discontinuities =
+                            response.data.video_discontinuities;
+                    }
+                });
         },
         closeEditDialog() {
             this.editDialog = false;
@@ -528,7 +650,12 @@ export default {
                     dohledVolume: this.audioDohled,
                     vytvaretNahled: this.vytvareniNahledu,
                     sendMailAlert: this.emailAlert,
-                    sendSmsAlert: this.smsAlert
+                    sendSmsAlert: this.smsAlert,
+
+                    video_discontinuities: this.video_discontinuities,
+                    audio_discontinuities: this.audio_discontinuities,
+                    audio_scrambled: this.audio_scrambled,
+                    streamIssues: this.streamIssues
                 })
                 .then(function(response) {
                     currentObj.status = response.data;

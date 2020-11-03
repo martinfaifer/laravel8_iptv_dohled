@@ -8,6 +8,9 @@
  *
  * JÁDRO VERZE 1.0 RC
  *
+ * change log
+ * upravena ntifikace kanálu, kdy se neměnil záznam v historie
+ *
  *
  */
 
@@ -23,6 +26,7 @@ use App\Jobs\Diagnostic_Stream_update;
 use App\Jobs\FFprobeDiagnostic;
 use App\Jobs\SendSuccessEmail;
 use App\Jobs\StreamInfoTsVideoBitrateJob;
+use App\Jobs\StreamNotificationLimit;
 use App\Models\AudioBitrate;
 use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\Stream;
@@ -160,15 +164,6 @@ class DiagnosticController extends Controller
                     ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
                 }
 
-                /**
-                 * ---------------------------------------------------------------------------------------------------------------------------------------
-                 * EVENT LOOP
-                 * vše co je v eventLoop_for_TS_Global_Service , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
-                 * ---------------------------------------------------------------------------------------------------------------------------------------
-                 */
-
-                // $eventLoop = Factory::create();
-
 
                 // zpracování pole
                 // vyhledání specifických klíčů, dle kterých se pole zpracuje
@@ -192,9 +187,9 @@ class DiagnosticController extends Controller
                     ];
                 }
 
-                if (array_key_exists('service', $tsduckArr)) {
-                    // self::collect_service_from_tsduckArr($tsduckArr["service"], $streamId);
-                }
+                // if (array_key_exists('service', $tsduckArr)) {
+                // self::collect_service_from_tsduckArr($tsduckArr["service"], $streamId);
+                // }
 
                 // array || null video, array || null audio, array || null ca
                 // tato funkce je nejdulezitejsi z cele diagnostiky
@@ -208,15 +203,21 @@ class DiagnosticController extends Controller
                     // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
                     $pids_data = self::analyze_pids_and_storeData($pids, $streamId, $streamUrl);
                 }
-
-
-                // $eventLoop->run(); // konec event loopu
             }
 
+            /**
+             * ---------------------------------------------------------------------------------------------------------------------------------------
+             * EVENT LOOP
+             * vše co je v eventLoop_for_TS_Global_Service , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
+             * ---------------------------------------------------------------------------------------------------------------------------------------
+             */
+
+            $eventLoop = Factory::create();
             // analyzování výstupu z jednotlivých podruzných funkcí
-            if ($ts_data["status"] == "issue" || $global_data["status"] == "issue" || $pids_data["status"] == "issue") {
+            if ($ts_data["status"] != "success" || $global_data["status"] != "success" || $pids_data["status"] != "success") {
                 // update záznamu na issue
                 if ($streamInfoData->status != "issue") {
+                    // ZMĚNA STAVU Z SUCCESS NEBO ERROR NA ISSUE
                     dispatch(new Diagnostic_Stream_update($streamId, "issue"));
                 }
 
@@ -234,23 +235,15 @@ class DiagnosticController extends Controller
                     dispatch(new Diagnostic_Status_Update($streamId, $global_data["dataAlert"]));
                 }
             } else {
-
-                // stream má status success
+                // NEBYLA NALEZENA ŽÁDNÁ CHYBA, ZMĚNA STAVU Z ISSUE NEBO ERROR NA SUCCESS
                 if ($streamInfoData->status != "success") {
+                    // UPDATE ZÁZNAMU
                     dispatch(new Diagnostic_Stream_update($streamId, "success"));
                 }
             }
 
-            // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
-            if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-                // odeslání mail notifikace pokud je zapotřebí
-                dispatch(new SendSuccessEmail($streamId));
-            }
-            // event do mozaiky
-            // event(new StreamNotification());
-            event(new StreamInfoHistory($streamId));
-
-            sleep(2);
+            $eventLoop->run(); // konec event loopu
+            sleep(3);
         } // end of loop
     }
 
@@ -457,6 +450,12 @@ class DiagnosticController extends Controller
             }
         }
 
+        // Dispatch JOB pouze pokud hodnoty jsou jiné než 0 až na videoBitrate
+        if ($videoBitrate == "0" || $discontinuities != "0" || $scrambled != "0" ||  $audioDiscontinuities != "0" || $audioScrambled != "0") {
+            // dispatch Job StreamNotificationLimit
+            dispatch(new StreamNotificationLimit($streamId, $videoBitrate, $discontinuities, $scrambled, $audioDiscontinuities, $audioScrambled));
+        }
+
 
 
         /**
@@ -509,14 +508,12 @@ class DiagnosticController extends Controller
 
         //  uložení informace o streamu do proměnné
         $streamData = Stream::where('id', $streamId)->first();
-        // dd($streamData->dohledVidea);
 
         // pokud streamData->dohledVidea && streamData->dohledAudia jsou obojí true , zpracuje se vše jak je vidět zde dole
         if ($streamData->dohledVidea == true && $streamData->dohledVolume == true) {
 
             // kontrola zda existují hodnoty
             if (isset($audioAccess) && isset($videoAccess)) {
-
                 if ($audioAccess == 'success' && $videoAccess == 'success') {
 
                     // overení, ze kanál má hodnotu success
@@ -537,6 +534,26 @@ class DiagnosticController extends Controller
                     ];
                 }
             }
+        } else if ($pids['video']['bitrate'] == "0" || $pids['audio']['bitrate'] == "0") {
+            // video nebo audio bitrate je = 0
+            if ($pids['video']['bitrate'] == "0") {
+                return [
+                    'status' => "issue",
+                    'dataAlert' => array([
+                        'status' => "no_video_bitrate",
+                        'message' => "Video má nulový datový tok!"
+                    ])
+                ];
+            } else {
+                return [
+                    'status' => "issue",
+                    'dataAlert' => array([
+                        'status' => "no_audio_bitrate",
+                        'message' => "Audio má nulový bitrate!"
+                    ])
+                ];
+            }
+
             // pokud se nedohleduje video ( radio kanál )
         } else if ($streamData->dohledVidea == false && $streamData->dohledVolume == true) {
             if (isset($audioAccess)) {
@@ -622,12 +639,13 @@ class DiagnosticController extends Controller
         if ($invalidsyncs == "0" && $scrambledpids == "0" && $transporterrors == "0") {
 
             // overení zda existuje záznam v tabulce StreamAlert , pokud existuje, budou veskere záznamy s daným streamId odebrány
-            if (StreamAlert::where('stream_id', $streamId)->first()) {
-                foreach (StreamAlert::where('stream_id', $streamId)->get() as $streamAlert) {
-                    // odebrání záznamů z tabulky
-                    StreamAlert::where('id', $streamAlert['id'])->delete();
-                }
-            }
+
+            // if (StreamAlert::where('stream_id', $streamId)->first()) {
+            //     foreach (StreamAlert::where('stream_id', $streamId)->get() as $streamAlert) {
+            //         // odebrání záznamů z tabulky
+            //         StreamAlert::where('id', $streamAlert['id'])->delete();
+            //     }
+            // }
 
             return [
                 'status' => "success"

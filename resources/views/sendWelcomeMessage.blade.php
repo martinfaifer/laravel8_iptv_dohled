@@ -1,6 +1,14 @@
 @component('mail::message')
-    <p>
-        Přístupy do systému jsou: {{$email}} {{$password}}
-    </p>
-    <a href="{{$url}}">Adresa do systemu</a>
+
+<p>
+    Přístup do systému:
+</p>
+@component('mail::panel')
+    {{$email}} / {{$password}}
+@endcomponent
+
+@component('mail::button', ['url' => $url, 'color' => 'success'])
+Adresa do systemu
+@endcomponent
+
 @endcomponent

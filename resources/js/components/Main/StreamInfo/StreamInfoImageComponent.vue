@@ -88,9 +88,9 @@
 </template>
 <script>
 export default {
-    props: ["streamId"],
     data: () => ({
-        stream: []
+        stream: [],
+        streamId: null
     }),
 
     created() {
@@ -100,25 +100,54 @@ export default {
         getStreamImage() {
             window.axios
                 .post("streamInfo/image", {
-                    streamId: this.streamId
+                    streamId: this.$route.params.id
                 })
                 .then(response => {
                     this.stream = response.data;
                 });
+        },
+
+        exitWebsocektChannels() {
+            Echo.leaveChannel("StreamImage" + this.$route.params.id);
+        },
+
+        websocketData() {
+            Echo.leaveChannel("StreamImage" + this.$route.params.id);
+
+            Echo.channel("StreamImage" + this.$route.params.id).listen(
+                "StreamImage",
+                e => {
+                    this.stream.image = e[0];
+                }
+            );
+        },
+
+        waitForConnectToWebsocket() {
+            let currentObj = this;
+            setTimeout(function() {
+                currentObj.websocketData();
+            }, 2000);
         }
     },
 
     mounted() {
         // StreamImage
-        Echo.channel("StreamImage" + this.streamId).listen("StreamImage", e => {
-            console.log(e);
-            this.stream.image = e[0];
-        });
+        Echo.channel("StreamImage" + this.$route.params.id).listen(
+            "StreamImage",
+            e => {
+                this.stream.image = e[0];
+            }
+        );
     },
     watch: {
         $route(to, from) {
             this.getStreamImage();
-        }
+            this.waitForConnectToWebsocket()
+        },
+    },
+
+    destroyed() {
+        Echo.leaveChannel("StreamImage" + this.$route.params.id);
     }
 };
 </script>

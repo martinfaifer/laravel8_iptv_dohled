@@ -42,7 +42,7 @@
                             >
                                 <small :class="`${stream.color}--text`">
                                     <strong>
-                                        {{ stream.created_at }} => změněno
+                                        {{ stream.created_at }} => Změněno
                                         pořadí Pidů
                                     </strong>
                                 </small>
@@ -86,6 +86,35 @@
                                     </strong>
                                 </small>
                             </div>
+                            <div v-else-if="stream.status == 'issue'">
+                                <small :class="`${stream.color}--text`">
+                                    <strong>
+                                        {{ stream.created_at }} => Ve streamu se
+                                        vyskytl problém
+                                    </strong>
+                                </small>
+                            </div>
+                            <div v-else-if="stream.status == 'no_dekrypt'">
+                                <small :class="`${stream.color}--text`">
+                                    <strong>
+                                        {{ stream.created_at }} => Stream se nedekryptuje
+                                    </strong>
+                                </small>
+                            </div>
+                            <div v-else-if="stream.status == 'no_video_bitrate'">
+                                <small :class="`${stream.color}--text`">
+                                    <strong>
+                                        {{ stream.created_at }} => Video nemá datový tok
+                                    </strong>
+                                </small>
+                            </div>
+                            <div v-else-if="stream.status == 'no_audio_bitrate'">
+                                <small :class="`${stream.color}--text`">
+                                    <strong>
+                                        {{ stream.created_at }} => Audio nemá datový tok
+                                    </strong>
+                                </small>
+                            </div>
                         </div>
                     </v-timeline-item>
                 </v-timeline>
@@ -102,9 +131,9 @@
 </template>
 <script>
 export default {
-    props: ["streamId"],
     data: () => ({
-        streamHistory: []
+        streamHistory: [],
+        streamId: null
     }),
 
     created() {
@@ -114,7 +143,7 @@ export default {
         getStreamHistory() {
             window.axios
                 .post("streamInfo/history/10", {
-                    streamId: this.streamId
+                    streamId: this.$route.params.id
                 })
                 .then(response => {
                     this.streamHistory = response.data;
@@ -123,22 +152,21 @@ export default {
     },
 
     mounted() {
-        // streamInfoTsHistory
-        Echo.channel("streamInfoTsHistory" + this.streamId).listen(
-            "StreamInfoHistory",
-            e => {
-                // console.log(e);
-                if (e[0].length > 0) {
-                    // console.log(e[0]);
-                    this.streamHistory = e[0];
-                }
-            }
+        setInterval(
+            function() {
+                try {
+                    this.getStreamHistory();
+                } catch (error) {}
+            }.bind(this),
+            5000
         );
     },
     watch: {
         $route(to, from) {
+            this.streamHistory = [];
+            this.streamId = null;
             this.getStreamHistory();
         }
-    }
+    },
 };
 </script>

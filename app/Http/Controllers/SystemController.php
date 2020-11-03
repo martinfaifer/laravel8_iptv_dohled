@@ -4,13 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Events\StreamNotification;
 use App\Jobs\SystemMailAlert;
+use App\Models\SystemProccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Probe\ProviderFactory;
 use React\EventLoop\Factory;
 
 class SystemController extends Controller
 {
+
+
+    /**
+     * vypsání všech procesů co aktuálně fungují
+     *
+     * @return void
+     */
+    public function admin_info_system()
+    {
+        $user = Auth::user();
+        if ($user->role_id == "1") {
+            return SystemProccess::get();
+        }
+    }
+
     /**
      * testing fn pro získání kompletních informací ze systému
      *
@@ -65,6 +82,10 @@ class SystemController extends Controller
                 dispatch(new SystemMailAlert("hdd"));
                 // brodcast message
 
+            }
+
+            if (self::count_expiration_of_ssl_and_if_expiration_is_lower_than_one_day_send_warning_email() == "alert") {
+                dispatch(new SystemMailAlert("ssl"));
             }
         });
 
@@ -147,6 +168,7 @@ class SystemController extends Controller
     {
         $uptimeData = shell_exec('uptime -p');
         $uptimeData = str_replace("up", "", $uptimeData);
+        $uptimeData = str_replace("days", "d", $uptimeData);
         $uptimeData = str_replace("day", "d", $uptimeData);
         $uptimeData = str_replace("hours", "h", $uptimeData);
         $uptimeData = str_replace("minutes", "min", $uptimeData);
@@ -189,6 +211,10 @@ class SystemController extends Controller
 
         return [
             array(
+                'popis' => "Uptime",
+                'data' => self::get_uptime()
+            ),
+            array(
                 'popis' => "OS",
                 'data' => str_replace("\n", "", $provider->getOsRelease())
             ),
@@ -215,6 +241,10 @@ class SystemController extends Controller
             array(
                 'popis' => "Nginx",
                 'data' => $nginx
+            ),
+            array(
+                'popis' => "Expirace SSL certifikátu",
+                'data' => self::check_web_certificate()
             )
 
         ];
@@ -223,12 +253,12 @@ class SystemController extends Controller
     /**
      * funkce na ověření platnosti certifikatu
      *
-     * @return void
+     * @return string
      */
     public static function check_web_certificate()
     {
         // $url = env("APP_URL");
-        $url = "https://portal.grapesc.cz";
+        $url = "https://iptvdohled.grapesc.cz";
         $orignal_parse = parse_url($url, PHP_URL_HOST);
         $get = stream_context_create(array("ssl" => array("capture_peer_cert" => TRUE)));
         $read = stream_socket_client(
@@ -243,14 +273,47 @@ class SystemController extends Controller
         $certinfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
 
         // dd(date(DATE_ATOM, time())); // nyní
-        dd(date(DATE_ATOM, $certinfo["validTo_time_t"])); // expirace certifikatu
-        // dd($certinfo["validTo_time_t"]);
-        // validTo_time_t
+        return substr(date(DATE_ATOM, $certinfo["validTo_time_t"]), 0, 10); // expirace certifikatu
+    }
+
+
+    /**
+     * fn pro výpočet kolik zbívá dní do expirace certifikátu
+     *
+     * @return string
+     */
+    public static function count_expiration_of_ssl_and_if_expiration_is_lower_than_one_day_send_warning_email(): string
+    {
+        $expiraceDatum = self::check_web_certificate();
+        $oneDayLeft = strtotime('-1 day');
+        $expiraceDatumToLinuxTime = strtotime($expiraceDatum);
+        if ($oneDayLeft > $expiraceDatumToLinuxTime) {
+            return "alert";
+        } else {
+            "ok";
+        }
     }
 
 
     public static function clear_jobs_failed_table()
     {
         DB::delete('delete from failed_jobs');
+    }
+
+
+    /**
+     * funkce na odebrní náhledu, které jsou starsi nez jedna hodina
+     *
+     * @return void
+     */
+    public static function oldImgOlderThanOneHour()
+    {
+        $unixTimeMinusHodina = time() - 3600;  // získání unixtimu, který je starší jak jedna hodina
+        foreach (scandir((public_path('/storage/channelsImages/'))) as $img) {
+
+            if ($unixTimeMinusHodina > filemtime(public_path('/storage/channelsImages/' . $img))) {
+                unlink(public_path('/storage/' . $img));   // odebrání obrázku z file systemu
+            }
+        }
     }
 }

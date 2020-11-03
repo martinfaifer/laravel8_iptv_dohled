@@ -9,5 +9,9 @@
         Dochází místo na disku, nyní využito více jak 80%!
     @endif
 
+    @if ($partOfSystem == "ssl")
+        Za méně jak jeden den, vypší ssl certifikát!!!
+    @endif
+
 
 @endcomponent

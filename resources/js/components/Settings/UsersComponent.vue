@@ -201,6 +201,15 @@
                                 label="Uživatelská role"
                             ></v-select>
                             <!-- user role -->
+
+                            <!-- status -->
+                            <v-row>
+                                <v-switch
+                                    v-model="userActiveStatus"
+                                    label="blokovat uživatele"
+                                >
+                                </v-switch>
+                            </v-row>
                         </v-container>
                     </v-card-text>
                     <v-card-actions>
@@ -229,6 +238,7 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            userActiveStatus: false,
             editDialog: false,
             userId: null,
             jmeno: null,
@@ -258,6 +268,7 @@ export default {
             ]
         };
     },
+
     components: {
         "alert-component": AlertComponent
     },
@@ -331,7 +342,8 @@ export default {
                     userId: this.userId,
                     jmeno: this.jmeno,
                     email: this.email,
-                    role_id: this.role_id
+                    role_id: this.role_id,
+                    status: this.userActiveStatus
                 })
                 .then(function(response) {
                     if (response.data.status == "success") {

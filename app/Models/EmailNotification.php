@@ -13,6 +13,7 @@ class EmailNotification extends Model
         'email',
         'belongsTo',
         'channels',
+        'channels_issues',
         'system'
     ];
 }

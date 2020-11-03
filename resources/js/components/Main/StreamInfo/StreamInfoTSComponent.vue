@@ -107,27 +107,33 @@
                     </v-progress-linear>
 
                     <br />
+
+                    <!--  -->
                     <v-card
                         flat
-                        v-show="videoBitrateChartArray.length > 1"
+                        v-show="audioBitrateChartArray.length > 1"
                         color="transparent"
                     >
                         <div class="text-center">
-                            <span class="body-1">
-                                Graf video bitratu
+                            <span>
+                                Graf audio bitratu
                             </span>
                         </div>
                         <v-sheet color="transparent">
+                            <!-- audio bitrate chart -->
                             <v-sparkline
                                 :smooth="16"
-                                :gradient="['blue']"
+                                :labels="audioLabels"
+                                :gradient="['#1feaea', '#ffd200', '#f72047']"
                                 :line-width="1"
-                                :value="videoBitrateChartArray"
+                                :value="audioBitrateChartArray"
                                 auto-draw
                                 stroke-linecap="round"
                             ></v-sparkline>
                         </v-sheet>
                     </v-card>
+                    <!--  -->
+
                     <v-card
                         v-if="ccErorrs.status === 'exist'"
                         flat
@@ -244,25 +250,27 @@
 
                     <v-card
                         flat
-                        v-show="audioBitrateChartArray.length > 1"
+                        v-show="videoBitrateChartArray.length > 1"
                         color="transparent"
                     >
                         <div class="text-center">
-                            <span>
-                                Graf audio bitratu
+                            <span class="body-1">
+                                Graf video bitratu
                             </span>
                         </div>
                         <v-sheet color="transparent">
                             <v-sparkline
                                 :smooth="16"
-                                :gradient="['blue']"
+                                :labels="videoLabels"
+                                :gradient="['#1feaea', '#ffd200', '#f72047']"
                                 :line-width="1"
-                                :value="audioBitrateChartArray"
+                                :value="videoBitrateChartArray"
                                 auto-draw
                                 stroke-linecap="round"
                             ></v-sparkline>
                         </v-sheet>
                     </v-card>
+
                     <v-card
                         v-if="ccErorrs.status === 'exist'"
                         flat
@@ -399,25 +407,28 @@
 </template>
 <script>
 export default {
-    props: ["streamId"],
     data: () => ({
         stream: [],
 
+        videoLabels: [],
         videoBitrateChartArray: [],
         audioBitrateChartArray: [],
-
+        audioLabels: [],
+        streamId: null,
         ccErorrs: []
     }),
 
     created() {
         this.getStreamDetailInfo();
         this.loadCCError();
+        // this.exitWebsocektChannels();
+        this.websocketData();
     },
     methods: {
         loadCCError() {
             window.axios
                 .post("streamInfo/ccError", {
-                    streamId: this.streamId
+                    streamId: this.$route.params.id
                 })
                 .then(response => {
                     if (response.data.status === "exist") {
@@ -431,39 +442,87 @@ export default {
         getStreamDetailInfo() {
             window.axios
                 .post("streamInfo/detail", {
-                    streamId: this.streamId
+                    streamId: this.$route.params.id
                 })
                 .then(response => {
                     this.stream = response.data;
                 });
-        }
-    },
+        },
+        currentTime() {
+                var today = new Date();
+                return today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+        },
 
-    mounted() {
-        Echo.channel("streamInfoTsVideoBitrate" + this.streamId).listen(
-            "StreamInfoTsVideoBitrate",
-            e => {
+        websocketData() {
+            Echo.leaveChannel(
+                "streamInfoTsAudioBitrate" + this.$route.params.id
+            );
+            Echo.leaveChannel(
+                "streamInfoTsVideoBitrate" + this.$route.params.id
+            );
+
+            Echo.channel(
+                "streamInfoTsVideoBitrate" + this.$route.params.id
+            ).listen("StreamInfoTsVideoBitrate", e => {
                 this.stream.video.bitrate = e["bitrate"];
                 this.videoBitrateChartArray.push(parseInt(e["bitrate"]));
+
+
+                if(this.videoBitrateChartArray.length == 10) {
+                    this.videoBitrateChartArray.shift();
+                }
+
+                this.videoLabels.push(this.currentTime());
+                if(this.videoLabels.length == 10) {
+                    this.videoLabels.shift();
+                }
+
+
+
                 this.stream.video.pid = e["videoPid"];
                 this.stream.video.discontinuities = e["discontinuities"];
                 this.stream.video.scrambled = e["scrambled"];
-            }
-        );
+            });
 
-        Echo.channel("streamInfoTsAudioBitrate" + this.streamId).listen(
-            "StreamInfoAudioBitrate",
-            e => {
+            Echo.channel(
+                "streamInfoTsAudioBitrate" + this.$route.params.id
+            ).listen("StreamInfoAudioBitrate", e => {
                 // console.log(e);
                 this.stream.audio.bitrate = e["bitrate"];
                 this.audioBitrateChartArray.push(parseInt(e["bitrate"]));
+                if(this.audioBitrateChartArray.length == 10) {
+                    this.audioBitrateChartArray.shift();
+                }
+
+                this.audioLabels.push(this.currentTime());
+                if(this.audioLabels.length == 10) {
+                    this.audioLabels.shift();
+                }
                 this.stream.audio.pid = e["audioPid"];
                 this.stream.audio.discontinuities = e["audioDiscontinuities"];
                 this.stream.audio.scrambled = e["audioScrambled"];
                 this.stream.audio.audioLanguage = e["audioLanguage"];
                 this.stream.audio.audioAccess = e["audioAccess"];
-            }
-        );
+            });
+        },
+        exitWebsocektChannels() {
+            Echo.leaveChannel(
+                "streamInfoTsAudioBitrate" + this.$route.params.id
+            );
+            Echo.leaveChannel(
+                "streamInfoTsVideoBitrate" + this.$route.params.id
+            );
+        },
+        waitForConnectToWebsocket() {
+            let currentObj = this;
+            setTimeout(function() {
+                currentObj.websocketData();
+            }, 2000);
+        }
+    },
+
+    mounted() {
+        this.websocketData();
 
         setInterval(
             function() {
@@ -476,9 +535,17 @@ export default {
     },
     watch: {
         $route(to, from) {
+            this.videoBitrateChartArray = [];
+            this.audioBitrateChartArray = [];
+
+            this.waitForConnectToWebsocket;
             this.getStreamDetailInfo();
             this.loadCCError();
         }
+    },
+    destroyed() {
+        Echo.leaveChannel("streamInfoTsAudioBitrate" + this.$route.params.id);
+        Echo.leaveChannel("streamInfoTsVideoBitrate" + this.$route.params.id);
     }
 };
 </script>

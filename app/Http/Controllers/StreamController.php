@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CcError;
 use App\Models\Stream;
 use App\Models\User;
 use App\Models\StreamAlert;
@@ -11,8 +12,11 @@ use App\Models\StreamHistory;
 use App\Models\StreamService;
 use App\Models\StreamVideo;
 use App\Models\ChannelsWhichWaitingForNotification;
+use App\Models\StreamBitrate;
+use App\Models\StreamNotificationLimit;
 use Illuminate\Http\Request;
 use Illuminate\Log\Logger;
+use App\Jobs\SendSuccessEmail;
 use Illuminate\Support\Facades\Auth;
 use React\EventLoop\Factory;
 
@@ -30,14 +34,21 @@ class StreamController extends Controller
     {
         Stream::where('id', $streamId)->update(["status" => $status]);
 
+        // ZÁZNAM DO HISTORIE, ŽE STREAM JE OK
+        StreamHistory::create([
+            'stream_id' => $streamId,
+            'status' => "stream_ok"
+        ]);
 
-        // pokus strean je success => odebrání záznamu z alertu
-        if ($status == "success") {
-            if (StreamAlert::where('stream_id',  $streamId)->first()) {
-                foreach (StreamAlert::where('stream_id',  $streamId)->get() as $alertToDelete) {
-                    StreamAlert::where('id', $alertToDelete["id"])->delete();
-                }
+        if (StreamAlert::where('stream_id',  $streamId)->first()) {
+            foreach (StreamAlert::where('stream_id',  $streamId)->get() as $alertToDelete) {
+                StreamAlert::where('id', $alertToDelete["id"])->delete();
             }
+        }
+
+        if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+            // odeslání mail notifikace pokud je zapotřebí
+            dispatch(new SendSuccessEmail($streamId));
         }
     }
 
@@ -63,13 +74,12 @@ class StreamController extends Controller
                     'message' => $streamAlertData['message']
                 ]);
 
-                if (StreamHistory::where('stream_id', $streamId)->first()) {
-                    if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamAlertData['status']) {
-                        StreamHistory::create([
-                            'stream_id' => $streamId,
-                            'status' => $streamAlertData['status']
-                        ]);
-                    }
+                // KONTROLA, ZDA EXISTUJI JIZ ZAZNAM
+                if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamAlertData['status']) {
+                    StreamHistory::create([
+                        'stream_id' => $streamId,
+                        'status' => $streamAlertData['status']
+                    ]);
                 } else {
 
                     StreamHistory::create([
@@ -447,6 +457,19 @@ class StreamController extends Controller
         }
     }
 
+    /**
+     * funkce na vrácení status streamu
+     *
+     * @param Request $request
+     * @return array
+     */
+    public static function stream_info_checkStatus(Request $request): array
+    {
+        return [
+            'status' => Stream::where('id', $request->streamId)->first()->status
+        ];
+    }
+
 
     /**
      * funkce na získání detailních informací o streamu
@@ -537,7 +560,7 @@ class StreamController extends Controller
     /**
      * Undocumented function
      *
-     * @param Request $request (nazev, stream_url, dohledovano, dohledVolume, vytvaretNahled, sendMailAlert, sendSmsAlert)
+     * @param Request $request (nazev, stream_url, dohledovano, dohledVolume, vytvaretNahled, sendMailAlert, sendSmsAlert , video_discontinuities, audio_discontinuities, audio_scrambled, streamIssues)
      * @return array
      */
     public function edit_stream(Request $request): array
@@ -556,7 +579,31 @@ class StreamController extends Controller
         } else {
             $status = "stop";
         }
-        // self::stop_diagnostic_stream_from_backend(intval($request->streamId));
+
+        if ($request->streamIssues) {
+            // vyhledání zda jiz existuje záznam
+            if (StreamNotificationLimit::where('stream_id', $request->streamId)->first()) {
+                // existuje, muzeme aktualizovat záznam
+                StreamNotificationLimitController::update_stream_limit_for_notification(
+                    $request->streamId,
+                    $request->video_discontinuities,
+                    $request->audio_discontinuities,
+                    $request->audio_scrambled
+                );
+            } else {
+                // neexituje záznam, vytocorime
+                StreamNotificationLimitController::add_stream_to_notification_limit(
+                    $request->streamId,
+                    $request->video_discontinuities,
+                    $request->audio_discontinuities,
+                    $request->audio_scrambled
+                );
+            }
+        } else {
+            // odebereme zaznam z tabulky
+            StreamNotificationLimitController::delete_stream_limit_for_notification($request->streamId);
+        }
+
 
         Stream::where('id', $request->streamId)->update([
             'nazev' => $request->nazev,
@@ -584,31 +631,32 @@ class StreamController extends Controller
      */
     public static function delete_stream(Request $request)
     {
-        // vyhledání streamu a
+        // vyhledání streamu
         $stream = Stream::where('id', $request->streamId)->first();
-        $streamPid = $stream->process_pid;
+
         // killnuti procesu pro diagnostiku
-        $killPidu = self::stop_diagnostic_stream_from_frontend($request);
+        if (!is_null($stream->process_pid)) {
+            self::stop_diagnostic_stream_from_backend($stream->process_pid);
+        }
+
+
         // smazaní streamu z db
         Stream::where('id', $request->streamId)->delete();
-        // vyhledání v historii a smazání
-        if (StreamHistory::where('stream_id', $request->streamId)->first()) {
-            foreach (StreamHistory::where('stream_id', $request->streamId)->get() as $dataForDelete) {
-                StreamHistory::where('id', $dataForDelete['id'])->delete();
-            }
+
+        try {
+            // funkce na odebrání veškerách informací o streamu, bez jakéhokoliv returnu
+            self::delete_all_stream_information($request->streamId);
+        } catch (\Throwable $th) {
+            // nemela by vzniknout žádná chyba
         }
 
-        // Odebrání dat z Alertu
-        if (StreamAlert::where('stream_id', $request->streamID)->first()) {
-            foreach (StreamAlert::where('stream_id', $request->streamID)->get() as $alertDataForDelete) {
-                StreamAlert::where('id', $alertDataForDelete['id'])->delete();
-            }
-        }
 
-        // vyhledání zda jsou data ve fornte na alerting
-        if (ChannelsWhichWaitingForNotification::where('id', $request->streamId)->first()) {
-            foreach (ChannelsWhichWaitingForNotification::where('id', $request->streamId)->get() as $waitingDataForDelete) {
-                ChannelsWhichWaitingForNotification::where('id', $waitingDataForDelete['id'])->delete();
+        // unlink náhledu pokud není hodnota "image" = "false"
+        if ($stream->image != "false") {
+            if (file_exists(public_path($stream->image))) {
+                // Náhled existuje => odebrání náhledu z filesystemu
+                dd("existuje");
+                unlink(public_path($stream->image));
             }
         }
 
@@ -617,6 +665,68 @@ class StreamController extends Controller
             'status' => "success",
             'msg' => "Stream byl odebrán!"
         ];
+    }
+
+    /**
+     * funknce na odebrnání veškerých informací o streamu, vyvolaná akcí "delete" od uživatele
+     *
+     * @param string $streamId
+     * @return void
+     */
+    public static function delete_all_stream_information(string $streamId): void
+    {
+        // vyhledání v historii a smazání
+        if (StreamHistory::where('stream_id', $streamId)->first()) {
+            foreach (StreamHistory::where('stream_id', $streamId)->get() as $dataForDelete) {
+                StreamHistory::where('id', $dataForDelete['id'])->delete();
+            }
+        }
+
+        // Odebrání dat z Alertu
+        if (StreamAlert::where('stream_id', $streamId)->first()) {
+            foreach (StreamAlert::where('stream_id', $streamId)->get() as $alertDataForDelete) {
+                StreamAlert::where('id', $alertDataForDelete['id'])->delete();
+            }
+        }
+
+        // vyhledání zda jsou data ve fronte na alerting
+        if (ChannelsWhichWaitingForNotification::where('id', $streamId)->first()) {
+            foreach (ChannelsWhichWaitingForNotification::where('id', $streamId)->get() as $waitingDataForDelete) {
+                ChannelsWhichWaitingForNotification::where('id', $waitingDataForDelete['id'])->delete();
+            }
+        }
+
+        // vyhledání dza existuje záznam v limitacích
+        if (StreamNotificationLimit::where('stream_id', $streamId)->first()) {
+            StreamNotificationLimitController::delete_stream_limit_for_notification($streamId);
+        }
+
+        // odebrání záznamu z tabulky stream_audio
+        if (StreamAudio::where('stream_id', $streamId)->first()) {
+            StreamAudio::where('stream_id', $streamId)->delete();
+        }
+
+        // obebrání zíznamu z tabulky stream_cas
+        if (StreamCa::where('stream_id', $streamId)->first()) {
+            StreamCa::where('stream_id', $streamId)->delete();
+        }
+
+        // oberání z tabulky stream_services
+        if (StreamService::where('stream_id', $streamId)->first()) {
+            StreamService::where('stream_id', $streamId)->delete();
+        }
+
+        // oberání z tabulky stream_videos
+        if (StreamVideo::where('stream_id', $streamId)->first()) {
+            StreamVideo::where('stream_id', $streamId)->delete();
+        }
+
+        // odebrání veškerých záznamů z tabulky cc_errors
+        if (CcError::where('streamId', $streamId)->first()) {
+            foreach (CcError::where('streamId', $streamId)->get() as $ccr) {
+                CcError::where('id', $ccr['id'])->delete();
+            }
+        }
     }
 
 
@@ -658,6 +768,19 @@ class StreamController extends Controller
                 'sendMailAlert' => $request->emailAlert,
                 'sendSmsAlert' => $request->smsAlert
             ]);
+
+            if ($request->streamIssues) {
+                // opetovné vyhledání streamu, pro ziskání id , pro případné uložení limitu pro notifikaci
+                $streamId = Stream::where('stream_url', $request->streamUrl)->first()->id;
+                // založení
+                StreamNotificationLimitController::add_stream_to_notification_limit(
+                    $streamId,
+                    $request->video_discontinuities,
+                    $request->audio_discontinuities,
+                    $request->audio_scrambled
+                );
+            }
+
             return [
                 'isAlert' => "isAlert",
                 'status' => "success",

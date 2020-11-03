@@ -242,7 +242,6 @@
 </template>
 <script>
 export default {
-    props: ["streamId"],
     data: () => ({
         tab: null,
         items: ["Multicast", "H264", "H264"],
@@ -256,7 +255,8 @@ export default {
         h265DeviceId: null,
         multiplexer: null,
         prijem: null,
-        streamStatus: null
+        streamStatus: null,
+        streamId: null
     }),
 
     created() {},
@@ -265,7 +265,7 @@ export default {
             if (this.iptvDokuConnectionStatus == "success") {
                 window.axios
                     .post("/api/iptvdoku/search/stream", {
-                        streamId: this.streamId
+                        streamId: this.$route.params.id
                     })
                     .then(response => {
                         this.streamStatus = response.data.status;

@@ -94,11 +94,12 @@
         </v-app-bar>
 
         <v-navigation-drawer
+
             v-model="drawer"
             right
             fixed
             temporary
-            width="18%"
+
             color="transparent"
         >
             <div
@@ -226,6 +227,7 @@ export default {
         loadAlerts() {
             window.axios.get("/streamAlerts").then(response => {
                 this.alerts = response.data;
+                this.$store.commit("updateAlert", response.data);
                 this.alertCount = response.data.length;
             });
         },

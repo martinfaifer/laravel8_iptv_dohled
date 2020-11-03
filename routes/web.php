@@ -10,14 +10,19 @@ use App\Http\Controllers\FirewallLogController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
+use App\Http\Controllers\StreamNotificationLimitController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDetailController;
 use App\Http\Controllers\UserHistoryController;
 use App\Jobs\add_ccError;
 use App\Jobs\Diagnostic_Status_Update;
+use App\Jobs\StreamNotificationLimit;
+use App\Models\Stream;
+// use App\Models\StreamNotificationLimit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 
@@ -30,6 +35,8 @@ Route::get('/', function () {
 Route::get('streamAlerts', [StreamController::class, 'show_problematic_streams_as_alerts'])->middleware('firewall');
 // mozaika , pagination
 Route::get('pagination', [StreamController::class, 'streams_for_mozaiku'])->middleware('firewall');
+// overení status streamu
+Route::post('streamInfo/status', [StreamController::class, 'stream_info_checkStatus'])->middleware('firewall');
 // StreamInfo -> image
 Route::post('streamInfo/image', [StreamController::class, 'stream_info_image'])->middleware('firewall');
 // StreamInfo -> Detailní informace o Streamu, pokud existuji ( u kanálů z ffproby data nejsou )
@@ -41,6 +48,8 @@ Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->m
 // StreamInfo -> Výpis CC Erorru do grafu
 Route::post('streamInfo/ccError', [CcErrorController::class, 'get_ccErrors_for_current_stream'])->middleware('firewall');
 
+// StreamHistory
+Route::get('history', [StreamHistoryController::class, 'return_last_10_history'])->middleware('firewall');
 
 // % streamů, které fungují
 Route::get('working/streams', [StreamController::class, 'percent_working_streams'])->middleware('firewall');
@@ -116,6 +125,10 @@ Route::get('hdd', [SystemController::class, 'hdd'])->middleware('firewall');
 Route::get('uptime', [SystemController::class, 'get_uptime'])->middleware('firewall');
 Route::get('server/satatus', [SystemController::class, 'server_status'])->middleware('firewall');
 Route::get('firewall/status', [FirewallController::class, 'check_status'])->middleware('firewall');
+Route::get("certifikate", [SystemController::class, 'check_web_certificate'])->middleware('firewall');
+Route::get('certifikate/check', [SystemController::class, 'count_expiration_of_ssl'])->middleware('firewall');
+// admin zona
+Route::get('admin/system/info', [SystemController::class, 'admin_info_system'])->middleware('firewall');
 
 /**
  * Nastavení Streamů
@@ -124,6 +137,7 @@ Route::get("streams", [StreamController::class, 'get_streams'])->middleware('fir
 Route::post("stream/edit", [StreamController::class, 'edit_stream'])->middleware('firewall');
 Route::post("stream/delete", [StreamController::class, 'delete_stream'])->middleware('firewall');
 Route::post("stream/add", [StreamController::class, 'create_stream'])->middleware('firewall');
+Route::post("stream/issues", [StreamNotificationLimitController::class, 'get_information_for_editation'])->middleware('firewall');
 
 
 /**
@@ -157,5 +171,16 @@ Route::post('notifications/edit', [EmailNotificationController::class, 'edit_ema
  * TESTING
  */
 
-// Route::get("certifikate", [SystemController::class, 'check_web_certificate']);
+
 // Route::get('prum', [CcErrorController::class, 'prum_every_two_hours']);
+// Route::get('unlink', function () {
+//     if (file_exists(public_path(Stream::where('id', "1")->first()->image))) {
+//         // Náhled existuje => odebrání náhledu z filesystemu
+//         dd("existuje");
+//         // unlink(public_path($oldImage));
+
+//         // Stream::where('id', $streamId)->update(['image' => 'false']);
+//     } else {
+//         dd("neexituje");
+//     }
+// });

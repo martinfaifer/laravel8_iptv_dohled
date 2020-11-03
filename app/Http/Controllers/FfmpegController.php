@@ -29,10 +29,10 @@ class FfmpegController extends Controller
         // $imgName = $streamId . ".jpg";
         $streamUrl = trim($streamUrl);
         // vyhledání stávajícího náhledu, a případné smazání
-        if (file_exists(public_path($oldImage))) {
+        if (file_exists(public_path(Stream::where('id', $streamId)->first()->image))) {
             // Náhled existuje => odebrání náhledu z filesystemu
-            // return "existuje";
-            unlink(public_path($oldImage));
+
+            unlink(public_path(Stream::where('id', $streamId)->first()->image));
 
             Stream::where('id', $streamId)->update(['image' => 'false']);
         }
@@ -49,11 +49,6 @@ class FfmpegController extends Controller
             // odeslání eventu do frontendu
             event(new StreamImage($streamId, "storage/channelsImages/{$newImgName}"));
         }
-
-        // pokud bude existoval, update záznamu, a spustení eventu, pro odeslání do frontendu do mozaiky
-
-
-
     }
 
     /**

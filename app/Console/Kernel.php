@@ -24,6 +24,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // cistení slozky s obrázky
+        $schedule->command('command:deleteImagesOlderTharOneHour')->hourly()->runInBackground();
         // cistení záznamu z tabulky cc_errors
         $schedule->command('command:prum_CC_errors')->everyMinute()->runInBackground();
 

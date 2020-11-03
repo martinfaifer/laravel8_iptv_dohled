@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\SendSuccessEmail;
 use App\Events\StreamNotification;
 use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\Stream;
@@ -44,31 +45,27 @@ class FFprobeController extends Controller
             // pokud $ffprobeJsonOutput neobsahuje klíč "programs" => stream nefunguje ===> ukládá se error
             if (!array_key_exists("programs", $ffprobeJsonOutput)) {
 
-                if ($streamInfoData->status != 'error') {
+                if ($streamInfoData->status != "error") {
                     Stream::where('id', $streamId)->update(['status' => "error"]);
+
+                    StreamHistory::create([
+                        'stream_id' => $streamId,
+                        'status' => "stream_error"
+                    ]);
 
                     // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
                     // overení, zda stream má povolenou notifikaci
                     if ($streamInfoData->sendMailAlert == true) {
                         if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-                            // odebrání záznamu z tabulky
+                            // vytvorení záznamu
                             ChannelsWhichWaitingForNotification::create([
                                 'stream_id' => $streamId,
                                 'whenToNotify' => date("Y-m-d H:i", strtotime('+5 minutes'))
                             ]);
                         }
                     }
-
-
-                    if (!StreamHistory::where('stream_id', $streamId)->where('status', "stream_error")->orderBy('created_at', 'asc')->first()) {
-                        // poslední status u kanálu není stream_error ( nefunkční ), založí se nový status
-                        StreamHistory::create([
-                            'stream_id' => $streamId,
-                            'status' => "stream_error"
-                        ]);
-                    }
                 }
-                event(new StreamNotification());
+                // event(new StreamNotification());
             } else {
                 // byl nalezen klíc programs , stream nejspise funguje
 
@@ -77,23 +74,19 @@ class FFprobeController extends Controller
 
                     Stream::where('id', $streamId)->update(['status' => "success"]);
 
+                    StreamHistory::create([
+                        'stream_id' => $streamId,
+                        'status' => "stream_ok"
+                    ]);
+
                     // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
-                    if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                    if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "!=", 'false')->first()) {
                         // odeslání mail notifikace pokud je zapotřebí
-                        EmailNotificationController::notify_success_stream($streamId);
+                        dispatch(new SendSuccessEmail($streamId));
 
                         // odebrání záznamu z tabulky
                         ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
                     }
-
-                    if (!StreamHistory::where('stream_id', $streamId)->where('status', "stream_ok")->orderBy('created_at', 'asc')->first()) {
-                        // poslední status u kanálu není stream_stream_okerror ( funkční ), založí se nový status
-                        StreamHistory::create([
-                            'stream_id' => $streamId,
-                            'status' => "stream_ok"
-                        ]);
-                    }
-                    event(new StreamNotification());
                 }
             }
         }
@@ -111,13 +104,28 @@ class FFprobeController extends Controller
         // vyhledání informací o streamu, aby se medelal pro kazdý blok insert => získání statusu streamu
         $streamInfo = Stream::where('id', $streamId)->first();
 
-        // převedení do json
-        // $ffprobeJson = json_decode($ffprobeOutput, true);
-
         // kotrola zda v poli existuje klic "programs" , nikdy by neměla být nesplněná tato podmínka
         if (!array_key_exists("programs", $ffprobeJson)) {
-            // tato situace nikdy nenastane, jelikož podminka v parent fn toto resi
-            return;
+            if ($streamInfo->status != "error") {
+                Stream::where('id', $streamId)->update(['status' => "error"]);
+
+                StreamHistory::create([
+                    'stream_id' => $streamId,
+                    'status' => "stream_error"
+                ]);
+
+                // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
+                // overení, zda stream má povolenou notifikaci
+                if ($streamInfo->sendMailAlert == true) {
+                    if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                        // vytvorení záznamu
+                        ChannelsWhichWaitingForNotification::create([
+                            'stream_id' => $streamId,
+                            'whenToNotify' => date("Y-m-d H:i", strtotime('+5 minutes'))
+                        ]);
+                    }
+                }
+            }
         } else {
 
             // vyhledání pcr_pidu
@@ -144,8 +152,8 @@ class FFprobeController extends Controller
                             ]);
                         }
                     }
-                    event(new StreamNotification());
-                    return;
+                    // // event(new StreamNotification());
+                    // return;
                 }
 
                 if (array_key_exists("start_time", $program)) {
@@ -180,8 +188,6 @@ class FFprobeController extends Controller
                                     ]);
                                 }
                             }
-                            event(new StreamNotification());
-                            return;
                         }
 
                         if (array_key_exists("start_time", $streams)) {
@@ -224,8 +230,6 @@ class FFprobeController extends Controller
                                 ]);
                             }
                         }
-                        event(new StreamNotification());
-                        return;
                     } else {
 
                         $checkPrimarToVideo = intval($video_start_time) - intval($start_time);
@@ -248,8 +252,6 @@ class FFprobeController extends Controller
                                     ]);
                                 }
                             }
-                            event(new StreamNotification());
-                            return;
                         } else {
 
                             $orig_start_time = explode(".", $orig_start_time);
@@ -273,8 +275,6 @@ class FFprobeController extends Controller
                                         ]);
                                     }
                                 }
-                                event(new StreamNotification());
-                                return;
                             }
                         }
 
@@ -297,8 +297,8 @@ class FFprobeController extends Controller
                                 ]);
                             }
                         }
-                        event(new StreamNotification());
-                        return;
+                        // event(new StreamNotification());
+                        // return;
                     }
                 }
                 // update, pokud stav není success
@@ -317,8 +317,8 @@ class FFprobeController extends Controller
                         ]);
                     }
                 }
-                event(new StreamNotification());
-                return;
+                // event(new StreamNotification());
+                // return;
             } else {
 
                 if ($streamInfo->status == "success") {
@@ -338,8 +338,8 @@ class FFprobeController extends Controller
                         ]);
                     }
                 }
-                event(new StreamNotification());
-                return;
+                // event(new StreamNotification());
+                // return;
             }
         }
     }

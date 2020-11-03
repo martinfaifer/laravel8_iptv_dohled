@@ -7,7 +7,8 @@ Vue.use(Vuex);
 export const store = new Vuex.Store({
     state: {
         loggedUser: [],
-        iptvDokuConnectionStatus: []
+        iptvDokuConnectionStatus: [],
+        streamAlerts: []
     },
     actions: {},
     mutations: {
@@ -17,6 +18,10 @@ export const store = new Vuex.Store({
 
         updateIptvStatus(state, status) {
             state.iptvDokuConnectionStatus = status;
+        },
+
+        updateAlert(state, alert) {
+            state.streamAlerts = alert;
         }
     },
     getters: {}

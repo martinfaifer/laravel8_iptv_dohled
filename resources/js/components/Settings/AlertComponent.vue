@@ -59,6 +59,33 @@
                             >mdi-delete</v-icon
                         >
                     </template>
+
+                    <template v-slot:item.channels="{ item }">
+                        <span v-if="item.channels == 'yes'">
+                            <v-icon color="success">mdi-check</v-icon>
+                        </span>
+                        <span v-else>
+                            <v-icon color="red">mdi-close</v-icon>
+                        </span>
+                    </template>
+
+                    <template v-slot:item.channels_issues="{ item }">
+                        <span v-if="item.channels_issues == 'yes'">
+                            <v-icon color="success">mdi-check</v-icon>
+                        </span>
+                        <span v-else>
+                            <v-icon color="red">mdi-close</v-icon>
+                        </span>
+                    </template>
+
+                    <template v-slot:item.system="{ item }">
+                        <span v-if="item.system == 'yes'">
+                            <v-icon color="success">mdi-check</v-icon>
+                        </span>
+                        <span v-else>
+                            <v-icon color="red">mdi-close</v-icon>
+                        </span>
+                    </template>
                 </v-data-table>
             </v-card>
         </v-container>
@@ -87,7 +114,15 @@
                                 <v-col cols="12" sm="12" md="12">
                                     <v-switch
                                         v-model="streamAlerts"
-                                        label="Zasílání alertů na kanály"
+                                        label="Zasílání alertů při výpadku kanálu"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="streamAlertsIssue"
+                                        label="Zasílání alertů při problému s kanálem"
                                     ></v-switch>
                                 </v-col>
                             </v-row>
@@ -106,7 +141,7 @@
                         <v-btn
                             color="red darken-1"
                             text
-                            @click="closeCreateDialog()"
+                            @click="createDialog = false"
                         >
                             Zavřít
                         </v-btn>
@@ -134,7 +169,8 @@
                             <v-row>
                                 <v-col cols="12" sm="12" md="12">
                                     <v-text-field
-                                        autofocus
+                                        disabled
+                                        readonly
                                         v-model="email"
                                         label="Emailová adresa"
                                         required
@@ -146,7 +182,15 @@
                                 <v-col cols="12" sm="12" md="12">
                                     <v-switch
                                         v-model="streamAlerts"
-                                        label="Zasílání alertů na kanály"
+                                        label="Zasílání alertů při výpadku kanálu"
+                                    ></v-switch>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="12" sm="12" md="12">
+                                    <v-switch
+                                        v-model="streamAlertsIssue"
+                                        label="Zasílání alertů při problému s kanálem"
                                     ></v-switch>
                                 </v-col>
                             </v-row>
@@ -186,6 +230,7 @@ import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            streamAlertsIssue: false,
             editDialog: false,
             alertId: null,
             email: null,
@@ -206,6 +251,10 @@ export default {
                 },
 
                 { text: "Zasílat alerty kanálů", value: "channels" },
+                {
+                    text: "Zasílat alerting s problémy u streamů",
+                    value: "channels_issues"
+                },
                 { text: "Zasílat systémové alerty", value: "system" },
                 { text: "Akce", value: "Akce" }
             ]
@@ -218,6 +267,9 @@ export default {
         this.loadEmails();
     },
     methods: {
+        closeEditDialog() {
+            this.editDialog = false;
+        },
         loadEmails() {
             window.axios.get("notifications/mails").then(response => {
                 this.emails = response.data;
@@ -238,7 +290,8 @@ export default {
                 .post("notifications/create", {
                     email: this.email,
                     streamAlerts: this.streamAlerts,
-                    systemAlerts: this.systemAlerts
+                    systemAlerts: this.systemAlerts,
+                    streamAlertsIssue: this.streamAlertsIssue
                 })
                 .then(function(response) {
                     if (response.data.status == "success") {
@@ -249,6 +302,7 @@ export default {
                         (currentObj.email = null),
                             (currentObj.streamAlerts = false),
                             (currentObj.systemAlerts = false);
+                        currentObj.streamAlertsIssue = false;
                         setTimeout(function() {
                             currentObj.status = null;
                         }, 5000);
@@ -296,13 +350,14 @@ export default {
             this.email = null;
         },
         sendEdit() {
-             let currentObj = this;
+            let currentObj = this;
             axios
                 .post("notifications/edit", {
                     emailId: this.emailId,
                     email: this.email,
                     streamAlerts: this.streamAlerts,
-                    systemAlerts: this.systemAlerts
+                    systemAlerts: this.systemAlerts,
+                    streamAlertsIssue: this.streamAlertsIssue
                 })
                 .then(function(response) {
                     if (response.data.status == "success") {

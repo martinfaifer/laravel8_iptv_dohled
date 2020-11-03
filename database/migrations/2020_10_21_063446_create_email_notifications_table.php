@@ -18,6 +18,7 @@ class CreateEmailNotificationsTable extends Migration
             $table->string('email');
             $table->string('belongsTo')->nullable();
             $table->string('channels')->index();
+            $table->string('channels_issues')->index();
             $table->string('system')->index();
             $table->timestamps();
         });

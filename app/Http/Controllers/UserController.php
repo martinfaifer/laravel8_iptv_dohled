@@ -466,6 +466,13 @@ class UserController extends Controller
             ];
         }
 
+
+        if ($request->status != false) {
+            $status = "blocket";
+        } else {
+            $status = "active";
+        }
+
         // vyhledání, zda není nejaka hodnota empty
         if (empty($request->jmeno) || empty($request->email) || empty($request->role_id)) {
             return [
@@ -478,7 +485,8 @@ class UserController extends Controller
         User::where('id', $request->userId)->update([
             'name' => $request->jmeno,
             'email' => $request->email,
-            'role_id' => $request->role_id
+            'role_id' => $request->role_id,
+            'status' => $status
         ]);
         return [
             'isAlert' => "isAlert",

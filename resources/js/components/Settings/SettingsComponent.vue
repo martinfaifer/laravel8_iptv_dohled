@@ -51,7 +51,7 @@
                             <span>Kanály</span>
                         </v-tooltip>
 
-                        <div>
+                        <div v-if="userRole == '1'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -78,7 +78,7 @@
                             </v-tooltip>
                         </div>
 
-                        <div>
+                        <div v-if="userRole == '1'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -103,7 +103,7 @@
                             </v-tooltip>
                         </div>
 
-                        <div>
+                        <!-- <div v-if="userRole == '1'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -125,8 +125,8 @@
                                 </template>
                                 <span>Log</span>
                             </v-tooltip>
-                        </div>
-                        <div>
+                        </div> -->
+                        <div v-if="userRole == '1'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -172,14 +172,24 @@ export default {
         }
     },
     data() {
-        return {};
+        return {
+            userRole:null
+        };
     },
-    watch: {
-        // userData: function() {
-        //     if(this.userData.user_role === 'náhled') {
-        //         this.$router.push("/");
-        //     }
-        // }
+    created() {
+        this.loadUser();
+
+    },
+    methods: {
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                currentObj.userRole = response.data.role_id;
+                if(currentObj.userRole == "4") {
+                    currentObj.$router.push("/");
+                }
+            });
+        }
     }
 };
 </script>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\SendErrorStream;
+use App\Mail\SendStreamNotificationProblem;
 use App\Mail\SendSuccessStream;
 use App\Mail\SendSystemWarningAlert;
 use App\Mail\SendUserNotificationWelcomeMessage;
@@ -73,6 +74,26 @@ class EmailNotificationController extends Controller
                 ];
             }
         }
+
+
+        if ($whatNotify == "channels_issues") {
+            // pokud $whatNotify == "channels_issues"
+            if (!EmailNotification::where('channels_issues', 'yes')->first()) {
+                return [
+                    'status' => "not_exist"
+                ];
+            } else {
+
+                foreach (EmailNotification::where('channels_issues', 'yes')->get() as $emailToNotifySystemData) {
+                    $output[] = $emailToNotifySystemData['email'];
+                }
+
+                return [
+                    'status' => "exist",
+                    'data' => $output
+                ];
+            }
+        }
     }
 
     /**
@@ -97,13 +118,13 @@ class EmailNotificationController extends Controller
                 foreach ($checkIfExistErrorStream['data'] as $streamId) {
                     // vyhledání názvu streamu dle id
                     $streamName = Stream::where('id', $streamId)->first()->nazev;
-
+                    $url = env("APP_URL") . "/#/stream/{$streamId}";
                     // odeslání mailu na všechny email adresy
                     foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
 
                         // odeslání mailu s parametry email, název kanálu
                         // odeslat do queue
-                        Mail::to($email)->queue(new SendErrorStream($streamName));
+                        Mail::to($email)->queue(new SendErrorStream($streamName, $url));
                     }
 
                     // update záznamu ChannelsWhichWaitingForNotification -> notified => true
@@ -129,6 +150,7 @@ class EmailNotificationController extends Controller
             // emaily ...
 
             // vyhledání streamu, podle $streamId
+            // podmínka pro odeslání alertu, je notified == true
             if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "true")->first()) {
                 $streamName = Stream::where('id', $streamId)->first()->nazev;
                 // odeslání mailu na všechny email adresy
@@ -185,6 +207,33 @@ class EmailNotificationController extends Controller
         Mail::to($email)->queue(new SendUserNotificationWelcomeMessage($email, $password, $url));
     }
 
+    /**
+     * funkce na odeslání alertu o problémovém streamu
+     *
+     * @param [type] $subject
+     * @param [type] $streamId
+     * @param [type] $streamName
+     * @param [type] $url
+     * @return void
+     */
+    public static function send_information_about_problem_stream($subject, $streamId, $streamName, $url): void
+    {
+        // get emails to send data
+        $checkIfExistAnyEmailToNotify = self::check_if_is_mail_to_notify("channels_issues");
+
+        if ($checkIfExistAnyEmailToNotify['status'] == "exist") {
+            // emaily ...
+
+
+            // odeslání mailu na všechny email adresy
+            foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
+
+                // odeslat do queue
+                Mail::to($email)->queue(new SendStreamNotificationProblem($subject, $streamId, $streamName, $url));
+            }
+        }
+    }
+
 
     /**
      * funkce na vypsání všech emailových adres na které se budou zasílat alerty / pokud nic neexistuje vrácí pole se statusem empty
@@ -239,6 +288,11 @@ class EmailNotificationController extends Controller
         } else {
             $systemAlerts = "yes";
         }
+        if ($request->streamAlertsIssue == false) {
+            $channelIssue = "no";
+        } else {
+            $channelIssue = "yes";
+        }
 
 
         try {
@@ -246,7 +300,8 @@ class EmailNotificationController extends Controller
                 'email' => $request->email,
                 'belongsTo' => $user->id,
                 'channels' => $streamAlert,
-                'system' => $systemAlerts
+                'system' => $systemAlerts,
+                'channels_issues' => $channelIssue
             ]);
 
             return [
@@ -324,8 +379,14 @@ class EmailNotificationController extends Controller
             $systemAlerts = "yes";
         }
 
+        if ($request->streamAlertsIssue == false) {
+            $channelIssue = "no";
+        } else {
+            $channelIssue = "yes";
+        }
+
         try {
-            EmailNotification::where('id', $request->emailId)->update(['email' => "email", 'channels' => $streamAlert, 'system' => $systemAlerts]);
+            EmailNotification::where('id', $request->emailId)->update(['channels' => $streamAlert, 'channels_issues' => $channelIssue, 'system' => $systemAlerts]);
 
             return [
                 'isAlert' => "isAlert",

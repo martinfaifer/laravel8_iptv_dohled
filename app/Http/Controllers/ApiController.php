@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 class ApiController extends Controller
 {
     public $hello_dokumentace = "d4c3ed93-3768-48c0-98b6-1717108157e9";
+    public $hello_dohled = "873134d5-6324-4555-aa6d-fcdb1f7a9f4f";
     public $iptvdokuUriApiConnectionTest = "http://iptvdoku.grapesc.cz/api/connectionTest";
     public $iptvdokuUriApiStreamInfo = "http://iptvdoku.grapesc.cz/api/channel/search";
     public $iptvdokuUriApiStreams = "http://iptvdoku.grapesc.cz/api/channel/return";
@@ -52,5 +53,37 @@ class ApiController extends Controller
         return $response = Http::get($this->iptvdokuUriApiStreams, [
             'hello' => $this->hello_dokumentace,
         ]);
+    }
+
+    /**
+     * funkce na otestování připojení do tohoto systému
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function test_connection_from_another_system_to_this(Request $request)
+    {
+        if ($request->hello == $this->hello_dohled) {
+            return "success";
+        } else {
+            return "error";
+        }
+    }
+
+    /**
+     * funknce na vypsání alertů, co jsou aktuální
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function send_alerts_information_to_another_system(Request $request)
+    {
+        if ($this->test_connection_from_another_system_to_this($request) != "success") {
+            return [
+                'status' => "not_connected"
+            ];
+        }
+
+        return StreamController::show_problematic_streams_as_alerts();
     }
 }

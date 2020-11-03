@@ -13,15 +13,17 @@ class SendErrorStream extends Mailable
 
 
     public $stream;
+    public $url;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct(string $stream)
+    public function __construct(string $stream, string $url)
     {
         $this->stream = $stream;
+        $this->url = $url;
     }
 
     /**

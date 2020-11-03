@@ -17,13 +17,18 @@
                 <!--  -->
                 <serverinformation-component></serverinformation-component>
                 <v-row>
-                    Stav aktualně nefunkční streamy ...
+                    <crashedorissuedstreams-component></crashedorissuedstreams-component>
                 </v-row>
                 <v-row>
-                    neco zde bude ...
+                    <streamhistory-component></streamhistory-component>
                 </v-row>
             </v-row>
         </v-container>
+        <v-row class="ml-12" v-if="userRole == '1'">
+            <!-- admin information  -->
+            <!-- informace o běžících procesech , queue a pod -->
+            <admininformation-component></admininformation-component>
+        </v-row>
     </v-main>
 </template>
 <script>
@@ -39,12 +44,20 @@ import FirewallStatusComponent from "./_SystemPrehled/FirewallComponent";
 import WorkingStreamsComponent from "./_SystemPrehled/_StreamsPrehled/WorkingStreamsComponent";
 // serverInformation
 import ServerInformationComponent from "./_SystemPrehled/ServerInformationComponent";
+// notifikace nefunkčních streamů
+import CrashedOrIssuedStreamsComponent from "./_SystemPrehled/_StreamsPrehled/CrashedOrIssuedStreamsComponent";
+// historie streamů
+import StreamHistoryComponent from "./_SystemPrehled/_StreamsPrehled/StreamsHistoryComponent";
+// admin zona
+import AdminInformationComponent from "./_SystemPrehled/AdminInformationComponent";
 export default {
     data() {
-        return {};
+        return { userRole: null };
     },
 
-    created() {},
+    created() {
+        this.loadUser();
+    },
     components: {
         "cpu-component": CpuComponent,
         "uptime-component": UptimeComponent,
@@ -53,9 +66,19 @@ export default {
         "hdd-component": HddComponent,
         "workingstreams-component": WorkingStreamsComponent,
         "serverinformation-component": ServerInformationComponent,
-        "firewallstatus-component": FirewallStatusComponent
+        "firewallstatus-component": FirewallStatusComponent,
+        "crashedorissuedstreams-component": CrashedOrIssuedStreamsComponent,
+        "streamhistory-component": StreamHistoryComponent,
+        "admininformation-component": AdminInformationComponent
     },
-    methods: {},
+    methods: {
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                currentObj.userRole = response.data.role_id;
+            });
+        }
+    },
 
     mounted() {},
     watch: {}
