@@ -38,5 +38,6 @@ class SendStreamNotificationProblem implements ShouldQueue
      */
     public function handle()
     {
+        return [];
     }
 }

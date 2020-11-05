@@ -23,6 +23,7 @@ class CcErrorController extends Controller
      */
     public static function store_ccError(string $streamId, string $error, string $pozice): void
     {
+        date_default_timezone_set('Europe/Prague');
         if ($error != "0") {
             // vytvoření budoucí expirace
 

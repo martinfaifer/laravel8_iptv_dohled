@@ -13,6 +13,9 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         '/api/connectionTest',
-        '/api/streamAlerts'
+        '/api/streamAlerts',
+        '/api/new_event',
+        '/api/delete_event',
+        '/api/getInformationAboutStream'
     ];
 }

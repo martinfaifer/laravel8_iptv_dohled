@@ -24,13 +24,15 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // stream sheduler
+        $schedule->command('command:streamScheduler')->everyMinute()->runInBackground();
         // cistení slozky s obrázky
         $schedule->command('command:deleteImagesOlderTharOneHour')->hourly()->runInBackground();
         // cistení záznamu z tabulky cc_errors
         $schedule->command('command:prum_CC_errors')->everyMinute()->runInBackground();
 
         // čistení tabulky failed_jobs
-        $schedule->command('command:delete_failed_jobs_table')->everyMinute()->runInBackground();
+        $schedule->command('queue:flush')->daily()->runInBackground();
 
         // vytváření náhledů pro streamy
         $schedule->command('command:create_thumbnail_from_stream')->everyThreeMinutes()->runInBackground();

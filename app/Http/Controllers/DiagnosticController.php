@@ -146,13 +146,11 @@ class DiagnosticController extends Controller
                 // kanál nyní označíme jako nefunkční, aktualizujeme status kanálu a následně uložíme do historie, pro budoucí výpis
                 // před aktualizací statusu, oveření zda kanál již posledním uloženým statusem není označen jako nefunkční
 
-                // dispatch FFprobe , pokud i ta selze => kanál nefunguje od verze 0.3
-                // dispatch(new FFprobeDiagnostic($streamUrl, $streamId, null)); // QUEUE
                 FFprobeController::ffprobe_diagnostic($streamUrl, $streamId, null);
             }
 
             // stream funguje
-            // vyčtou se ze streamu všechny možná data, která případně pomohou diagnostikovat chyby ve streamu
+            // vyčtou se ze streamu všechna možná data, která případně pomohou diagnostikovat chyby ve streamu
             // převod stringu do pole
             else {
                 // fn pro převedení stringu do pole
@@ -164,6 +162,13 @@ class DiagnosticController extends Controller
                     ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
                 }
 
+                /**
+                 * ---------------------------------------------------------------------------------------------------------------------------------------
+                 * EVENT LOOP
+                 * vše co je v eventLoop , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
+                 * ---------------------------------------------------------------------------------------------------------------------------------------
+                 */
+                $eventLoop = Factory::create();
 
                 // zpracování pole
                 // vyhledání specifických klíčů, dle kterých se pole zpracuje
@@ -203,48 +208,52 @@ class DiagnosticController extends Controller
                     // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
                     $pids_data = self::analyze_pids_and_storeData($pids, $streamId, $streamUrl);
                 }
+
+                $eventLoop->run();
+
+
+                // analyzování výstupu z jednotlivých podruzných funkcí
+                if ($ts_data["status"] != "success" || $global_data["status"] != "success" || $pids_data["status"] != "success") {
+                    // update záznamu na issue
+
+
+                    /**
+                     * ---------------------------------------------------------------------------------------------------------------------------------------
+                     * EVENT LOOP
+                     * vše co je v eventLoop , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
+                     * ---------------------------------------------------------------------------------------------------------------------------------------
+                     */
+                    $eventLoop = Factory::create();
+                    if ($streamInfoData->status != "issue") {
+                        // ZMĚNA STAVU Z SUCCESS NEBO ERROR NA ISSUE
+                        dispatch(new Diagnostic_Stream_update($streamId, "issue"));
+                    }
+
+                    // zpracování alertů
+                    // vyhledání zda existuje v poly klic "dataAlert"
+                    if (array_key_exists("dataAlert", $ts_data)) {
+                        dispatch(new Diagnostic_Status_Update($streamId, $ts_data["dataAlert"]));
+                    }
+
+                    if (array_key_exists("dataAlert", $pids_data)) {
+                        dispatch(new Diagnostic_Status_Update($streamId, $pids_data["dataAlert"]));
+                    }
+
+                    if (array_key_exists("dataAlert", $global_data)) {
+                        dispatch(new Diagnostic_Status_Update($streamId, $global_data["dataAlert"]));
+                    }
+                    $eventLoop->run(); // konec event loopu
+                } else {
+                    // NEBYLA NALEZENA ŽÁDNÁ CHYBA, ZMĚNA STAVU Z ISSUE NEBO ERROR NA SUCCESS
+                    if ($streamInfoData->status != "success") {
+                        // UPDATE ZÁZNAMU
+                        dispatch(new Diagnostic_Stream_update($streamId, "success"));
+                    }
+                }
             }
-
-            /**
-             * ---------------------------------------------------------------------------------------------------------------------------------------
-             * EVENT LOOP
-             * vše co je v eventLoop_for_TS_Global_Service , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
-             * ---------------------------------------------------------------------------------------------------------------------------------------
-             */
-
-            $eventLoop = Factory::create();
-            // analyzování výstupu z jednotlivých podruzných funkcí
-            if ($ts_data["status"] != "success" || $global_data["status"] != "success" || $pids_data["status"] != "success") {
-                // update záznamu na issue
-                if ($streamInfoData->status != "issue") {
-                    // ZMĚNA STAVU Z SUCCESS NEBO ERROR NA ISSUE
-                    dispatch(new Diagnostic_Stream_update($streamId, "issue"));
-                }
-
-                // zpracování alertů
-                // vyhledání zda existuje v poly klic "dataAlert"
-                if (array_key_exists("dataAlert", $ts_data)) {
-                    dispatch(new Diagnostic_Status_Update($streamId, $ts_data["dataAlert"]));
-                }
-
-                if (array_key_exists("dataAlert", $pids_data)) {
-                    dispatch(new Diagnostic_Status_Update($streamId, $pids_data["dataAlert"]));
-                }
-
-                if (array_key_exists("dataAlert", $global_data)) {
-                    dispatch(new Diagnostic_Status_Update($streamId, $global_data["dataAlert"]));
-                }
-            } else {
-                // NEBYLA NALEZENA ŽÁDNÁ CHYBA, ZMĚNA STAVU Z ISSUE NEBO ERROR NA SUCCESS
-                if ($streamInfoData->status != "success") {
-                    // UPDATE ZÁZNAMU
-                    dispatch(new Diagnostic_Stream_update($streamId, "success"));
-                }
-            }
-
-            $eventLoop->run(); // konec event loopu
+            // zastavení scriptu na x sekund, pro případný overlapping a odlehčení databaze
             sleep(3);
-        } // end of loop
+        } // konec foreache
     }
 
 

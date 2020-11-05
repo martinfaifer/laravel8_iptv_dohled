@@ -27,6 +27,20 @@ class StreamHistoryController extends Controller
                         'color' => "green",
                         'created_at' => $created_at[0]
                     );
+                } else if ($streamHistory['status'] == 'sheduler_disable') {
+                    $historie[] = array(
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    );
+                } else if ($streamHistory['status'] == 'sheduler_enable') {
+                    $historie[] = array(
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    );
                 } else if ($streamHistory['status'] == 'issue') {
                     $historie[] = array(
                         'id' => $streamHistory['id'],
@@ -92,6 +106,27 @@ class StreamHistoryController extends Controller
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "green",
+                        'created_at' => $created_at[0]
+                    );
+                } else if ($streamHistory['status'] == 'sheduler_disable') {
+                    $historie[] = array(
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    );
+                } else if ($streamHistory['status'] == 'sheduler_enable') {
+                    $historie[] = array(
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    );
+                } else if ($streamHistory['status'] == 'issue') {
+                    $historie[] = array(
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "orange",
                         'created_at' => $created_at[0]
                     );
                 } else {

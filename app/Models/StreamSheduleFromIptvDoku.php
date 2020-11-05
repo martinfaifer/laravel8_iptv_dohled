@@ -19,7 +19,7 @@ class StreamSheduleFromIptvDoku extends Model
     use HasFactory;
 
     protected $fillable = [
-        'stream_id',
+        'streamId',
         'start_day',
         'start_time',
         'end_day',

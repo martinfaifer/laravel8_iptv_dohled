@@ -115,6 +115,20 @@
                                     </strong>
                                 </small>
                             </div>
+                            <div v-else-if="stream.status == 'sheduler_disable'">
+                                <small class="green--text">
+                                    <strong>
+                                        {{ stream.created_at }} => Aplikováno automatická vypnutí alertů
+                                    </strong>
+                                </small>
+                            </div>
+                            <div v-else-if="stream.status == 'sheduler_enable'">
+                                <small class="green--text">
+                                    <strong>
+                                        {{ stream.created_at }} => Aplikováno automatická zapnutí alertů
+                                    </strong>
+                                </small>
+                            </div>
                         </div>
                     </v-timeline-item>
                 </v-timeline>

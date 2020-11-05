@@ -59,7 +59,6 @@ class ApiController extends Controller
      * funkce na otestování připojení do tohoto systému
      *
      * @param Request $request
-     * @return void
      */
     public function test_connection_from_another_system_to_this(Request $request)
     {
@@ -85,5 +84,55 @@ class ApiController extends Controller
         }
 
         return StreamController::show_problematic_streams_as_alerts();
+    }
+
+
+    /**
+     * funknce na pridaní nové událsti do dohledu z extrerního systemu
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function create_new_event(Request $request)
+    {
+        // nutné vyhledat k jakému streamu se má založit událost
+
+        if ($this->test_connection_from_another_system_to_this($request) != "success") {
+            return [
+                'status' => "not_connected"
+            ];
+        }
+
+        StreamSheduleFromIptvDokuController::create_new_event($request);
+    }
+
+
+
+    /**
+     * funkce na odebrání události z sheduleru
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function delete_event(Request $request)
+    {
+        if ($this->test_connection_from_another_system_to_this($request) != "success") {
+            return [
+                'status' => "not_connected"
+            ];
+        }
+        StreamSheduleFromIptvDokuController::delete_event($request);
+    }
+
+
+    public function get_information_about_stream(Request $request)
+    {
+        if ($this->test_connection_from_another_system_to_this($request) != "success") {
+            return [
+                'status' => "not_connected"
+            ];
+        }
+
+        return StreamController::get_information_about_streams($request);
     }
 }

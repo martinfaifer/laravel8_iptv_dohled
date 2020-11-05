@@ -11,6 +11,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
 use App\Http\Controllers\StreamNotificationLimitController;
+use App\Http\Controllers\StreamSheduleFromIptvDokuController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDetailController;
@@ -47,6 +48,13 @@ Route::post('streamInfo/history/10', [StreamHistoryController::class, 'stream_in
 Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->middleware('firewall');
 // StreamInfo -> Výpis CC Erorru do grafu
 Route::post('streamInfo/ccError', [CcErrorController::class, 'get_ccErrors_for_current_stream'])->middleware('firewall');
+// StreamIfo -> sheduler
+Route::post('streamInfo/sheduler', [StreamSheduleFromIptvDokuController::class, 'return_shedule_data'])->middleware('firewall');
+// StreamInfo -> TodayEvent (sheduler)
+Route::post('streamInfo/todayEvent', [StreamSheduleFromIptvDokuController::class, 'check_if_today_is_shedule'])->middleware('firewall');
+// NavigationComponent -> zobrazení notifikace, pokud ke dnesnimu dni jsou plánované nejaké události
+Route::get('todayEvents', [StreamSheduleFromIptvDokuController::class, 'return_all_today_events'])->middleware('firewall');
+
 
 // StreamHistory
 Route::get('history', [StreamHistoryController::class, 'return_last_10_history'])->middleware('firewall');
@@ -171,16 +179,7 @@ Route::post('notifications/edit', [EmailNotificationController::class, 'edit_ema
  * TESTING
  */
 
-
-// Route::get('prum', [CcErrorController::class, 'prum_every_two_hours']);
-// Route::get('unlink', function () {
-//     if (file_exists(public_path(Stream::where('id', "1")->first()->image))) {
-//         // Náhled existuje => odebrání náhledu z filesystemu
-//         dd("existuje");
-//         // unlink(public_path($oldImage));
-
-//         // Stream::where('id', $streamId)->update(['image' => 'false']);
-//     } else {
-//         dd("neexituje");
-//     }
+// Route::get('time', function () {
+//     date_default_timezone_set('Europe/Prague');
+//     return date('H:i', time());
 // });

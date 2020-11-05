@@ -27,28 +27,32 @@ class StreamController extends Controller
      * update statusu u streamu
      *
      * @param string $streamId
-     * @param string $status
+     * @param string $status issue || success
      * @return void
      */
     public static function queue_diagnostic_update_stream_status(string $streamId, string $status): void
     {
-        Stream::where('id', $streamId)->update(["status" => $status]);
+        if ($status == "success") {
+            Stream::where('id', $streamId)->update(["status" => $status]);
 
-        // ZÁZNAM DO HISTORIE, ŽE STREAM JE OK
-        StreamHistory::create([
-            'stream_id' => $streamId,
-            'status' => "stream_ok"
-        ]);
+            // ZÁZNAM DO HISTORIE, ŽE STREAM JE OK
+            StreamHistory::create([
+                'stream_id' => $streamId,
+                'status' => "stream_ok"
+            ]);
 
-        if (StreamAlert::where('stream_id',  $streamId)->first()) {
-            foreach (StreamAlert::where('stream_id',  $streamId)->get() as $alertToDelete) {
-                StreamAlert::where('id', $alertToDelete["id"])->delete();
+            if (StreamAlert::where('stream_id',  $streamId)->first()) {
+                foreach (StreamAlert::where('stream_id',  $streamId)->get() as $alertToDelete) {
+                    StreamAlert::where('id', $alertToDelete["id"])->delete();
+                }
             }
-        }
 
-        if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-            // odeslání mail notifikace pokud je zapotřebí
-            dispatch(new SendSuccessEmail($streamId));
+            if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                // odeslání mail notifikace pokud je zapotřebí
+                dispatch(new SendSuccessEmail($streamId));
+            }
+        } else {
+            Stream::where('id', $streamId)->update(["status" => $status]);
         }
     }
 
@@ -74,7 +78,7 @@ class StreamController extends Controller
                     'message' => $streamAlertData['message']
                 ]);
 
-                // KONTROLA, ZDA EXISTUJI JIZ ZAZNAM
+                // KONTROLA, ZDA EXISTUJI JIZ ZAZNAM V HISTORII
                 if (StreamHistory::where('stream_id', $streamId)->orderBy('id', 'asc')->first()->status != $streamAlertData['status']) {
                     StreamHistory::create([
                         'stream_id' => $streamId,
@@ -793,5 +797,90 @@ class StreamController extends Controller
                 'msg' => "Nepodařilo se založit"
             ];
         }
+    }
+
+
+    /**
+     * funkce na vyhledání informací o streamech a vypsání do polí a následně zaslat do dokumentace ci jineho externího systému
+     *
+     * @param Request $request
+     * @return array
+     */
+    public static function get_information_about_streams(Request $request): array
+    {
+
+        // 'multicastUri' => $multicastUri,
+        //         'h264Uri' => $h264Uri,
+        //         'h265Uri' => $h265Uri,
+
+        // vyhledání informací o streamech, pokud je multicast, h264 nebo h265 null, vyzvirí se empty field
+
+        if ($multicast = Stream::where('stream_url', $request->multicastUri)->first()) {
+            $audioMulticast = StreamAudio::where('stream_id', $multicast->id)->first();
+            $videoMulticast = StreamVideo::where('stream_id', $multicast->id)->first();
+            $multicastData = [
+                'img' => env("APP_URL") . "/" . $multicast->image,
+                'name' => $multicast->nazev . " multicast",
+                'audioLang' => $audioMulticast->language,
+                'audioDiscontinuities' => $audioMulticast->discontinuities,
+                'audioScrambled' => $audioMulticast->scrambled,
+                'videoDiscontinuities' => $videoMulticast->discontinuities,
+                'videoScrambled' => $videoMulticast->scrambled,
+                'streamStatus' => $multicast->status,
+                'history' => StreamHistoryController::stream_info_history_ten_for_events($multicast->id)
+            ];
+        } else {
+            $multicastData = [];
+        }
+
+        if ($h264 = Stream::where('stream_url', $request->h264Uri)->first()) {
+            $audioH264 = StreamAudio::where('stream_id', $h264->id)->first();
+            $videoH264 = StreamVideo::where('stream_id', $h264->id)->first();
+            $h264Data = [
+                'img' => env("APP_URL") . "/" . $h264->image,
+                'name' => $h264->nazev . " H264",
+                'audioLang' => $audioH264->language,
+                'audioDiscontinuities' => $audioH264->discontinuities,
+                'audioScrambled' => $audioH264->scrambled,
+                'videoDiscontinuities' => $videoH264->discontinuities,
+                'videoScrambled' => $videoH264->scrambled,
+                'streamStatus' => $h264->status,
+                'history' => StreamHistoryController::stream_info_history_ten_for_events($h264->id)
+            ];
+        } else {
+            $h264Data = [];
+        }
+
+        if ($h265 = Stream::where('stream_url', $request->h265Uri)->first()) {
+            $audioH265 = StreamAudio::where('stream_id', $h265->id)->first();
+            $videoH265 = StreamVideo::where('stream_id', $h265->id)->first();
+            $h265Data = [
+                'img' => env("APP_URL") . "/" . $h265->image,
+                'name' => $h265->nazev . " H265",
+                'audioLang' => $audioH265->language,
+                'audioDiscontinuities' => $audioH265->discontinuities,
+                'audioScrambled' => $audioH265->scrambled,
+                'videoDiscontinuities' => $videoH265->discontinuities,
+                'videoScrambled' => $videoH265->scrambled,
+                'streamStatus' => $h265->status,
+                'history' => StreamHistoryController::stream_info_history_ten_for_events($h265->id)
+            ];
+        } else {
+            $h265Data = [];
+        }
+
+        if (empty($multicastData) && empty($h264Data) && empty($h265Data)) {
+            return [
+                'status' => "fail"
+            ];
+        }
+
+        return [
+            'status' => "success",
+            'streamData' => [
+                $multicastData, $h264Data, $h265Data
+
+            ]
+        ];
     }
 }

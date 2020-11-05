@@ -26,7 +26,7 @@ class FFprobeController extends Controller
     public static function ffprobe_diagnostic($streamUrl, $streamId, $audioVideoCheck = null): void
     {
 
-        $ffprobeOutput = shell_exec("timeout --foreground 10s ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 10");
+        $ffprobeOutput = shell_exec("timeout --foreground 3s ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 2");
 
         $ffprobeJsonOutput = json_decode($ffprobeOutput, true);
 
@@ -37,7 +37,6 @@ class FFprobeController extends Controller
 
             //  proběhne kontrola, kdy se bude hlidat, resync audio / video
             self::check_if_stream_has_resync_audio_video($ffprobeJsonOutput, $streamId);
-            return;
         } else {
 
 
@@ -65,9 +64,10 @@ class FFprobeController extends Controller
                         }
                     }
                 }
-                // event(new StreamNotification());
-            } else {
-                // byl nalezen klíc programs , stream nejspise funguje
+            }
+
+            if (array_key_exists("programs", $ffprobeJsonOutput)) {
+                // byl nalezen klíc programs => stream  funguje
 
                 // v teto fázy zatím jen ulozit stav success , zatím se nehledají žádné chyby a pod...
                 if ($streamInfoData->status != 'success') {
@@ -83,9 +83,6 @@ class FFprobeController extends Controller
                     if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "!=", 'false')->first()) {
                         // odeslání mail notifikace pokud je zapotřebí
                         dispatch(new SendSuccessEmail($streamId));
-
-                        // odebrání záznamu z tabulky
-                        ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
                     }
                 }
             }
@@ -297,8 +294,6 @@ class FFprobeController extends Controller
                                 ]);
                             }
                         }
-                        // event(new StreamNotification());
-                        // return;
                     }
                 }
                 // update, pokud stav není success
@@ -317,8 +312,6 @@ class FFprobeController extends Controller
                         ]);
                     }
                 }
-                // event(new StreamNotification());
-                // return;
             } else {
 
                 if ($streamInfo->status == "success") {
@@ -338,8 +331,6 @@ class FFprobeController extends Controller
                         ]);
                     }
                 }
-                // event(new StreamNotification());
-                // return;
             }
         }
     }

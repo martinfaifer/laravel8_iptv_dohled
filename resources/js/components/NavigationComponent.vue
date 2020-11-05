@@ -37,9 +37,25 @@
                     <template v-slot:activator="{ on }">
                         <v-btn class="white--text" fab icon v-on="on">
                             <v-avatar color="transparent" small>
-                                <v-icon dark>
-                                    mdi-account
-                                </v-icon>
+                                <span v-if="todayEventsCount != '0'">
+                                    <v-badge
+                                        bordered
+                                        bottom
+                                        color="blue"
+                                        :content="todayEventsCount"
+                                        offset-x="10"
+                                        offset-y="10"
+                                    >
+                                        <v-icon dark>
+                                            mdi-account
+                                        </v-icon>
+                                    </v-badge>
+                                </span>
+                                <span v-else>
+                                    <v-icon dark>
+                                        mdi-account
+                                    </v-icon>
+                                </span>
                             </v-avatar>
                         </v-btn>
                     </template>
@@ -77,6 +93,24 @@
                                 >mdi-television</v-icon
                             >
                         </v-list-item>
+                        <!-- udalosti v daný den -->
+                        <div v-if="todayEvents != null">
+                            <v-divider></v-divider>
+                            <v-list-item
+                                v-for="todayEvent in todayEvents"
+                                :key="todayEvent.id"
+                            >
+                                <small class="orange--text">
+                                    <strong
+                                        >Na dnešní den je plánovaný výpadek
+                                        {{ todayEvent.stream }}</strong
+                                    > </small
+                                ><v-spacer></v-spacer
+                                ><v-icon color="orange" right small
+                                    >mdi-calendar</v-icon
+                                >
+                            </v-list-item>
+                        </div>
                     </v-list>
                 </v-menu>
             </template>
@@ -94,12 +128,10 @@
         </v-app-bar>
 
         <v-navigation-drawer
-
             v-model="drawer"
             right
             fixed
             temporary
-
             color="transparent"
         >
             <div
@@ -117,7 +149,7 @@
                     <strong>{{ alert.msg }}</strong>
                     <div v-show="alert.data">
                         <v-row
-                            class="ml-3"
+                            class="ml-1"
                             v-for="issueData in alert.data"
                             :key="issueData.id"
                         >
@@ -174,6 +206,8 @@
 <script>
 export default {
     data: () => ({
+        todayEvents: null,
+        todayEventsCount: "0",
         iptvDokuStatus: null,
         isIptvDoku: null,
         drawer: null,
@@ -210,8 +244,21 @@ export default {
         this.loadAlerts();
         this.loadUser();
         this.testConnectionToIptvDoku();
+        this.loadTodayEvents();
     },
     methods: {
+        loadTodayEvents() {
+            window.axios.get("todayEvents").then(response => {
+                if (response.data.status == "empty") {
+                    this.todayEvents = null;
+                    this.todayEventsCount = "0";
+                } else {
+                    this.todayEvents = response.data;
+                    this.todayEventsCount = response.data.length;
+                }
+            });
+        },
+
         testConnectionToIptvDoku() {
             window.axios.get("/api/iptvdoku/testConnection").then(response => {
                 this.$store.state.iptvDokuConnectionStatus = response.data;
