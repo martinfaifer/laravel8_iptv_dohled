@@ -22,9 +22,13 @@ class ApiController extends Controller
     public function test_connection_to_dokumentace()
     {
 
-        return $response = Http::get($this->iptvdokuUriApiConnectionTest, [
-            'hello' => $this->hello_dokumentace,
-        ]);
+        try {
+            return $response = Http::get($this->iptvdokuUriApiConnectionTest, [
+                'hello' => $this->hello_dokumentace,
+            ]);
+        } catch (\Throwable $th) {
+            return "error";
+        }
     }
 
 
