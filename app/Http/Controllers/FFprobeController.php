@@ -26,7 +26,7 @@ class FFprobeController extends Controller
     public static function ffprobe_diagnostic($streamUrl, $streamId, $audioVideoCheck = null): void
     {
 
-        $ffprobeOutput = shell_exec("timeout --foreground 3s ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 2");
+        $ffprobeOutput = shell_exec("ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 2");
 
         $ffprobeJsonOutput = json_decode($ffprobeOutput, true);
 
@@ -43,6 +43,9 @@ class FFprobeController extends Controller
 
             // pokud $ffprobeJsonOutput neobsahuje klíč "programs" => stream nefunguje ===> ukládá se error
             if (!array_key_exists("programs", $ffprobeJsonOutput)) {
+
+                // ukoncení socektu
+                // OBECNÁ FN PRO UKOCENI PIDU + VYRESETOVÁNÍ HODNOTY DO NULL
 
                 if ($streamInfoData->status != "error") {
                     Stream::where('id', $streamId)->update(['status' => "error"]);

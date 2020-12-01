@@ -128,7 +128,7 @@ export default {
             function() {
                 this.loadHistory();
             }.bind(this),
-            10000
+            60000
         );
     }
 };

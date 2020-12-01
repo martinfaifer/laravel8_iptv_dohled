@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\CcError;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class CcErrorController extends Controller
 {
 
     public $audio = array();
     public $video = array();
+    public $videoTime = array();
+    public $audioTime = array();
 
 
     /**
@@ -57,9 +60,12 @@ class CcErrorController extends Controller
             if (CcError::where('streamId', $request->streamId)->where('pozition', "audio")->first()) {
 
                 foreach (CcError::where('streamId', $request->streamId)->where('pozition', "audio")->get() as $audio) {
-                    $this->audio[] = array(
-                        substr($audio->created_at, 0, 19), $audio->ccError
-                    );
+                    // $this->audio[] = array(
+                    //     substr($audio->created_at, 0, 19), $audio->ccError
+                    // );
+
+                    $this->audio[] = array(intval($audio->ccError));
+                    $this->audioTime[] = array(substr($audio->created_at, 10, 19));
                 }
             }
 
@@ -67,17 +73,21 @@ class CcErrorController extends Controller
 
 
                 foreach (CcError::where('streamId', $request->streamId)->where('pozition', "video")->get() as $video) {
-                    // 19
-                    $this->video[] = array(
-                        substr($video->created_at, 0, 19), $video->ccError
-                    );
+
+                    // $this->video[] = array(
+                    //     substr($video->created_at, 0, 19), $video->ccError
+                    // );
+                    $this->video[] = array(intval($video->ccError));
+                    $this->videoTime[] = array(substr($video->created_at, 10, 19));
                 }
             }
 
             return [
                 'status' => "exist",
-                'audio' => $this->audio,
-                'video' => $this->video
+                'audio' => Arr::collapse($this->audio),
+                'audioTime' => $this->audioTime,
+                'video' => Arr::collapse($this->video),
+                'videoTime' => $this->videoTime
             ];
         } else {
             // nastesti neexistuje zadny zaznam

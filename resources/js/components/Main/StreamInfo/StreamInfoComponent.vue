@@ -1,6 +1,6 @@
 <template>
     <v-main class="mt-12">
-        <v-container>
+        <v-container fluid class="body-1">
             <!-- náhled na kanál -> komponent img -->
             <div
                 v-if="status === 'waiting' || status === 'stop'"
@@ -54,7 +54,8 @@ export default {
     data() {
         return {
             status: null,
-            todayEvent: null
+            todayEvent: null,
+            interval: null
         };
     },
 
@@ -95,7 +96,7 @@ export default {
     },
 
     mounted() {
-        setInterval(
+        this.interval = setInterval(
             function() {
                 try {
                     this.getStreamStatus();
@@ -109,6 +110,10 @@ export default {
             this.getStreamStatus();
             this.getTodayEvent();
         }
-    }
+    },
+
+    beforeDestroy: function() {
+        clearInterval(this.interval);
+    },
 };
 </script>

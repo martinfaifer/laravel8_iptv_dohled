@@ -3,6 +3,7 @@
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
 use App\Http\Controllers\CcErrorController;
+use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\EmailNotificationController;
 use App\Http\Controllers\FfmpegController;
 use App\Http\Controllers\FirewallController;
@@ -25,7 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-
+use Linfo\Linfo;
 
 Route::get('/', function () {
     return view('welcome');
@@ -44,6 +45,8 @@ Route::post('streamInfo/image', [StreamController::class, 'stream_info_image'])-
 Route::post('streamInfo/detail', [StreamController::class, 'stream_info_detail'])->middleware('firewall');
 // StreamInfo -> Výpis historie, posledních 10 zázamů
 Route::post('streamInfo/history/10', [StreamHistoryController::class, 'stream_info_history_ten'])->middleware('firewall');
+// StreamInfo -> Výpis historie, posledních 5 zázamů
+Route::post('streamInfo/history/5', [StreamHistoryController::class, 'stream_info_history_five'])->middleware('firewall');
 // StreamInfo -> Výpis z dokumentace pomocí api
 Route::post('streamInfo/doku', [StreamController::class, 'stream_info_doku'])->middleware('firewall');
 // StreamInfo -> Výpis CC Erorru do grafu
@@ -126,6 +129,8 @@ Route::post('user/delete', [UserController::class, 'user_delete'])->middleware('
 // systémové pozadavky
 Route::get('system', [SystemController::class, 'checkSystemUsage'])->middleware('firewall');
 
+
+Route::get('system/usage/areaChart', [SystemController::class, 'create_data_for_area_chart'])->middleware('firewall');
 Route::get('cpu', [SystemController::class, 'cpu'])->middleware('firewall');
 Route::get('ram', [SystemController::class, 'ram'])->middleware('firewall');
 Route::get('swap', [SystemController::class, 'swap'])->middleware('firewall');
@@ -146,7 +151,8 @@ Route::post("stream/edit", [StreamController::class, 'edit_stream'])->middleware
 Route::post("stream/delete", [StreamController::class, 'delete_stream'])->middleware('firewall');
 Route::post("stream/add", [StreamController::class, 'create_stream'])->middleware('firewall');
 Route::post("stream/issues", [StreamNotificationLimitController::class, 'get_information_for_editation'])->middleware('firewall');
-
+Route::post('stream/get_name_and_dohled', [StreamController::class, 'get_stream_name_and_dohled'])->middleware('firewall');
+Route::post('stream/mozaika/edit/save', [StreamController::class, 'mozaika_stream_small_edit'])->middleware('firewall');
 
 /**
  * FIREWALL
@@ -175,6 +181,7 @@ Route::post('notifications/delete', [EmailNotificationController::class, 'delete
 Route::post('notifications/edit', [EmailNotificationController::class, 'edit_email'])->middleware('firewall');
 
 
+
 /**
  * TESTING
  */
@@ -183,3 +190,21 @@ Route::post('notifications/edit', [EmailNotificationController::class, 'edit_ema
 //     date_default_timezone_set('Europe/Prague');
 //     return date('H:i', time());
 // });
+
+
+// Route::get('system/info/test', function () {
+//     $linfo = new Linfo();
+//     $parser = $linfo->getParser();
+//     // getNet
+
+//     return $parser->getNet();
+// });
+
+
+
+Route::get('tsDuck/arr', function () {
+    // ssome code
+
+    $tsDuckData = shell_exec("tsp -I ip š -P until -s 1 -P analyze --normalized -O drop");
+    return DiagnosticController::convert_tsduck_string_to_array($tsDuckData);
+});

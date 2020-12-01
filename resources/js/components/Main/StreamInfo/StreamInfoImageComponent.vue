@@ -90,13 +90,18 @@
 export default {
     data: () => ({
         stream: [],
-        streamId: null
+        streamId: null,
+        routeId: null
     }),
 
     created() {
         this.getStreamImage();
+        this.bindRouteId();
     },
     methods: {
+         bindRouteId() {
+            this.routeId = this.$route.params.id;
+        },
         getStreamImage() {
             window.axios
                 .post("streamInfo/image", {
@@ -107,13 +112,7 @@ export default {
                 });
         },
 
-        exitWebsocektChannels() {
-            Echo.leaveChannel("StreamImage" + this.$route.params.id);
-        },
-
         websocketData() {
-            Echo.leaveChannel("StreamImage" + this.$route.params.id);
-
             Echo.channel("StreamImage" + this.$route.params.id).listen(
                 "StreamImage",
                 e => {
@@ -131,7 +130,6 @@ export default {
     },
 
     mounted() {
-        // StreamImage
         Echo.channel("StreamImage" + this.$route.params.id).listen(
             "StreamImage",
             e => {
@@ -141,13 +139,21 @@ export default {
     },
     watch: {
         $route(to, from) {
+            this.bindRouteId();
             this.getStreamImage();
-            this.waitForConnectToWebsocket()
+            Echo.leaveChannel("StreamImage" + from.params.id);
+
+            Echo.channel("StreamImage" + to.params.id).listen(
+                "StreamImage",
+                e => {
+                    this.stream.image = e[0];
+                }
+            );
         },
     },
 
-    destroyed() {
-        Echo.leaveChannel("StreamImage" + this.$route.params.id);
+    beforeDestroy() {
+        Echo.leaveChannel("StreamImage" + this.routeId);
     }
 };
 </script>

@@ -17,8 +17,10 @@ use App\Models\StreamNotificationLimit;
 use Illuminate\Http\Request;
 use Illuminate\Log\Logger;
 use App\Jobs\SendSuccessEmail;
+use App\Models\StopedStream;
 use Illuminate\Support\Facades\Auth;
 use React\EventLoop\Factory;
+use Illuminate\Support\Facades\Cache;
 
 class StreamController extends Controller
 {
@@ -115,7 +117,7 @@ class StreamController extends Controller
      * @param string $streamToStartId
      * @return void
      */
-    public static function check_and_store_pid(string $processPid, string $streamToStartId): void
+    public static function check_and_store_pid(string $postion, string $processPid, string $streamToStartId): void
     {
 
         // ne vždy bude existovat ffmpegPid, takže s ním se nebude počítat protože se dohleduje v samostatném procesu
@@ -124,7 +126,7 @@ class StreamController extends Controller
             // uložení pidu do tabulky k streamu
 
             // pokud dorazil $processPid a ffmpegPid, uložení
-            Stream::where('id', $streamToStartId)->update(['process_pid' => intval($processPid), 'ffmpeg_pid' => $ffmpegPid ?? null]);
+            Stream::where('id', $streamToStartId)->update([$postion => intval($processPid)]);
             // vyhledání zda existuje záznam v tabulce stream_alerts se statusem start_error a stream_id streamu, co nyní spoustíme
             if (StreamAlert::where('stream_id', $streamToStartId)->where('status', "start_error")->first()) {
                 // existuje záznam, dojde k jeho odebrání
@@ -144,16 +146,15 @@ class StreamController extends Controller
             ]);
 
             // vyhledání, který pid nefunguje a killnutí pidu, který aktuálně funguje navíc, aby zbytečně nebral resourcess na serveru
-            sleep(6);
             if (SystemController::check_if_process_running(intval($processPid)) == "running") {
                 self::stop_diagnostic_stream_from_backend(intval($processPid));
             }
 
-            if (isset($ffmpegPid)) {
-                if (SystemController::check_if_process_running(intval($ffmpegPid)) == "running") {
-                    self::stop_diagnostic_stream_from_backend(intval($ffmpegPid));
-                }
-            }
+            // if (isset($ffmpegPid)) {
+            //     if (SystemController::check_if_process_running(intval($ffmpegPid)) == "running") {
+            //         self::stop_diagnostic_stream_from_backend(intval($ffmpegPid));
+            //     }
+            // }
         }
     }
 
@@ -163,18 +164,24 @@ class StreamController extends Controller
      *
      * @return void
      */
-    public static function start_all_streams_for_diagnostic()
+    public static function start_all_streams_for_diagnostic(): void
     {
         //vyhledání streamů, které mají process_pid == null , ffmpeg_pid == null a status má hodnoty jiné nez success , running nebo stop
         if (Stream::where('process_pid', null)->where('dohledovano', true)->where('status', "!=", 'stop')->first()) {
             // existuje minimálně jeden stream. který má process_pid == null a zároveň nemá status stop
             foreach (Stream::where('process_pid', null)->where('dohledovano', true)->where('status', "!=", 'stop')->get() as $streamToStart) {
+                if (!StopedStream::where('streamId', "!=", $streamToStart->id)->first()) {
 
-                // pro každý stream spustí diagnostiku
-                // spustení příkazu a vrácení pidu
-                $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToStart->stream_url} {$streamToStart->id}" . ' > /dev/null 2>&1 & echo $!; ');
+                    // otevreni socketu, pokud jiz nebyl otevren
+                    $socketPid = shell_exec("nohup php artisan command:openStreamSocket " . $streamToStart->id . " " . null . " > /dev/null 2>&1 & echo $!; ");
+                    self::check_and_store_pid("socket_process_pid", $socketPid, $streamToStart->id);
 
-                self::check_and_store_pid($processPid, $streamToStart->id);
+                    // pro každý stream spustí diagnostiku
+                    // spustení příkazu a vrácení pidu
+                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToStart->stream_url} {$streamToStart->id}" . ' > /dev/null 2>&1 & echo $!; ');
+
+                    self::check_and_store_pid("process_pid", $processPid, $streamToStart->id);
+                }
             }
         }
     }
@@ -186,7 +193,7 @@ class StreamController extends Controller
      * @param int $pid
      * @return void
      */
-    public static function stop_diagnostic_stream_from_backend($pid)
+    public static function stop_diagnostic_stream_from_backend($pid): void
     {
         shell_exec("kill {$pid}");
     }
@@ -219,6 +226,11 @@ class StreamController extends Controller
                                 'status' => "stop"
                             ]
                         );
+
+                        // vytvorení záznamu do stopstreams
+                        StopedStream::create([
+                            'streamId' => $request->streamId
+                        ]);
                         // odeslání informace do frontendu
                         return [
                             'status' => "success",
@@ -279,22 +291,23 @@ class StreamController extends Controller
 
         // event loop
         // $eventLoop = Factory::create();
-        // $timer = $eventLoop->addPeriodicTimer(5, function () {
-        if (Stream::where('process_pid', "!=", null)->where('dohledovano', true)->first()) {
-            foreach (Stream::where('process_pid', "!=", null)->where('dohledovano', true)->get() as $streamWithProcessPid) {
+        // $timer = $eventLoop->addPeriodicTimer(1, function () {
+        if (Stream::where('process_pid', "!=", null)->where('status', "!=", "stop")->where('dohledovano', true)->first()) {   // => zde se berou vsechny streamy, které by se měli dohledovat respektive, které se dohledují
+            foreach (Stream::where('process_pid', "!=", null)->where('dohledovano', true)->where('status', "!=", "stop")->get() as $streamWithProcessPid) {
                 if (SystemController::check_if_process_running(intval($streamWithProcessPid->process_pid)) != "running") {
+                    //
                     // ukocení streamu
-
                     self::stop_diagnostic_stream_from_backend(intval($streamWithProcessPid->process_pid));
+
                     if (!is_null($streamWithProcessPid->ffmpeg_pid)) {
                         self::stop_diagnostic_stream_from_backend(intval($streamWithProcessPid->ffmpeg_pid));
                     }
 
                     // spustení streamu
-
-
-                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamWithProcessPid->stream_url} {$streamWithProcessPid->id}" . ' > /dev/null 2>&1 & echo $!; ');
-                    self::check_and_store_pid(intval($processPid), $streamWithProcessPid->id);
+                    if (!StopedStream::where('streamId', $streamWithProcessPid->id)->first()) {
+                        $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamWithProcessPid->stream_url} {$streamWithProcessPid->id}" . ' > /dev/null 2>&1 & echo $!; ');
+                        self::check_and_store_pid("process_pid", intval($processPid), $streamWithProcessPid->id);
+                    }
                 }
             }
         }
@@ -305,7 +318,7 @@ class StreamController extends Controller
     /**
      * funkce pro ukončení všech streamů co aktuálně fungují
      *
-     * u každého streamu proběhne update process_pid = null ffmpeg_pid = null status = waiting
+     * u každého streamu proběhne update process_pid => null ffmpeg_pid => null status => waiting , socket_process_pid => null
      *
      * @return array
      */
@@ -324,7 +337,19 @@ class StreamController extends Controller
                     self::stop_diagnostic_stream_from_backend($streamProUkonceni->process_pid);
                 }
 
-                Stream::where('id', $streamProUkonceni->id)->update(['status' => "waiting", 'process_pid' => null, 'ffmpeg_pid' => null]);
+                if (!is_null($streamProUkonceni->socket_process_pid)) {
+                    self::stop_diagnostic_stream_from_backend($streamProUkonceni->socket_process_pid);
+                }
+
+                Stream::where('id', $streamProUkonceni->id)
+                    ->update(
+                        [
+                            'status' => "waiting",
+                            'process_pid' => null,
+                            'ffmpeg_pid' => null,
+                            'socket_process_pid' => null
+                        ]
+                    );
             }
 
             return [
@@ -476,25 +501,51 @@ class StreamController extends Controller
 
 
     /**
-     * funkce na získání detailních informací o streamu
+     * funkce na získání detailních informací o streamu z Cache
      *
      * @param Request $request->streamId
-     * @return array | redirect
+     * @return array
      */
-    public function stream_info_detail(Request $request)
+    public function stream_info_detail(Request $request): array
     {
-        // overení zda existuje stream s tímto id
-        if (Stream::where('id', $request->streamId)->first()) {
 
-            return [
-                'audio' => StreamAudio::where('stream_id', $request->streamId)->first() ?? null,
-                'video' => StreamVideo::where('stream_id', $request->streamId)->first() ?? null,
-                'service' => StreamService::where('stream_id', $request->streamId)->first() ?? null,
-                'ca' => StreamCa::where('stream_id', $request->streamId)->first() ?? null,
-            ];
-        } else {
-            redirect(404);
+        $video = null;
+        $audio = null;
+        $ca = null;
+
+        // vyhledání záznamu z cache pro video
+        if (Cache::has($request->streamId . "_video")) {
+            $video = Cache::get($request->streamId . "_video");
         }
+
+        // cache pro audio
+        if (Cache::has($request->streamId . "_audio")) {
+            $audio = Cache::get($request->streamId . "_audio");
+        }
+
+        // cache pro ca
+        if (Cache::has($request->streamId . "_ca")) {
+            $ca = Cache::get($request->streamId . "_ca");
+        }
+
+        return [
+            'audio' => $audio,
+            'video' => $video,
+            'ca' => $ca
+        ];
+
+        // overení zda existuje stream s tímto id
+        // if (Stream::where('id', $request->streamId)->first()) {
+
+        //     return [
+        //         'audio' => StreamAudio::where('stream_id', $request->streamId)->first() ?? null,
+        //         'video' => StreamVideo::where('stream_id', $request->streamId)->first() ?? null,
+        //         'service' => StreamService::where('stream_id', $request->streamId)->first() ?? null,
+        //         'ca' => StreamCa::where('stream_id', $request->streamId)->first() ?? null,
+        //     ];
+        // } else {
+        //     redirect(404);
+        // }
     }
 
     /**
@@ -579,9 +630,20 @@ class StreamController extends Controller
             ];
         }
         if ($request->dohledovano) {
-            $status = "success";
+            $status = "waiting";
+            // odebrání z tabulky stopedStreams
+            StopedStream::where('streamId', $request->streamId)->delete();
         } else {
             $status = "stop";
+            $streamData = Stream::where('id', $request->sreamId)->first();
+            // kill vsech procesů co běží na pozadí u streamu
+            self::stop_diagnostic_stream_from_backend($streamData->process_pid);
+            self::stop_diagnostic_stream_from_backend($streamData->socket_process_pid);
+
+            // založení do stopedStreams
+            StopedStream::create([
+                'streamId' => $request->streamId
+            ]);
         }
 
         if ($request->streamIssues) {
@@ -639,8 +701,9 @@ class StreamController extends Controller
         $stream = Stream::where('id', $request->streamId)->first();
 
         // killnuti procesu pro diagnostiku
-        if (!is_null($stream->process_pid)) {
+        if (!is_null($stream->process_pid) || !is_null($stream->socket_process_pid)) {
             self::stop_diagnostic_stream_from_backend($stream->process_pid);
+            self::stop_diagnostic_stream_from_backend($stream->socket_process_pid);
         }
 
 
@@ -659,7 +722,6 @@ class StreamController extends Controller
         if ($stream->image != "false") {
             if (file_exists(public_path($stream->image))) {
                 // Náhled existuje => odebrání náhledu z filesystemu
-                dd("existuje");
                 unlink(public_path($stream->image));
             }
         }
@@ -881,6 +943,118 @@ class StreamController extends Controller
                 $multicastData, $h264Data, $h265Data
 
             ]
+        ];
+    }
+
+
+
+    /**
+     * fn pro prihlášení multicástů per stream
+     *
+     * pokud stream nabyde statusu stop => ukocení
+     *
+     *
+     *
+     * @param string $streamId
+     * @return void
+     */
+    public static function hold_multicast_per_stream(string $streamId, $kill = null): void
+    {
+        // event loop per stream
+        $eventLoop = Factory::create();
+
+        // loop, kdy se kazdou "s" testuje ctení
+        $eventLoop->addPeriodicTimer(1, function () use ($streamId, $kill) {
+
+            $stream = Stream::where('id', $streamId)->first();
+
+            // rozlození url na uri a port
+
+            $url = explode(":", $stream->stream_url);
+
+            $socket = socket_create(AF_INET, SOCK_RAW, SOL_UDP);
+            $result = socket_connect($socket, $url[0], $url[1]);
+            if ($result === false) {
+
+                socket_close($socket);
+            } else {
+                socket_close($socket);
+                $socket = socket_create(AF_INET, SOCK_RAW, SOL_UDP);
+                socket_bind($socket, $url[0], $url[1]);
+
+                $buf = "";
+
+                socket_recv($socket, $buf, 2048, MSG_WAITALL);
+            }
+
+
+            // ukončení event loopu
+
+            if (!is_null($kill)) {
+                // odpojení od socketu
+                socket_close($socket);
+            }
+        });
+
+        $eventLoop->run();
+    }
+
+
+    /**
+     * fn pro získání názvu a stavu o dohledování dle streamId
+     *
+     * @param Request $request->streamId
+     * @return array
+     */
+    public function get_stream_name_and_dohled(Request $request): array
+    {
+        if (!Stream::where('id', $request->streamId)->first()) {
+            return [
+                'status' => "error",
+            ];
+        }
+
+        $stream = Stream::where('id', $request->streamId)->first();
+        return [
+            'status' => "success",
+            'stream_name' => $stream->nazev,
+            'dohledovano' => $stream->dohledovano
+        ];
+    }
+
+
+    /**
+     * fn pro zakladní editaci nazvu a stavu dohledování kanálu
+     *
+     * @param Request $request->streamId, streamName, dohledovano
+     * @return array
+     */
+    public function mozaika_stream_small_edit(Request $request): array
+    {
+        if (!Stream::where('id', $request->streamId)->first()) {
+            return [
+                'status' => "error",
+            ];
+        }
+
+        // update zaznamu
+        if (empty($request->streamName)) {
+            return [
+                'isAlert' => "isAlert",
+                'status' => "warning",
+                'msg' => "Chybí vyplnit název!"
+            ];
+        }
+
+
+        Stream::where('id', $request->streamId)->update([
+            'nazev' => $request->streamName,
+        ]);
+
+        return [
+            'isAlert' => "isAlert",
+            'status' => "success",
+            'msg' => "Stream byl editován!"
         ];
     }
 }

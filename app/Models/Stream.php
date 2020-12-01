@@ -33,6 +33,7 @@ class Stream extends Model
         'sendSmsAlert',
         'status',
         'process_pid',
-        'ffmpeg_pid'
+        'ffmpeg_pid',
+        'socket_process_pid'
     ];
 }

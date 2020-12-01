@@ -33,7 +33,7 @@
             <!-- user Part -->
 
             <template v-if="$vuetify.breakpoint.smAndUp">
-                <v-menu transition="scroll-y-transition">
+                <v-menu transition="scroll-y-transition" class="body-1">
                     <template v-slot:activator="{ on }">
                         <v-btn class="white--text" fab icon v-on="on">
                             <v-avatar color="transparent" small>
@@ -60,9 +60,18 @@
                         </v-btn>
                     </template>
                     <v-list width="250px" class="text-center subtitle-2">
+                        <!-- theme change -->
+                        <v-list-item>
+                            <v-list-item-content>
+                                Dark mode<v-spacer></v-spacer>
+                            </v-list-item-content>
+
+                            <v-switch dense v-model="$vuetify.theme.dark" />
+                        </v-list-item>
+                        <!-- end theme change -->
                         <v-list-item link to="/user/prehled">
                             Editace <v-spacer></v-spacer
-                            ><v-icon color="grey" right small
+                            ><v-icon color="#DAE0E2" right small
                                 >mdi-account-cog-outline</v-icon
                             >
                         </v-list-item>
@@ -72,14 +81,14 @@
                             to="/settings/prehled"
                         >
                             Nastavení App<v-spacer></v-spacer
-                            ><v-icon color="grey" right small
+                            ><v-icon color="#00CCCD" right small
                                 >mdi-settings</v-icon
                             >
                         </v-list-item>
                         <v-divider></v-divider>
                         <v-list-item @click="logOut()">
                             Odhlásit se <v-spacer></v-spacer
-                            ><v-icon color="grey" right small>mdi-lock</v-icon>
+                            ><v-icon color="red" right small>mdi-lock</v-icon>
                         </v-list-item>
 
                         <v-divider v-show="isIptvDoku == 'success'"></v-divider>
@@ -134,33 +143,51 @@
             temporary
             color="transparent"
         >
-            <div
-                id="alerty"
-                class="pl-2 pr-2"
-                v-for="alert in alerts"
-                :key="alert.id"
-            >
-                <v-alert
-                    dense
-                    border="left"
-                    :type="alert.status"
-                    class="body-2 mt-2"
+            <div v-if="alertCount != '0'">
+                <div
+                    id="alerty"
+                    class="pl-2 pr-2"
+                    v-for="alert in alerts"
+                    :key="alert.id"
                 >
-                    <strong>{{ alert.msg }}</strong>
-                    <div v-show="alert.data">
-                        <v-row
-                            class="ml-1"
-                            v-for="issueData in alert.data"
-                            :key="issueData.id"
+                    <v-alert
+                        v-if="alertCount != '0'"
+                        dense
+                        border="left"
+                        :type="alert.status"
+                        class="body-2 mt-2"
+                    >
+                        <strong>{{ alert.msg }}</strong>
+                        <div v-show="alert.data">
+                            <v-row
+                                class="ml-1"
+                                v-for="issueData in alert.data"
+                                :key="issueData.id"
+                            >
+                                <small>
+                                    <strong>
+                                        {{ issueData.message }}
+                                    </strong>
+                                </small>
+                            </v-row>
+                        </div>
+                    </v-alert>
+                </div>
+            </div>
+            <!--  -->
+            <div v-else>
+                <div class="pl-2 pr-2">
+                    <v-alert
+                        dense
+                        border="left"
+                        type="success"
+                        class="body-2 mt-2"
+                    >
+                        <strong
+                            >Všechny dohledované streamy jsou funknčí</strong
                         >
-                            <small>
-                                <strong>
-                                    {{ issueData.message }}
-                                </strong>
-                            </small>
-                        </v-row>
-                    </div>
-                </v-alert>
+                    </v-alert>
+                </div>
             </div>
         </v-navigation-drawer>
 
@@ -213,7 +240,7 @@ export default {
         drawer: null,
         userMenu: null,
         alerts: [],
-        alertCount: "",
+        alertCount: "0",
         newNotifications: [],
         userRole: null,
 
@@ -273,9 +300,15 @@ export default {
         },
         loadAlerts() {
             window.axios.get("/streamAlerts").then(response => {
-                this.alerts = response.data;
-                this.$store.commit("updateAlert", response.data);
-                this.alertCount = response.data.length;
+                if (response.data.length === 0) {
+                    this.alerts = response.data;
+                    this.$store.commit("updateAlert", response.data);
+                    this.alertCount = "0";
+                } else {
+                    this.alerts = response.data;
+                    this.$store.commit("updateAlert", response.data);
+                    this.alertCount = response.data.length;
+                }
             });
         },
 

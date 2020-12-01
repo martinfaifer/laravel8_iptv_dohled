@@ -33,6 +33,20 @@
                     </v-btn>
                 </v-card-title>
                 <v-data-table
+                    v-if="emails === null"
+                    dense
+                    loading
+                    loading-text="Načítají se data"
+                >
+                </v-data-table>
+                <v-data-table
+                    v-if="emails.status === 'empty'"
+                    dense
+                    no-data-text="Nejsou zde žádná data"
+                >
+                </v-data-table>
+                <v-data-table
+                    v-else
                     dense
                     :headers="header"
                     :items="emails"

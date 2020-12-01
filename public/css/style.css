@@ -1,3 +1,9 @@
+body {
+    background-color: #121212;
+  }
+
+  /* inspire -> scss convert */
+
 .v-card--reveal {
     align-items: center;
     bottom: 0;

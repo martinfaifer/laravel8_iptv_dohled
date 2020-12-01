@@ -16,8 +16,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Cache;
 use App\Events\StreamInfoAudioBitrate;
+use App\Events\StreamInfoCa;
 use App\Events\StreamInfoHistory;
+use App\Events\StreamInfoService;
 use App\Events\StreamInfoTsVideoBitrate;
 use App\Events\StreamNotification;
 use App\Jobs\add_ccError;
@@ -29,6 +32,7 @@ use App\Jobs\StreamInfoTsVideoBitrateJob;
 use App\Jobs\StreamNotificationLimit;
 use App\Models\AudioBitrate;
 use App\Models\ChannelsWhichWaitingForNotification;
+use App\Models\StopedStream;
 use App\Models\Stream;
 use App\Models\StreamAlert;
 use App\Models\StreamAudio;
@@ -42,6 +46,8 @@ use App\Models\StreamVideo;
 use App\Models\VideoBitrate;
 use Illuminate\Support\Arr;
 use React\EventLoop\Factory;
+use React\Promise\Deferred;
+
 
 class DiagnosticController extends Controller
 {
@@ -52,7 +58,7 @@ class DiagnosticController extends Controller
      * @param string $tsduckString
      * @return array
      */
-    public static function convert_tsduck_string_to_array(string $tsduckString)
+    public static function convert_tsduck_string_to_array(string $tsduckString): array
     {
         // definice proměnné, do které se budou ukladat zpracovaná data ze stringu
         $output = array();
@@ -131,131 +137,161 @@ class DiagnosticController extends Controller
      */
     public static function stream_realtime_diagnostic_and_return_status(string $streamUrl, string $streamId)
     {
-        $loop = "start";
-        while ($loop == "start") {
+
+        /**
+         * ---------------------------------------------------------------------------------------------------------------------------------------
+         * EVENT LOOP
+         * vše co je v eventLoop , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
+         * ---------------------------------------------------------------------------------------------------------------------------------------
+         */
+        $eventLoop = Factory::create();
+
+
+        $eventLoop->addPeriodicTimer(1, function () use ($streamId, $streamUrl) {
+            // definice promisu
+            $promise = new Deferred();
+
+            // overení zda stream nemá status stop
             // získání informací o streamu
-            $streamInfoData = Stream::where('id', $streamId)->first();
+            if ($streamInfoData = Stream::where('id', $streamId)->first()) {
+                if (!StopedStream::where('streamId', "!=", $streamId)->first()) {
 
-            // spuštění tsducku pro diagnostiku kanálu
-            $tsDuckData = shell_exec("timeout --foreground 2s tsp -I http {$streamUrl} -P until -s 1 -P analyze --normalized -O drop");
+                    // spuštění tsducku pro diagnostiku kanálu ip = multicast http = hls
+                    $tsDuckData = shell_exec("timeout -s SIGKILL 2 tsp -I ip {$streamUrl} -P until -s 1 -P analyze --normalized -O drop");
 
-            // ověření zda analýza selhala či nikoliv
-            if (empty($tsDuckData)) {
+                    // zde neco co mi bude hlídat, zda tsDuckData se rádně ukoncil a zda vrátil nějakou hodnotu
 
-                // analýza selhala, kanál nejspíše není funkční
-                // kanál nyní označíme jako nefunkční, aktualizujeme status kanálu a následně uložíme do historie, pro budoucí výpis
-                // před aktualizací statusu, oveření zda kanál již posledním uloženým statusem není označen jako nefunkční
+                    // ověření zda analýza selhala či nikoliv
+                    if (empty($tsDuckData)) {
 
-                FFprobeController::ffprobe_diagnostic($streamUrl, $streamId, null);
+                        // analýza selhala, kanál nejspíše není funkční
+                        // kanál nyní označíme jako nefunkční, aktualizujeme status kanálu a následně uložíme do historie, pro budoucí výpis
+                        // před aktualizací statusu, oveření zda kanál již posledním uloženým statusem není označen jako nefunkční
+
+                        FFprobeController::ffprobe_diagnostic($streamUrl, $streamId, null);
+                    }
+                    // stream funguje
+                    // vyčtou se ze streamu všechna možná data, která případně pomohou diagnostikovat chyby ve streamu
+                    // převod stringu do pole
+                    else {
+                        // fn pro převedení stringu do pole
+                        $tsduckArr = self::convert_tsduck_string_to_array($tsDuckData);
+
+                        // overení, ze se jedná skotecne o pole
+                        if (is_array($tsduckArr)) {
+                            // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+                            if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                                // odebrání záznamu z tabulky
+                                ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
+                            }
+
+                            // zpracování pole
+                            // vyhledání specifických klíčů, dle kterých se pole zpracuje
+                            if (array_key_exists('ts', $tsduckArr)) {
+                                // pokud je vse v poradku vraci pole "status" => "success"
+                                // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
+                                $ts_data = self::collect_transportStream_from_tsduckArr($tsduckArr["ts"], $streamId);
+                            }
+
+                            // kontrola, zda pid není roven 0 , pokud ano, vypadá to, že stream je bez audia
+                            // vytvoření podminky, kdy se nemá kontrolovat zvuk u videa
+                            if ($streamInfoData->dohledVolume == true) {
+                                if (array_key_exists('global', $tsduckArr)) {
+                                    // pokud je vse v poradku vraci pole "status" => "success"
+                                    // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
+                                    $global_data = self::collect_global_from_tsduckArr($tsduckArr["global"], $streamId);
+                                }
+                            } else {
+                                $global_data = [
+                                    'status' => "success"
+                                ];
+                            }
+
+                            // zobrazení servisních informací
+                            if (array_key_exists('service', $tsduckArr)) {
+                                self::collect_service_from_tsduckArr($tsduckArr["service"], $streamId);
+                            }
+
+
+                            // array || null video, array || null audio, array || null ca
+                            // tato funkce je nejdulezitejsi z cele diagnostiky
+                            if (array_key_exists('pids', $tsduckArr)) {
+                                $pids = self::collect_pids_from_tsduckArr($tsduckArr["pids"]);
+
+                                // Zpracování pidů
+                                // od teto analýzy se odvíjí téměř veškeré informace o streamu
+
+                                // pokud je vse v poradku vraci pole "status" => "success"
+                                // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
+                                $pids_data = self::analyze_pids_and_storeData($pids, $streamId, $streamUrl);
+                            }
+
+                            // analyzování výstupu z jednotlivých podruzných funkcí
+                            // nesmí nic být hodnoty null
+                            if (!is_null($ts_data["status"]) || !is_null($global_data["status"]) || !is_null($pids_data["status"])) {
+                                if ($ts_data["status"] != "success" || $global_data["status"] != "success" || $pids_data["status"] != "success") {
+                                    // update záznamu na issue
+
+
+                                    if (!StopedStream::where('streamId', $streamId)->first()) {
+                                        if ($streamInfoData->status != "issue") {
+                                            // ZMĚNA STAVU Z SUCCESS NEBO ERROR NA ISSUE
+                                            dispatch(new Diagnostic_Stream_update($streamId, "issue"));
+                                        }
+
+                                        // zpracování alertů
+                                        // vyhledání zda existuje v poly klic "dataAlert"
+                                        if (array_key_exists("dataAlert", $ts_data)) {
+                                            dispatch(new Diagnostic_Status_Update($streamId, $ts_data["dataAlert"]));
+                                        }
+
+                                        if (array_key_exists("dataAlert", $pids_data)) {
+                                            dispatch(new Diagnostic_Status_Update($streamId, $pids_data["dataAlert"]));
+                                        }
+
+                                        if (array_key_exists("dataAlert", $global_data)) {
+                                            dispatch(new Diagnostic_Status_Update($streamId, $global_data["dataAlert"]));
+                                        }
+                                    } else {
+                                        dispatch(new Diagnostic_Stream_update($streamId, "stop"));
+                                    }
+                                } else {
+                                    if (!StopedStream::where('streamId', $streamId)->first()) {
+                                        // NEBYLA NALEZENA ŽÁDNÁ CHYBA, ZMĚNA STAVU Z ISSUE NEBO ERROR NA SUCCESS
+                                        if ($streamInfoData->status != "success") {
+                                            // UPDATE ZÁZNAMU
+                                            dispatch(new Diagnostic_Stream_update($streamId, "success"));
+                                        }
+                                    } else {
+                                        dispatch(new Diagnostic_Stream_update($streamId, "stop"));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                unset($tsDuckData);
+                unset($global_data);
+                unset($tsduckArr);
+                unset($ts_data);
+                unset($pids);
+                unset($pids_data);
             }
 
-            // stream funguje
-            // vyčtou se ze streamu všechna možná data, která případně pomohou diagnostikovat chyby ve streamu
-            // převod stringu do pole
-            else {
-                // fn pro převedení stringu do pole
-                $tsduckArr = self::convert_tsduck_string_to_array($tsDuckData);
+            /**
+             * DESTROY EVERYTHING
+             */
 
-                // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
-                if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-                    // odebrání záznamu z tabulky
-                    ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
-                }
+            unset($tsDuckData);
+            unset($global_data);
+            unset($tsduckArr);
+            unset($ts_data);
+            unset($pids);
+            unset($pids_data);
+        });
 
-                /**
-                 * ---------------------------------------------------------------------------------------------------------------------------------------
-                 * EVENT LOOP
-                 * vše co je v eventLoop , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
-                 * ---------------------------------------------------------------------------------------------------------------------------------------
-                 */
-                $eventLoop = Factory::create();
-
-                // zpracování pole
-                // vyhledání specifických klíčů, dle kterých se pole zpracuje
-                if (array_key_exists('ts', $tsduckArr)) {
-                    // pokud je vse v poradku vraci pole "status" => "success"
-                    // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
-                    $ts_data = self::collect_transportStream_from_tsduckArr($tsduckArr["ts"], $streamId);
-                }
-
-                // kontrola, zda pid není roven 0 , pokud ano, vypadá to, že stream je bez audia
-                // vytvoření podminky, kdy se nemá kontrolovat zvuk u videa
-                if ($streamInfoData->dohledVolume == true) {
-                    if (array_key_exists('global', $tsduckArr)) {
-                        // pokud je vse v poradku vraci pole "status" => "success"
-                        // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
-                        $global_data = self::collect_global_from_tsduckArr($tsduckArr["global"], $streamId);
-                    }
-                } else {
-                    $global_data = [
-                        'status' => "success"
-                    ];
-                }
-
-                // if (array_key_exists('service', $tsduckArr)) {
-                // self::collect_service_from_tsduckArr($tsduckArr["service"], $streamId);
-                // }
-
-                // array || null video, array || null audio, array || null ca
-                // tato funkce je nejdulezitejsi z cele diagnostiky
-                if (array_key_exists('pids', $tsduckArr)) {
-                    $pids = self::collect_pids_from_tsduckArr($tsduckArr["pids"]);
-
-                    // Zpracování pidů
-                    // od teto analýzy se odvíjí téměř veškeré informace o streamu
-
-                    // pokud je vse v poradku vraci pole "status" => "success"
-                    // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["streamId" => $streamId, "status" => "status", "message" => "message"]
-                    $pids_data = self::analyze_pids_and_storeData($pids, $streamId, $streamUrl);
-                }
-
-                $eventLoop->run();
-
-
-                // analyzování výstupu z jednotlivých podruzných funkcí
-                if ($ts_data["status"] != "success" || $global_data["status"] != "success" || $pids_data["status"] != "success") {
-                    // update záznamu na issue
-
-
-                    /**
-                     * ---------------------------------------------------------------------------------------------------------------------------------------
-                     * EVENT LOOP
-                     * vše co je v eventLoop , funguje async => rychlejší odbavení / zpracování dat bez nutnosti cekání, I/O no blocking
-                     * ---------------------------------------------------------------------------------------------------------------------------------------
-                     */
-                    $eventLoop = Factory::create();
-                    if ($streamInfoData->status != "issue") {
-                        // ZMĚNA STAVU Z SUCCESS NEBO ERROR NA ISSUE
-                        dispatch(new Diagnostic_Stream_update($streamId, "issue"));
-                    }
-
-                    // zpracování alertů
-                    // vyhledání zda existuje v poly klic "dataAlert"
-                    if (array_key_exists("dataAlert", $ts_data)) {
-                        dispatch(new Diagnostic_Status_Update($streamId, $ts_data["dataAlert"]));
-                    }
-
-                    if (array_key_exists("dataAlert", $pids_data)) {
-                        dispatch(new Diagnostic_Status_Update($streamId, $pids_data["dataAlert"]));
-                    }
-
-                    if (array_key_exists("dataAlert", $global_data)) {
-                        dispatch(new Diagnostic_Status_Update($streamId, $global_data["dataAlert"]));
-                    }
-                    $eventLoop->run(); // konec event loopu
-                } else {
-                    // NEBYLA NALEZENA ŽÁDNÁ CHYBA, ZMĚNA STAVU Z ISSUE NEBO ERROR NA SUCCESS
-                    if ($streamInfoData->status != "success") {
-                        // UPDATE ZÁZNAMU
-                        dispatch(new Diagnostic_Stream_update($streamId, "success"));
-                    }
-                }
-            }
-            // zastavení scriptu na x sekund, pro případný overlapping a odlehčení databaze
-            sleep(3);
-        } // konec foreache
+        $eventLoop->run();
     }
-
 
     /**
      * funkce, která z analyzuje veské informace o pidech
@@ -281,6 +317,11 @@ class DiagnosticController extends Controller
     public static function analyze_pids_and_storeData(array $pids, string $streamId, string $streamUrl): array
     {
 
+
+        $cache_video = array();
+        $cache_audio = array();
+        $cache_ca = array();
+
         // zpracování videa
         // kontrola statusu access
         // zaznamenání video datového toku , scrambled, discontinuities
@@ -303,7 +344,7 @@ class DiagnosticController extends Controller
             $discontinuities = $pids['video']['discontinuities'];
             $scrambled = $pids['video']['scrambled'];
 
-            event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate'], $videoPid, $discontinuities, $scrambled));
+            event(new StreamInfoTsVideoBitrate($streamId, $pids['video']['bitrate'], $videoPid, $discontinuities, $scrambled, $videoAccess));
         }
 
 
@@ -355,43 +396,15 @@ class DiagnosticController extends Controller
          */
         if (isset($videoPid) && isset($videoAccess) && isset($discontinuities) && isset($scrambled) && isset($videoBitrate)) {
 
-            // kontrola zda existuje záznam v tabulce stream_videos
-            // pokud nebude existovat záznam => založí se nový
 
-            if ($streamVideoData = StreamVideo::where('stream_id', $streamId)->first()) {
-                // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
-                // streamVideoData obsahuje pole
-
-                if ($streamVideoData['pid'] != (int) $videoPid) {
-                    StreamVideo::where('stream_id', $streamId)->update(['pid' => $videoPid]);
-                }
-
-                if ($streamVideoData['access'] != $videoAccess) {
-                    StreamVideo::where('stream_id', $streamId)->update(['access' => $videoAccess]);
-                }
-
-                if ($streamVideoData['discontinuities'] != $discontinuities) {
-                    StreamVideo::where('stream_id', $streamId)->update(['discontinuities' => $discontinuities]);
-                    dispatch(new add_ccError($streamId, $discontinuities, "video"));
-                }
-
-                if ($streamVideoData['scrambled'] != $scrambled) {
-                    StreamVideo::where('stream_id', $streamId)->update(['scrambled' => $scrambled]);
-                }
-
-                StreamVideo::where('stream_id', $streamId)->update(['bitrate' => $videoBitrate]);
-            } else {
-
-                // uložení záznamu bez
-                StreamVideo::create([
-                    'stream_id' => $streamId,
-                    'pid' => (int) $videoPid,
-                    'access' => $videoAccess,
-                    'discontinuities' => $discontinuities,
-                    'scrambled' => $scrambled,
-                    'bitrate' => $videoBitrate
-                ]);
-            }
+            // cache video pole
+            // $cache_video = array(
+            //     'pid' => (int) $videoPid,
+            //     'access' => $videoAccess,
+            //     'discontinuities' => $discontinuities,
+            //     'scrambled' => $scrambled,
+            //     'bitrate' => $videoBitrate
+            // );
         }
 
         /**
@@ -402,61 +415,17 @@ class DiagnosticController extends Controller
 
         if (isset($audioBitrate) && isset($audioPid) && isset($audioDiscontinuities) && isset($audioScrambled) && isset($audioLanguage) && isset($audioAccess)) {
 
-            // kontrola zda existuje záznam v tabulce stream_audios
-            // pokud nebude existovat záznam => založí se nový
+            // cache audio pole
+            // $cache_audio = array(
+            //     'pid' => (int) $audioPid,
+            //     'access' => $audioAccess,
+            //     'discontinuities' => $audioDiscontinuities,
+            //     'scrambled' => $audioScrambled,
+            //     'language' => $audioLanguage,
+            //     'bitrate' => $audioBitrate
+            // );
 
             event(new StreamInfoAudioBitrate($streamId, $pids['audio']['bitrate'], $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess));
-
-            if ($streamAudioData = StreamAudio::where('stream_id', $streamId)->first()) {
-                // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
-                // streamVideoData obsahuje pole
-                if ($streamAudioData['pid'] != (int) $audioPid) {
-                    StreamAudio::where('stream_id', $streamId)->update(['pid' => $audioPid]);
-                }
-
-                if ($streamAudioData['access'] != $audioAccess) {
-                    StreamAudio::where('stream_id', $streamId)->update(['access' => $audioAccess]);
-                }
-
-                if ($streamAudioData['discontinuities'] != $audioDiscontinuities) {
-                    StreamAudio::where('stream_id', $streamId)->update(['discontinuities' => $audioDiscontinuities]);
-                    dispatch(new add_ccError($streamId, $audioDiscontinuities, "audio"));
-                }
-
-                if ($streamAudioData['scrambled'] != $audioScrambled) {
-                    StreamAudio::where('stream_id', $streamId)->update(['scrambled' => $audioScrambled]);
-                }
-
-                //  pokud se změní jazyková stopa ==> ALERT jelikož se mění výstup i uživatelům do TV
-                if ($streamAudioData['language'] != $audioLanguage) {
-                    StreamAudio::where('stream_id', $streamId)->update(['language' => $audioLanguage]);
-
-                    // vytvoření alertu do Tabulky StreamAlerts
-                    // vyhledání, zda již existuje záznam
-                    if (!StreamAlert::where('stream_id', $streamId)->where('status', "audio_warning")->first()) {
-                        // záznam neexistuje
-                        StreamAlert::create([
-                            'stream_id' => $streamId,
-                            'status' => "audio_warning",
-                            'message' => "Změněna jazyková stopa!"
-                        ]);
-                    }
-                }
-
-                StreamAudio::where('stream_id', $streamId)->update(['bitrate' => $audioBitrate]);
-            } else {
-
-                // uložení záznamu bez bitrate
-                StreamAudio::create([
-                    'stream_id' => $streamId,
-                    'pid' => (int) $audioPid,
-                    'access' => $audioAccess,
-                    'discontinuities' => $audioDiscontinuities,
-                    'scrambled' => $audioScrambled,
-                    'language' => $audioLanguage,
-                    'bitrate' => $audioBitrate
-                ]);
-            }
         }
 
         // Dispatch JOB pouze pokud hodnoty jsou jiné než 0 až na videoBitrate
@@ -475,35 +444,17 @@ class DiagnosticController extends Controller
 
         if (isset($caScrambled) && isset($caAccess)) {
 
-            // kontrola zda existuje záznam v tabulce stream_cas
-            // pokud nebude existovat záznam => založí se nový
+            // $cache_ca = array(
+            //     'description' => $caDescription ?? null,
+            //     'access' => $caAccess,
+            //     'scrambled' => $caScrambled
+            // );
 
-            if ($streamCaData = StreamCa::where('stream_id', $streamId)->first()) {
-                // záznam existuje, proběhne kontrola jednotlivých dat, kdy se provede update jen rozdílů
-                if ($streamCaData['access'] != $caAccess) {
-                    // update access
-                    StreamCa::where('stream_id', $streamId)->update(['access' => $caAccess]);
-                }
-                if ($streamCaData['description'] != $caDescription) {
-                    // update description
-                    StreamCa::where('stream_id', $streamId)->update(['description' => $caDescription ?? null]);
-                }
-
-                if ($streamCaData['scrambled'] != $caScrambled) {
-                    // update scrambled
-                    StreamCa::where('stream_id', $streamId)->update(['scrambled' => $caScrambled]);
-                }
-            } else {
-
-                // uložení záznamu bez bitrate
-                StreamCa::create([
-                    'stream_id' => $streamId,
-                    'description' => $caDescription ?? null,
-                    'access' => $caAccess,
-                    'scrambled' => $caScrambled
-                ]);
-            }
+            // prostor pro vebsocket
+            event(new StreamInfoCa($streamId, $caDescription ?? null, $caAccess, $caScrambled));
         }
+
+
 
         /**
          * ---------------------------------------------------------------------------------------------------------------------------
@@ -647,15 +598,6 @@ class DiagnosticController extends Controller
         // pokud je hodnota jiná u invalidsyncs , scrambledpids , transporterrors jiná nez 0
         if ($invalidsyncs == "0" && $scrambledpids == "0" && $transporterrors == "0") {
 
-            // overení zda existuje záznam v tabulce StreamAlert , pokud existuje, budou veskere záznamy s daným streamId odebrány
-
-            // if (StreamAlert::where('stream_id', $streamId)->first()) {
-            //     foreach (StreamAlert::where('stream_id', $streamId)->get() as $streamAlert) {
-            //         // odebrání záznamů z tabulky
-            //         StreamAlert::where('id', $streamAlert['id'])->delete();
-            //     }
-            // }
-
             return [
                 'status' => "success"
             ];
@@ -789,82 +731,7 @@ class DiagnosticController extends Controller
             }
         }
 
-        // overení zda existuje v Stream_services
-        // pokud neexistuje, zalozí se data
-        if ($streamServices = StreamService::where('stream_id', $streamId)->first()) {
-            // zaznam existuje, pokud postupně zkontrolován
-            // pokud je změna, vyvolá se warning
-
-            if ($streamServices->tsid != $tsid) {
-                // update
-                StreamService::where('stream_id', $streamId)->update(['tsid' => $tsid]);
-                // warning
-                // overeni zda existuje stream s tsid_warning
-                if (!StreamAlert::where('stream_id', $streamId)->where('status', "tsid_warning")->first()) {
-                    // create
-                    StreamAlert::create([
-                        'stream_id' => $streamId,
-                        'status' => "tsid_warning",
-                        'message' => "Změnilo se Transport Stream id!!"
-                    ]);
-
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "tsid_warning"
-                    ]);
-                }
-            }
-
-            if ($streamServices->pmtpid != $pmtpid) {
-                // update
-                StreamService::where('stream_id', $streamId)->update(['pmtpid' => $pmtpid]);
-                // warning
-                // overeni zda existuje stream s pmtpid_warning
-
-                if (!StreamAlert::where('stream_id', $streamId)->where('status', "pmtpid_warning")->first()) {
-                    // create
-                    StreamAlert::create([
-                        'stream_id' => $streamId,
-                        'status' => "pmtpid_warning",
-                        'message' => "Změnil se pmt pid!!"
-                    ]);
-
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "pmtpid_warning"
-                    ]);
-                }
-            }
-
-            if ($streamServices->pcrpid != $pcrpid) {
-                // update
-                StreamService::where('stream_id', $streamId)->update(['pcrpid' => $pcrpid]);
-                // warrning
-                // overeni zda existuje stream s pcrpid_warning
-
-                if (!StreamAlert::where('stream_id', $streamId)->where('status', "pcrpid_warning")->first()) {
-                    // create
-                    StreamAlert::create([
-                        'stream_id' => $streamId,
-                        'status' => "pcrpid_warning",
-                        'message' => "Změnil se pcr pid!!"
-                    ]);
-
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "pcrpid_warning"
-                    ]);
-                }
-            }
-        } else {
-            // záznam nebyl nalezen, založí se ...
-            StreamService::create([
-                'stream_id' => $streamId,
-                'tsid' => $tsid,
-                'pmtpid' => $pmtpid,
-                'pcrpid' => $pcrpid,
-            ]);
-        }
+        event(new StreamInfoService($streamId, $tsid, $pmtpid, $pcrpid));
     }
 
     /**
@@ -880,9 +747,9 @@ class DiagnosticController extends Controller
      * @param array $tsduckArr
      * @return array video array || null
      * @return array audio array || null
-     * @return void
+     * @return array
      */
-    public static function collect_pids_from_tsduckArr(array $tsduckArr)
+    public static function collect_pids_from_tsduckArr(array $tsduckArr): array
     {
         // zpracování pole "pids", kdy se bere pid a data v něm
         foreach ($tsduckArr as $pid) {

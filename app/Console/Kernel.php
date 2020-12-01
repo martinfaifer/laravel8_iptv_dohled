@@ -24,6 +24,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+
+        // killnutí streamu, který existuje v tabulce stoppedStreams
+        $schedule->command('command:killStopedStreams')->everyMinute()->runInBackground();
         // stream sheduler
         $schedule->command('command:streamScheduler')->everyMinute()->runInBackground();
         // cistení slozky s obrázky
@@ -38,7 +41,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('command:create_thumbnail_from_stream')->everyThreeMinutes()->runInBackground();
 
         // overování zda sluzby fungují jak mají
-        $schedule->command('command:check_if_serverices_running')->everyMinute()->runInBackground();
+        // $schedule->command('command:check_if_serverices_running')->everyMinute()->runInBackground(); // pro test vypnuto
 
         // spustení všech diagnostic a náhledů, které ještě nefungují nebo z nějakého duvodu crashnuly a je zapotřebí je znovu spustit
         $schedule->command('command:start_all_streams_for_diagnostic')->everyMinute()->runInBackground();

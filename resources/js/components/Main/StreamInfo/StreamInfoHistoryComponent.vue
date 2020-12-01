@@ -8,7 +8,9 @@
             flat
         >
             <span>
-                Historie
+                <strong>
+                    Historie
+                </strong>
             </span>
             <v-container v-if="streamHistory != 'none'">
                 <v-timeline dense>
@@ -156,7 +158,7 @@ export default {
     methods: {
         getStreamHistory() {
             window.axios
-                .post("streamInfo/history/10", {
+                .post("streamInfo/history/5", {
                     streamId: this.$route.params.id
                 })
                 .then(response => {

@@ -32,6 +32,7 @@ class CreateStreamsTable extends Migration
             $table->string('status')->default('waiting')->index();
             $table->string('process_pid')->nullable();
             $table->string('ffmpeg_pid')->nullable();
+            $table->string('socket_process_pid')->nullable();
             $table->timestamps();
         });
     }

@@ -42,6 +42,7 @@ class SystemController extends Controller
             'cpu_model' => $provider->getCpuModel(),
             'cpu_usage' => $provider->getCpuUsage(),
             'cpu_cores' => $provider->getCpuCores(),
+            // 'cpu_physical_cores' => $provider->getPhysicalCpus(),
             'free_memory' => $provider->getFreeMem(),
             'used_memory' => $provider->getUsedMem(),
             'total_memory' => $provider->getTotalMem(),
@@ -51,6 +52,7 @@ class SystemController extends Controller
             'os_release' => $provider->getOsRelease(),
             'os_type' => $provider->getOsType(),
             'server_ip' => $provider->getServerIP(),
+            // 'getCpuinfoByLsCpu' => $provider->getCpuinfoByLsCpu()
         ];
     }
 
@@ -115,6 +117,24 @@ class SystemController extends Controller
 
 
     /**
+     * funknce na vytvoření dat o zátěži systemu, ram a dalších budoucích prostredků
+     *
+     * @return array
+     */
+    public static function create_data_for_area_chart(): array
+    {
+
+        $nyni = date("Y-m-d") . " " . date("H:i");
+        $provider = ProviderFactory::create();
+        // $usedRam = $provider->getUsedMem() / 1073741824;
+
+        return [
+            'nyni' => $nyni,
+            'data' => self::cpu()
+        ];
+    }
+
+    /**
      * kontrola CPU serveru, výpis vytížení
      *
      * @return void
@@ -125,11 +145,8 @@ class SystemController extends Controller
         return round($load[0], 2);
     }
 
-
     public static function ram()
     {
-        $provider = ProviderFactory::create();
-
         $provider = ProviderFactory::create();
         $totalRam = $provider->getTotalMem() / 1073741824;
         $usedRam = $provider->getUsedMem() / 1073741824;
@@ -315,5 +332,11 @@ class SystemController extends Controller
                 unlink(public_path('/storage/' . $img));   // odebrání obrázku z file systemu
             }
         }
+    }
+
+
+    protected function getNetwork(): array
+    {
+        return [];
     }
 }

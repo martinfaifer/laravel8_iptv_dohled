@@ -23,9 +23,10 @@
         <link href="{{ asset('css/app.css') }}" rel="stylesheet">
         <link href="{{ asset('css/style.css') }}" rel="stylesheet">
         <link href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" rel="stylesheet">
+        <style> *{ text-transform: none !important; } </style>
         <style>
             body {
-                font-family: Roboto;
+                font-family: Numito;
             }
         </style>
     </head>

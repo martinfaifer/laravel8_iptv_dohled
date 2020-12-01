@@ -11,6 +11,9 @@
                 <firewallstatus-component></firewallstatus-component>
             </v-row>
         </v-container>
+        <!-- <v-container fluid>
+            <ramareachart-component></ramareachart-component>
+        </v-container> -->
         <v-divider class="mt-2 mb-2"></v-divider>
         <v-container fluid>
             <v-row class="ml-12">
@@ -50,6 +53,10 @@ import CrashedOrIssuedStreamsComponent from "./_SystemPrehled/_StreamsPrehled/Cr
 import StreamHistoryComponent from "./_SystemPrehled/_StreamsPrehled/StreamsHistoryComponent";
 // admin zona
 import AdminInformationComponent from "./_SystemPrehled/AdminInformationComponent";
+
+// ram area chart
+import RamAreaChartComponent from "./_SystemPrehled/RamAreaChartComponent";
+
 export default {
     data() {
         return { userRole: null };
@@ -69,7 +76,8 @@ export default {
         "firewallstatus-component": FirewallStatusComponent,
         "crashedorissuedstreams-component": CrashedOrIssuedStreamsComponent,
         "streamhistory-component": StreamHistoryComponent,
-        "admininformation-component": AdminInformationComponent
+        "admininformation-component": AdminInformationComponent,
+        "ramareachart-component": RamAreaChartComponent
     },
     methods: {
         loadUser() {
