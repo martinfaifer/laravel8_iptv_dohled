@@ -26,66 +26,73 @@ class FFprobeController extends Controller
     public static function ffprobe_diagnostic($streamUrl, $streamId, $audioVideoCheck = null): void
     {
 
-        $ffprobeOutput = shell_exec("ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 2");
+        // timeout -s SIGKILL 3 => timeout 2 , 1s je rezerva
+        $ffprobeOutput = shell_exec("timeout -s SIGKILL 3 ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 2");
 
-        $ffprobeJsonOutput = json_decode($ffprobeOutput, true);
-
-        // získání informací o streamu
-        $streamInfoData = Stream::where('id', $streamId)->first();
-
-        if (!is_null($audioVideoCheck)) {
-
-            //  proběhne kontrola, kdy se bude hlidat, resync audio / video
-            self::check_if_stream_has_resync_audio_video($ffprobeJsonOutput, $streamId);
+        if (is_null($ffprobeOutput) || empty($ffprobeOutput) || $ffprobeOutput === "Killed") {
+            // nestihlo se naplnit udaji, muze se stat nebudem resit, hodnota null je v tomto pripade povolena nikoliv , ale zadouci
         } else {
 
+            // hodnota neni null, testuje se, zda bude vhodna
+
+            $ffprobeJsonOutput = json_decode($ffprobeOutput, true);
+
+            // získání informací o streamu
+            $streamInfoData = Stream::where('id', $streamId)->first();
+
+            if (!is_null($audioVideoCheck)) {
+
+                //  proběhne kontrola, kdy se bude hlidat, resync audio / video
+                self::check_if_stream_has_resync_audio_video($ffprobeJsonOutput, $streamId);
+            } else {
 
 
-            // pokud $ffprobeJsonOutput neobsahuje klíč "programs" => stream nefunguje ===> ukládá se error
-            if (!array_key_exists("programs", $ffprobeJsonOutput)) {
 
-                // ukoncení socektu
-                // OBECNÁ FN PRO UKOCENI PIDU + VYRESETOVÁNÍ HODNOTY DO NULL
+                // pokud $ffprobeJsonOutput neobsahuje klíč "programs" => stream nefunguje ===> ukládá se error
+                if (!array_key_exists("programs", $ffprobeJsonOutput)) {
 
-                if ($streamInfoData->status != "error") {
-                    Stream::where('id', $streamId)->update(['status' => "error"]);
+                    // ukoncení socektu
+                    // OBECNÁ FN PRO UKOCENI PIDU + VYRESETOVÁNÍ HODNOTY DO NULL
 
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "stream_error"
-                    ]);
+                    if ($streamInfoData->status != "error") {
+                        Stream::where('id', $streamId)->update(['status' => "error"]);
 
-                    // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
-                    // overení, zda stream má povolenou notifikaci
-                    if ($streamInfoData->sendMailAlert == true) {
-                        if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
-                            // vytvorení záznamu
-                            ChannelsWhichWaitingForNotification::create([
-                                'stream_id' => $streamId,
-                                'whenToNotify' => date("Y-m-d H:i", strtotime('+5 minutes'))
-                            ]);
+                        StreamHistory::create([
+                            'stream_id' => $streamId,
+                            'status' => "stream_error"
+                        ]);
+
+                        // založení do tabulky channels_which_waiting_for_notifications, pokud jiz neexistuje
+                        // overení, zda stream má povolenou notifikaci
+                        if ($streamInfoData->sendMailAlert == true) {
+                            if (!ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->first()) {
+                                // vytvorení záznamu
+                                ChannelsWhichWaitingForNotification::create([
+                                    'stream_id' => $streamId,
+                                    'whenToNotify' => date("Y-m-d H:i", strtotime('+5 minutes'))
+                                ]);
+                            }
                         }
                     }
                 }
-            }
 
-            if (array_key_exists("programs", $ffprobeJsonOutput)) {
-                // byl nalezen klíc programs => stream  funguje
+                if (array_key_exists("programs", $ffprobeJsonOutput)) {
+                    // byl nalezen klíc programs => stream  funguje
 
-                // v teto fázy zatím jen ulozit stav success , zatím se nehledají žádné chyby a pod...
-                if ($streamInfoData->status != 'success') {
+                    // v teto fázy zatím jen ulozit stav success , zatím se nehledají žádné chyby a pod...
+                    if ($streamInfoData->status != 'success') {
+                        Stream::where('id', $streamId)->update(['status' => "success"]);
 
-                    Stream::where('id', $streamId)->update(['status' => "success"]);
+                        StreamHistory::create([
+                            'stream_id' => $streamId,
+                            'status' => "stream_ok"
+                        ]);
 
-                    StreamHistory::create([
-                        'stream_id' => $streamId,
-                        'status' => "stream_ok"
-                    ]);
-
-                    // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
-                    if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "!=", 'false')->first()) {
-                        // odeslání mail notifikace pokud je zapotřebí
-                        dispatch(new SendSuccessEmail($streamId));
+                        // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+                        if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "!=", 'false')->first()) {
+                            // odeslání mail notifikace pokud je zapotřebí
+                            dispatch(new SendSuccessEmail($streamId));
+                        }
                     }
                 }
             }

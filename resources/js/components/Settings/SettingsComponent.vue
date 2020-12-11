@@ -1,9 +1,17 @@
 <template>
     <v-main>
         <!-- menu -->
-        <v-app-bar class="mt-12" color="transparent" fixed dense flat dark>
-            <v-row justify="center" fixed>
-                <v-card fixed flat color="transparent">
+
+        <v-app-bar
+            class="mt-12"
+            color="rgba(18, 18, 18, 0.8)"
+            fixed
+            flat
+            dense
+            dark
+        >
+            <v-row justify="center">
+                <v-card flat color="transparent">
                     <v-toolbar color="transparent" flat dense dark>
                         <v-spacer></v-spacer>
 
@@ -11,8 +19,41 @@
                             <template v-slot:activator="{ on }">
                                 <v-btn
                                     link
+                                    to="/settings/prehled_streams"
+                                    :class="{
+                                        'white--text':
+                                            $vuetify.theme.dark === true,
+                                        'black--text':
+                                            $vuetify.theme.dark === false
+                                    }"
+                                    v-on="on"
+                                    icon
+                                >
+                                    <v-icon
+                                        v-if="
+                                            $route.path ===
+                                                '/settings/prehled_streams'
+                                        "
+                                        color="teal"
+                                        >mdi-view-stream</v-icon
+                                    >
+                                    <v-icon v-else>mdi-view-stream</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Dashboard Streamů</span>
+                        </v-tooltip>
+
+                        <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                                <v-btn
+                                    link
                                     to="/settings/prehled"
-                                    class="white--text"
+                                    :class="{
+                                        'white--text':
+                                            $vuetify.theme.dark === true,
+                                        'black--text':
+                                            $vuetify.theme.dark === false
+                                    }"
                                     v-on="on"
                                     icon
                                 >
@@ -34,7 +75,12 @@
                                 <v-btn
                                     link
                                     to="/settings/streams"
-                                    class="white--text"
+                                    :class="{
+                                        'white--text':
+                                            $vuetify.theme.dark === true,
+                                        'black--text':
+                                            $vuetify.theme.dark === false
+                                    }"
                                     v-on="on"
                                     icon
                                 >
@@ -57,7 +103,12 @@
                                     <v-btn
                                         link
                                         to="/settings/users"
-                                        class="white--text"
+                                        :class="{
+                                            'white--text':
+                                                $vuetify.theme.dark === true,
+                                            'black--text':
+                                                $vuetify.theme.dark === false
+                                        }"
                                         v-on="on"
                                         icon
                                     >
@@ -84,7 +135,12 @@
                                     <v-btn
                                         link
                                         to="/settings/alerts"
-                                        class="white--text"
+                                        :class="{
+                                            'white--text':
+                                                $vuetify.theme.dark === true,
+                                            'black--text':
+                                                $vuetify.theme.dark === false
+                                        }"
                                         v-on="on"
                                         icon
                                     >
@@ -102,37 +158,18 @@
                                 <span>Nastavení Alertingu</span>
                             </v-tooltip>
                         </div>
-
-                        <!-- <div v-if="userRole == '1'">
-                            <v-tooltip bottom>
-                                <template v-slot:activator="{ on }">
-                                    <v-btn
-                                        link
-                                        to="/settings/logs"
-                                        class="white--text"
-                                        v-on="on"
-                                        icon
-                                    >
-                                        <v-icon
-                                            v-if="
-                                                $route.path === '/settings/logs'
-                                            "
-                                            color="teal"
-                                            >mdi-git</v-icon
-                                        >
-                                        <v-icon v-else>mdi-git</v-icon>
-                                    </v-btn>
-                                </template>
-                                <span>Log</span>
-                            </v-tooltip>
-                        </div> -->
                         <div v-if="userRole == '1'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
                                         link
                                         to="/settings/firewall"
-                                        class="white--text"
+                                        :class="{
+                                            'white--text':
+                                                $vuetify.theme.dark === true,
+                                            'black--text':
+                                                $vuetify.theme.dark === false
+                                        }"
                                         v-on="on"
                                         icon
                                     >
@@ -161,6 +198,7 @@
         <transition name="fade" mode="out-in">
             <router-view class="mt-16" />
         </transition>
+
         <!-- konec menu -->
     </v-main>
 </template>
@@ -173,19 +211,18 @@ export default {
     },
     data() {
         return {
-            userRole:null
+            userRole: null
         };
     },
     created() {
         this.loadUser();
-
     },
     methods: {
         loadUser() {
             let currentObj = this;
             window.axios.get("user").then(response => {
                 currentObj.userRole = response.data.role_id;
-                if(currentObj.userRole == "4") {
+                if (currentObj.userRole == "4") {
                     currentObj.$router.push("/");
                 }
             });

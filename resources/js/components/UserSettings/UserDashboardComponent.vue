@@ -1,116 +1,94 @@
 <template>
     <div>
-        <v-row>
-            <span class="headline">Přehled</span>
-        </v-row>
-        <v-spacer></v-spacer>
-        <br />
         <!-- container pro sum informací -->
         <v-container fluid>
             <v-row>
                 <v-row>
                     <v-hover v-slot:default="{ hover }">
                         <v-card
-                            :elevation="hover ? 3 : 0"
+                            :elevation="hover ? 1 : 0"
                             height="100%"
                             width="40em"
-                            class="text-center pl-10 pr-10 transition-fast-in-fast-out ml-12"
-                            color="transparent"
+                            class="text-center"
                             flat
                         >
-                            <span>
-                                <strong>
-                                    Informace o uživateli
-                                </strong>
-                            </span>
-                            <v-container>
-                                <v-card color="transparent" flat>
-                                    <v-list-item>
-                                        Jméno:
+                            <v-card-text>
+                                <span>
+                                    <strong>
+                                        Informace o uživateli
+                                    </strong>
+                                </span>
+                                <v-list-item>
+                                    Jméno:
+                                    <span class="ml-3">
+                                        <strong>
+                                            {{ user.name }}
+                                        </strong>
+                                    </span>
+                                </v-list-item>
+                                <v-list-item>
+                                    email:
+                                    <span class="ml-3">
+                                        <strong>
+                                            {{ user.email }}
+                                        </strong>
+                                    </span>
+                                </v-list-item>
+                                <div v-if="user.userDetail != 'false'">
+                                    <v-list-item
+                                        v-if="user.userDetail.company != null"
+                                    >
+                                        Společnost:
                                         <span class="ml-3">
                                             <strong>
-                                                {{ user.name }}
+                                                {{ user.userDetail.company }}
                                             </strong>
                                         </span>
                                     </v-list-item>
-                                    <v-list-item>
-                                        email:
+                                    <v-list-item
+                                        v-if="
+                                            user.userDetail.tel_number != null
+                                        "
+                                    >
+                                        Tel:
                                         <span class="ml-3">
                                             <strong>
-                                                {{ user.email }}
+                                                {{ user.userDetail.tel_number }}
                                             </strong>
                                         </span>
                                     </v-list-item>
-                                    <div v-if="user.userDetail != 'false'">
-                                        <v-list-item
-                                            v-if="
-                                                user.userDetail.company != null
-                                            "
-                                        >
-                                            Společnost:
-                                            <span class="ml-3">
-                                                <strong>
-                                                    {{
-                                                        user.userDetail.company
-                                                    }}
-                                                </strong>
-                                            </span>
-                                        </v-list-item>
-                                        <v-list-item
-                                            v-if="
-                                                user.userDetail.tel_number !=
-                                                    null
-                                            "
-                                        >
-                                            Tel:
-                                            <span class="ml-3">
-                                                <strong>
-                                                    {{
-                                                        user.userDetail
-                                                            .tel_number
-                                                    }}
-                                                </strong>
-                                            </span>
-                                        </v-list-item>
-                                        <v-list-item
-                                            v-if="
-                                                user.userDetail.nickname != null
-                                            "
-                                        >
-                                            Přezdívka:
-                                            <span class="ml-3">
-                                                <strong>
-                                                    {{
-                                                        user.userDetail.nickname
-                                                    }}
-                                                </strong>
-                                            </span>
-                                        </v-list-item>
-                                    </div>
-                                </v-card>
-                            </v-container>
+                                    <v-list-item
+                                        v-if="user.userDetail.nickname != null"
+                                    >
+                                        Přezdívka:
+                                        <span class="ml-3">
+                                            <strong>
+                                                {{ user.userDetail.nickname }}
+                                            </strong>
+                                        </span>
+                                    </v-list-item>
+                                </div>
+                            </v-card-text>
                         </v-card>
                     </v-hover>
                 </v-row>
                 <!-- {{ user }} -->
                 <!-- container pro nastavení GUI -->
-                <v-row>
+                <v-row class="ml-12">
                     <v-hover v-slot:default="{ hover }">
                         <v-card
-                            :elevation="hover ? 3 : 0"
+                            :elevation="hover ? 1 : 0"
                             height="100%"
                             width="40em"
-                            class="text-center pl-10 pr-10 transition-fast-in-fast-out ml-12 mr-12"
-                            color="transparent"
+                            class="text-center"
                             flat
                         >
-                            <span>
-                                <strong>
-                                    Nastavení prostředí:
-                                </strong>
-                            </span>
-                            <v-container>
-                                <v-card color="transparent" flat> </v-card>
+                            <v-card-text>
+                                <span>
+                                    <strong>
+                                        Nastavení prostředí:
+                                    </strong>
+                                </span>
                                 <v-list-item>
                                     Nastavení mozaiky:
                                     <span
@@ -132,21 +110,22 @@
                                     class="text-start"
                                     v-if="user.mozaika == 'custom'"
                                 >
-                                    Statické kanály
+                                    <strong>
+                                        Statické kanály
+                                    </strong>
                                 </span>
                                 <v-list-item v-if="user.mozaika == 'custom'">
                                     <ul>
                                         <li
                                             v-for="staticChannel in user.staticChannels"
+                                            :key="staticChannel.id"
                                             class="ml-3"
                                         >
-                                            <strong>
-                                                {{ staticChannel.nazev }}
-                                            </strong>
+                                            {{ staticChannel.nazev }}
                                         </li>
                                     </ul>
                                 </v-list-item>
-                            </v-container>
+                            </v-card-text>
                         </v-card>
                     </v-hover>
                 </v-row>
@@ -155,55 +134,59 @@
             <v-row class="mt-8">
                 <v-hover v-slot:default="{ hover }">
                     <v-card
-                        :elevation="hover ? 3 : 0"
+                        :elevation="hover ? 1 : 0"
                         height="100%"
                         width="100%"
-                        class="text-center pl-10 pr-10 transition-fast-in-fast-out"
-                        color="transparent"
+                        class="text-center"
                         flat
                     >
-                        <span>
-                            <strong>
-                                Historie
-                            </strong>
-                        </span>
-                        <v-container v-if="history != 'none'">
-                            <v-timeline dense>
-                                <v-timeline-item
-                                    v-for="userHist in history"
-                                    :key="userHist.id"
-                                    small
-                                >
-                                    <template v-slot:opposite>
-                                        <span
-                                            class="
+                        <v-card-text>
+                            <span>
+                                <strong>
+                                    Historie
+                                </strong>
+                            </span>
+                            <v-container v-if="history != 'none'">
+                                <v-timeline dense>
+                                    <v-timeline-item
+                                        v-for="userHist in history"
+                                        :key="userHist.id"
+                                        small
+                                    >
+                                        <template v-slot:opposite>
+                                            <span
+                                                class="
                                                 body-1 font-weight-bold
                                             "
-                                            v-text="userHist.created_at"
-                                        ></span>
-                                    </template>
-                                    <div class="py-4">
-                                        <div>
-                                            <small class="green--text">
-                                                <strong>
-                                                    {{ userHist.created_at }} =>
-                                                    {{ userHist.message }}
-                                                </strong>
-                                            </small>
+                                                v-text="userHist.created_at"
+                                            ></span>
+                                        </template>
+                                        <div class="py-4">
+                                            <div>
+                                                <small class="green--text">
+                                                    <strong>
+                                                        {{
+                                                            userHist.created_at
+                                                        }}
+                                                        =>
+                                                        {{ userHist.message }}
+                                                    </strong>
+                                                </small>
+                                            </div>
                                         </div>
-                                    </div>
-                                </v-timeline-item>
-                            </v-timeline>
-                        </v-container>
-                        <v-container v-else>
-                            <div>
-                                <v-alert dense text type="info">
-                                    <strong
-                                        >Není evidována žádná historie
-                                    </strong>
-                                </v-alert>
-                            </div>
-                        </v-container>
+                                    </v-timeline-item>
+                                </v-timeline>
+                            </v-container>
+                            <v-container v-else>
+                                <div>
+                                    <v-alert dense text type="info">
+                                        <strong
+                                            >Není evidována žádná historie
+                                        </strong>
+                                    </v-alert>
+                                </div>
+                            </v-container>
+                        </v-card-text>
                     </v-card>
                 </v-hover>
             </v-row>

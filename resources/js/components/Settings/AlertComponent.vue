@@ -6,7 +6,7 @@
                 :status="status"
             ></alert-component>
         </div>
-        <v-container>
+        <v-container fluid>
             <!-- Soupis e-mailů, na které se zasílají alerty -->
 
             <v-card color="transparent" class="elevation-0 body-2">
@@ -263,7 +263,7 @@ export default {
                     align: "start",
                     value: "email"
                 },
-
+                { text: "Vlastník", value: "belongsTo" },
                 { text: "Zasílat alerty kanálů", value: "channels" },
                 {
                     text: "Zasílat alerting s problémy u streamů",
@@ -286,7 +286,11 @@ export default {
         },
         loadEmails() {
             window.axios.get("notifications/mails").then(response => {
-                this.emails = response.data;
+                if(response.data.status === 'success') {
+                    this.emails = response.data.data;
+                } else {
+                    this.emails = null;
+                }
             });
         },
         OpenCreateDialog() {

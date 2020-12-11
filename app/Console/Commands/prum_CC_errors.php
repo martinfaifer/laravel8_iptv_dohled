@@ -12,7 +12,7 @@ class prum_CC_errors extends Command
      *
      * @var string
      */
-    protected $signature = 'command:prum_CC_errors';
+    protected $signature = 'stream:prum_CC_errors';
 
     /**
      * The console command description.

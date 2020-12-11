@@ -8,6 +8,7 @@ use App\Http\Controllers\EmailNotificationController;
 use App\Http\Controllers\FfmpegController;
 use App\Http\Controllers\FirewallController;
 use App\Http\Controllers\FirewallLogController;
+use App\Http\Controllers\NodeController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
@@ -84,6 +85,9 @@ Route::get('logout', [UserController::class, 'logout'])->middleware('firewall');
 // Editace jmena a mailu
 Route::post('user/obecne/edit', [UserController::class, 'obecne_edit'])->middleware('firewall');
 
+// Editace Dark || light modu
+Route::post('user/theme', [UserController::class, 'change_theme'])->middleware('firewall');
+
 // Editace hesla uzivatele
 Route::post('user/heslo/edit', [UserController::class, 'user_password_edit'])->middleware('firewall');
 
@@ -120,6 +124,8 @@ Route::post('user/create', [UserController::class, 'user_create'])->middleware('
 Route::post('user/edit', [UserController::class, 'user_edit'])->middleware('firewall');
 // Odebrání uživatele
 Route::post('user/delete', [UserController::class, 'user_delete'])->middleware('firewall');
+// vypsání uživatelů, dle data vytvoření od nejnovejsiho -> posledních 5
+Route::get('users/get/last/ten', [UserController::class, 'get_last_ten_users'])->middleware('firewall');
 
 
 /**
@@ -132,6 +138,12 @@ Route::get('system', [SystemController::class, 'checkSystemUsage'])->middleware(
 
 Route::get('system/usage/areaChart', [SystemController::class, 'create_data_for_area_chart'])->middleware('firewall');
 Route::get('cpu', [SystemController::class, 'cpu'])->middleware('firewall');
+Route::get('system/avarage/load', function () {
+    foreach (sys_getloadavg() as $load) {
+        $output[] = round($load, 2);
+    }
+    return $output;
+})->middleware('firewall');
 Route::get('ram', [SystemController::class, 'ram'])->middleware('firewall');
 Route::get('swap', [SystemController::class, 'swap'])->middleware('firewall');
 Route::get('hdd', [SystemController::class, 'hdd'])->middleware('firewall');
@@ -142,6 +154,8 @@ Route::get("certifikate", [SystemController::class, 'check_web_certificate'])->m
 Route::get('certifikate/check', [SystemController::class, 'count_expiration_of_ssl'])->middleware('firewall');
 // admin zona
 Route::get('admin/system/info', [SystemController::class, 'admin_info_system'])->middleware('firewall');
+// dashboard -> vykreslení streamu s cc errory
+Route::get('streams/cc', [CcErrorController::class, 'take_streams_check_if_exist_cc_and_count']);
 
 /**
  * Nastavení Streamů
@@ -153,6 +167,9 @@ Route::post("stream/add", [StreamController::class, 'create_stream'])->middlewar
 Route::post("stream/issues", [StreamNotificationLimitController::class, 'get_information_for_editation'])->middleware('firewall');
 Route::post('stream/get_name_and_dohled', [StreamController::class, 'get_stream_name_and_dohled'])->middleware('firewall');
 Route::post('stream/mozaika/edit/save', [StreamController::class, 'mozaika_stream_small_edit'])->middleware('firewall');
+
+// zobrazeni poslednich 10 stremu jak byli zalozeny od posledniho
+Route::get('streams/get/last/ten', [StreamController::class, 'get_last_ten'])->middleware('firewall');
 
 /**
  * FIREWALL
@@ -179,8 +196,25 @@ Route::post('notifications/create', [EmailNotificationController::class, 'create
 Route::post('notifications/delete', [EmailNotificationController::class, 'delete_email'])->middleware('firewall');
 // editace emailove adresy
 Route::post('notifications/edit', [EmailNotificationController::class, 'edit_email'])->middleware('firewall');
+// zobrazení emalovych uctu ptrici danemu uzivateli
+Route::get('user/notificationAccounts', [EmailNotificationController::class, 'return_emails_by_user'])->middleware('firewall');
 
 
+/**
+ * DATA PRO VYKRESLOVÁNÍ GRAFŮ
+ */
+// vykreslení funkčních || nefunkčních streamů
+Route::get('working_streams/areacharts', [StreamController::class, 'retun_count_of_working_streams']);
+// donut chart streamů
+Route::get('streams/donutChart', [StreamController::class, 'return_streams_data_for_donutChart']);
+// system -> load history for area chart
+Route::get('system/load/history', [SystemController::class, 'load_history_system_usage']);
+// System -> load history ram
+Route::get('system/load/ram', [SystemController::class, 'ram_history_system_usage']);
+// System -> load history HDD
+Route::get('system/hdd/history', [SystemController::class, 'hdd_history_system_usage']);
+// System -> load history swap
+Route::get('system/swap/history', [SystemController::class, 'swap_history_system_usage']);
 
 /**
  * TESTING
@@ -192,19 +226,27 @@ Route::post('notifications/edit', [EmailNotificationController::class, 'edit_ema
 // });
 
 
-// Route::get('system/info/test', function () {
-//     $linfo = new Linfo();
-//     $parser = $linfo->getParser();
-//     // getNet
 
-//     return $parser->getNet();
-// });
+
+Route::get('system/info/test', function () {
+    $linfo = new Linfo();
+    $parser = $linfo->getParser();
+    // getWebService
+    return $parser->getContains();
+    // return $parser->getWebService(); // posible
+    // return $parser->getUpTime(); // posible
+});
 
 
 
 Route::get('tsDuck/arr', function () {
     // ssome code
 
-    $tsDuckData = shell_exec("tsp -I ip š -P until -s 1 -P analyze --normalized -O drop");
+    $tsDuckData = shell_exec("tsp -I ip 239.250.2.37:1234 -P until -s 1 -P analyze --normalized -O drop");
     return DiagnosticController::convert_tsduck_string_to_array($tsDuckData);
 });
+
+// Route::get('run/node', function () {
+//     $cpuData = NodeController::runTestScrit();
+//     dd(explode("\n", $cpuData));
+// });

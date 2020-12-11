@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\StreamNotification;
 use App\Jobs\SystemMailAlert;
+use App\Models\SystemHistory;
 use App\Models\SystemProccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -274,8 +275,8 @@ class SystemController extends Controller
      */
     public static function check_web_certificate()
     {
-        // $url = env("APP_URL");
-        $url = "https://iptvdohled.grapesc.cz";
+        $url = env("APP_URL");
+        // $url = "https://iptvdohled.grapesc.cz";
         $orignal_parse = parse_url($url, PHP_URL_HOST);
         $get = stream_context_create(array("ssl" => array("capture_peer_cert" => TRUE)));
         $read = stream_socket_client(
@@ -338,5 +339,154 @@ class SystemController extends Controller
     protected function getNetwork(): array
     {
         return [];
+    }
+
+    /**
+     * fn pro sběr dat ze serveru a ukládání pro budoucí vykreslení do grafů
+     *
+     * @return void
+     */
+    public static function get_periodicly_systemLoad_ram_hdd_swap(): void
+    {
+        $provider = ProviderFactory::create();
+
+        // ram blok
+        $usedRam = $provider->getUsedMem() / 1073741824;
+
+        SystemHistory::create([
+            'value' => $usedRam,
+            'value_type' => "ram"
+        ]);
+
+        // swap
+        $usedSwap = $provider->getUsedSwap() / 1073741824;
+        SystemHistory::create([
+            'value' => $usedSwap,
+            'value_type' => "swap"
+        ]);
+
+        // hdd
+        $freeDisk = disk_free_space("/");
+        $freeDiskGiga = $freeDisk / 1073741824;
+        SystemHistory::create([
+            'value' => $freeDiskGiga,
+            'value_type' => "hdd"
+        ]);
+
+        // load
+        $load = sys_getloadavg();
+        $loadfiveminutes = round($load[0], 2);
+        SystemHistory::create([
+            'value' => $loadfiveminutes,
+            'value_type' => "load"
+        ]);
+    }
+
+
+    /**
+     * fn pro zobrazení historie zatížení systému
+     *
+     * @return array
+     */
+    public function load_history_system_usage(): array
+    {
+        if (SystemHistory::where('value_type', "load")->first()) {
+
+            foreach (SystemHistory::where('value_type', "load")->get() as $loadDataHistory) {
+                $seriesData[] = $loadDataHistory->value;
+                $xaxis[] = substr($loadDataHistory->created_at, 0, 19);
+            }
+
+            return [
+                'status' => "exist",
+                'xaxis' => $xaxis,
+                'seriesData' => $seriesData
+            ];
+        } else {
+            return [
+                'status' => "empty"
+            ];
+        }
+    }
+
+    /**
+     * fn pro vykrelsení area chartu, vyuzití ram
+     *
+     * @return array
+     */
+    public function ram_history_system_usage(): array
+    {
+        if (SystemHistory::where('value_type', "ram")->first()) {
+
+            foreach (SystemHistory::where('value_type', "ram")->get() as $ramDataHistory) {
+                $seriesData[] = $ramDataHistory->value;
+                $xaxis[] = substr($ramDataHistory->created_at, 0, 19);
+            }
+
+            return [
+                'status' => "exist",
+                'xaxis' => $xaxis,
+                'seriesData' => $seriesData
+            ];
+        } else {
+            return [
+                'status' => "empty"
+            ];
+        }
+    }
+
+
+    /**
+     * fn pro vykrelsení area chartu, vyuzití hdd
+     *
+     * @return array
+     */
+    public function hdd_history_system_usage(): array
+    {
+        if (SystemHistory::where('value_type', "hdd")->first()) {
+
+            foreach (SystemHistory::where('value_type', "hdd")->get() as $hddDataHistory) {
+                $seriesData[] = $hddDataHistory->value;
+                $xaxis[] = substr($hddDataHistory->created_at, 0, 19);
+            }
+
+            return [
+                'status' => "exist",
+                'xaxis' => $xaxis,
+                'seriesData' => $seriesData
+            ];
+        } else {
+            return [
+                'status' => "empty"
+            ];
+        }
+    }
+
+
+
+    /**
+     * fn pro vykrelsení area chartu, vyuzití swap
+     *
+     * @return array
+     */
+    public function swap_history_system_usage(): array
+    {
+        if (SystemHistory::where('value_type', "swap")->first()) {
+
+            foreach (SystemHistory::where('value_type', "swap")->get() as $swapDataHistory) {
+                $seriesData[] = $swapDataHistory->value;
+                $xaxis[] = substr($swapDataHistory->created_at, 0, 19);
+            }
+
+            return [
+                'status' => "exist",
+                'xaxis' => $xaxis,
+                'seriesData' => $seriesData
+            ];
+        } else {
+            return [
+                'status' => "empty"
+            ];
+        }
     }
 }

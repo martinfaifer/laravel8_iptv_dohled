@@ -16,7 +16,7 @@
                 <v-spacer>
                     <span class="body-2 mt-6">
                         Registrováno: {{ user.created_at }}
-                </span>
+                    </span>
                 </v-spacer>
                 <v-spacer></v-spacer>
                 <span class="body-2 mt-6">
@@ -32,9 +32,13 @@
                         {{ user.role }}
                     </strong>
                 </span>
+                <v-file-input
+                    v-if="openNewImage === true"
+                    accept="image/*"
+                    label="File input"
+                ></v-file-input>
             </div>
         </v-navigation-drawer>
-
     </v-main>
 </template>
 <script>

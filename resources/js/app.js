@@ -3,6 +3,7 @@ require("./bootstrap");
 window.Vue = require("vue");
 
 import Chartkick from "vue-chartkick";
+import VueApexCharts from 'vue-apexcharts'
 import Chart from "chart.js";
 import Vuetify from "vuetify";
 import VueRouter from "vue-router";
@@ -14,6 +15,9 @@ Vue.use(TrendChart);
 Vue.use(Vuetify);
 Vue.use(VueRouter);
 Vue.use(Chartkick.use(Chart));
+Vue.use(VueApexCharts)
+
+Vue.component('apexchart', VueApexCharts)
 
 import LoginComponent from "./components/LoginComponent";
 import NavigationComponent from "./components/NavigationComponent";
@@ -23,6 +27,7 @@ import UserComponent from "./components/UserSettings/UserComponent";
 
 import SettingsComponent from "./components/Settings/SettingsComponent";
 import SettingsPrehledComponent from "./components/Settings/SettingsPrehledComponent";
+// import SettingsSystemPrehledComponent from "./components/Settings/SettingsSystemPrehledComponent";
 import StreamsComponent from "./components/Settings/StreamsComponent";
 import UsersComponent from "./components/Settings/UsersComponent";
 import FirewallComponent from './components/Settings/FirewallComponent';

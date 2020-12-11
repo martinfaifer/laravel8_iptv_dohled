@@ -229,10 +229,12 @@
                 <v-container v-else>
                     <div>
                         <v-alert dense text type="info">
-                            <strong
-                                >Stream se nepodařilo vyhledat v
-                                dokumentaci</strong
-                            >
+                            <small>
+                                <strong
+                                    >Stream se nepodařilo vyhledat v
+                                    dokumentaci</strong
+                                >
+                            </small>
                         </v-alert>
                     </div>
                 </v-container>

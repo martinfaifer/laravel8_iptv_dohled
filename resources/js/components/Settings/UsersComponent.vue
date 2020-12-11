@@ -6,7 +6,7 @@
                 :status="status"
             ></alert-component>
         </div>
-        <v-container>
+        <v-container fluid>
             <v-card color="transparent" class="elevation-0 body-2">
                 <v-card-title>
                     <v-text-field

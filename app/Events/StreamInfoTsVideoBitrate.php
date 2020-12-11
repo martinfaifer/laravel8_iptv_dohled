@@ -21,19 +21,21 @@ class StreamInfoTsVideoBitrate implements ShouldBroadcastNow
     public $discontinuities;
     public $scrambled;
     public $videoAccess;
+    public $videoDescription;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess)
+    public function __construct($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess, $videoDescription)
     {
         $this->videoBitrate = $videoBitrate;
         $this->videoPid = $videoPid;
         $this->discontinuities = $discontinuities;
         $this->scrambled = $scrambled;
         $this->videoAccess = $videoAccess;
+        $this->videoDescription = $videoDescription;
 
         $this->streamId = $streamId;
     }
@@ -55,7 +57,8 @@ class StreamInfoTsVideoBitrate implements ShouldBroadcastNow
             'videoPid' => $this->videoPid,
             'discontinuities' => $this->discontinuities,
             'scrambled' => $this->scrambled,
-            'access' => $this->videoAccess
+            'access' => $this->videoAccess,
+            'videoDescription' => $this->videoDescription
         ];
     }
 }

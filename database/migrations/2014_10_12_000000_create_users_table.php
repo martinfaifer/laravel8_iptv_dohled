@@ -24,6 +24,7 @@ class CreateUsersTable extends Migration
             $table->text('customData')->nullable();
             $table->string('pagination')->default('24');
             $table->string('status')->default('active');
+            $table->boolean('isDark')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

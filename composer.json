@@ -18,13 +18,14 @@
         "laravel/horizon": "^5.2",
         "laravel/telescope": "^4.2",
         "laravel/tinker": "^2.4",
-        "linfo/linfo": "^4.0",
+        "linfo/linfo": "^4.0.5",
         "predis/predis": "^1.1",
         "pusher/pusher-php-server": "^4.1",
         "react/datagram": "^1.5",
         "react/event-loop": "^1.1.1",
         "react/promise": "^2.8.0",
-        "trntv/probe": "^1.0"
+        "trntv/probe": "^1.0",
+        "zetacomponents/system-information": "^1.1"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",

@@ -15,16 +15,18 @@ class StreamInfoTs implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $stream;
+    public $streamId;
+    public $country;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($stream)
+    public function __construct($streamId, $country)
     {
-        $this->stream = $stream;
+        $this->streamId = $streamId;
+        $this->country = $country;
     }
 
     /**
@@ -34,6 +36,14 @@ class StreamInfoTs implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new Channel('streamInfoTS' . $this->stream['id']);
+        return new Channel('streamInfoTS' . $this->streamId);
+    }
+
+
+    public function broadcastWith()
+    {
+        return [
+            'country' => $this->country
+        ];
     }
 }

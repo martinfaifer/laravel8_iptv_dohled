@@ -18,9 +18,9 @@
                             <v-card
                                 link
                                 :to="'stream/' + stream.id"
-                                :elevation="hover ? 24 : 0"
+                                :elevation="hover ? 12 : 0"
                                 class="mx-auto ma-0 transition-fast-in-fast-out"
-                                height="150"
+                                height="143"
                                 width="250"
                                 :class="{
                                     success: stream.status == 'success',
@@ -119,7 +119,7 @@
 
                         <!-- menu -->
                         <v-menu
-                            class="body-2"
+                            class="body-2 elevation-0"
                             dense
                             v-model="showMenu"
                             :position-x="x"
@@ -739,14 +739,18 @@ export default {
                 this.showMenu = true;
             });
         },
-        getStreams() {
-            window.axios
+        async getStreams() {
+            try {
+                await axios
                 .get("pagination?page=" + this.pagination.current)
                 .then(response => {
                     this.streams = response.data.data;
                     this.pagination.current = response.data.current_page;
                     this.pagination.total = response.data.last_page;
                 });
+            } catch (error) {
+
+            }
         },
         onPageChange() {
             this.getStreams();

@@ -9,21 +9,61 @@
             <v-toolbar color="transparent" fixed class="mb-6" dense flat>
                 <v-spacer></v-spacer>
 
-                <v-btn link to="/user/prehled" icon>
-                    <v-icon :color="prehledColor">
+                <v-btn
+                    link
+                    to="/user/prehled"
+                    :class="{
+                        'white--text': $vuetify.theme.dark === true,
+                        'black--text': $vuetify.theme.dark === false
+                    }"
+                    icon
+                >
+                    <v-icon v-if="$route.path === '/user/prehled'" color="teal">
                         mdi-view-dashboard
                     </v-icon>
+                    <v-icon v-else>mdi-view-dashboard</v-icon>
                 </v-btn>
-                <v-btn link to="/user/editace" icon>
-                    <v-icon :color="editaceColor"
-                        >mdi-account-cog-outline</v-icon
-                    >
+                <v-btn
+                    link
+                    to="/user/editace"
+                    icon
+                    :class="{
+                        'white--text': $vuetify.theme.dark === true,
+                        'black--text': $vuetify.theme.dark === false
+                    }"
+                >
+                    <v-icon v-if="$route.path === '/user/editace'" color="teal">
+                        mdi-account-cog-outline
+                    </v-icon>
+                    <v-icon v-else>mdi-account-cog-outline</v-icon>
                 </v-btn>
-                <v-btn link to="/user/gui" icon>
-                    <v-icon :color="guiColor">mdi-television-guide</v-icon>
+                <v-btn
+                    link
+                    to="/user/gui"
+                    icon
+                    :class="{
+                        'white--text': $vuetify.theme.dark === true,
+                        'black--text': $vuetify.theme.dark === false
+                    }"
+                >
+                    <v-icon v-if="$route.path === '/user/gui'" color="teal">
+                        mdi-television-guide
+                    </v-icon>
+                    <v-icon v-else>mdi-television-guide</v-icon>
                 </v-btn>
-                <v-btn link to="/user/alert" icon>
-                    <v-icon :color="alertColor">mdi-message-alert</v-icon>
+                <v-btn
+                    link
+                    to="/user/alert"
+                    icon
+                    :class="{
+                        'white--text': $vuetify.theme.dark === true,
+                        'black--text': $vuetify.theme.dark === false
+                    }"
+                >
+                    <v-icon v-if="$route.path === '/user/alert'" color="teal">
+                        mdi-message-alert
+                    </v-icon>
+                    <v-icon v-else>mdi-message-alert</v-icon>
                 </v-btn>
                 <v-spacer></v-spacer>
             </v-toolbar>
@@ -41,8 +81,8 @@
                         v-if="gui == true"
                         :user="user"
                     ></usergui-component>
+                    <useralert-component v-if="alert == true" :user="user"></useralert-component>
                 </v-row>
-
             </div>
         </v-container>
     </v-main>
@@ -52,6 +92,7 @@ import UserSideNavBarInfoComponent from "./UserSideBarInfoComponent";
 import UserDashboardComponent from "./UserDashboardComponent";
 import UserSettingsComponent from "./UserSettingsComponent";
 import UserGuiComponent from "./UserGuiComponent";
+import UserAlertComponent from "./UserAlertComponent"
 export default {
     data: () => ({
         userId: null,
@@ -84,7 +125,8 @@ export default {
         "usersidebar-component": UserSideNavBarInfoComponent,
         "userdashboard-component": UserDashboardComponent,
         "usersettings-component": UserSettingsComponent,
-        "usergui-component": UserGuiComponent
+        "usergui-component": UserGuiComponent,
+        "useralert-component": UserAlertComponent
     },
 
     methods: {

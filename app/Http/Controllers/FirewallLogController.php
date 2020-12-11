@@ -23,4 +23,16 @@ class FirewallLogController extends Controller
 
         return FirewallLog::get();
     }
+
+    /**
+     * automatické odmazávání logů z firewallu, které jsou starší než 24 hodin
+     *
+     * @return void
+     */
+    public static function prum_ips_older_than_twentyfour_hours(): void
+    {
+        if (FirewallLog::where('created_at', '<=', now()->subHours(24))->first()) {
+            FirewallLog::where('created_at', '<=', now()->subHours(24))->delete();
+        }
+    }
 }

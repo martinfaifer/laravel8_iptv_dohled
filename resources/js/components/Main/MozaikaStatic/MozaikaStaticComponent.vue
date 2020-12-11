@@ -18,9 +18,9 @@
                         <v-card
                             link
                             :to="'stream/' + stream.id"
-                            :elevation="hover ? 24 : 0"
+                            :elevation="hover ? 12 : 0"
                             class="mx-auto ma-0 transition-fast-in-fast-out"
-                            height="180"
+                            height="160"
                             width="280"
                             :class="{
                                 success: stream.status == 'success',

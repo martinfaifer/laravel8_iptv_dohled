@@ -123,7 +123,7 @@ class SystemProccessController extends Controller
 
         // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
         if (!SystemProccess::where('process_name', 'like', "%queue_worker%")->first()) {
-            for ($x = 0; $x <= 80;) {
+            for ($x = 0; $x <= 200;) {
 
 
                 $queuePid = self::start_queue_and_return_pid();
@@ -166,7 +166,7 @@ class SystemProccessController extends Controller
      */
     public static function start_queue_and_return_pid()
     {
-        $queuePid = shell_exec("nohup php artisan queue:work --sleep=3 --daemon > /dev/null 2>&1 & echo $!; ");
+        $queuePid = shell_exec("nohup php artisan queue:work --sleep=1 --tries=2 --daemon > /dev/null 2>&1 & echo $!; ");
 
         return intval($queuePid);
     }

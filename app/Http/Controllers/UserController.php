@@ -103,11 +103,21 @@ class UserController extends Controller
                 }
             }
 
+            // získání informace, zda má uživatel, dark nebo ligh mod
+            if (is_null($user->isDark)) {
+                $theme = true;
+            } else if ($user->isDark === 0) {
+                $theme = false;
+            } else {
+                $theme = true;
+            }
+
             return [
                 'name' => $user->name,
                 'role_id' => $user->role_id,
                 'mozaika' => $mozaika,
-                'customData' => $customData
+                'customData' => $customData,
+                'theme' => $theme
             ];
         }
     }
@@ -284,7 +294,7 @@ class UserController extends Controller
                 // status , msg
                 return [
                     "status" => array(
-                        'status' => "issue",
+                        'status' => "warning",
                         'msg' => "Je nutné vybrat kanály, které mají být statické!"
                     )
                 ];
@@ -527,5 +537,52 @@ class UserController extends Controller
                 'msg' => "Nepodařilo se odebrat uživatele"
             ];
         }
+    }
+
+    /**
+     * fn pro uložení dark || light modu prostredí
+     *
+     * @param Request $request->isDark
+     * @return array
+     */
+    public function change_theme(Request $request): array
+    {
+        // přihlásený uzivatel dle session
+        $user = Auth::user();
+        User::where('id', $user->id)->update(
+            [
+                'isDark' => $request->isDark
+            ]
+        );
+
+        return [
+            'status' => "success",
+            'msg' => "Změna byla uložena"
+        ];
+    }
+
+
+    public function get_last_ten_users(): array
+    {
+        if (!User::first()) {
+            return [
+                'status' => "error"
+            ];
+        }
+
+
+        foreach (User::orderByDesc('id')->take(10)->get(['name', 'email', 'role_id']) as $user) {
+            // vyhledání role + output
+            $output[] = array(
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => UserRole::where('id', $user->role_id)->first()->role_name
+            );
+        }
+
+        return [
+            'status' => "success",
+            'data' => $output
+        ];
     }
 }

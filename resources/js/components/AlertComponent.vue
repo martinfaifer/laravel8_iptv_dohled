@@ -4,7 +4,7 @@
             v-if="status.status"
             class="text-center"
             rounded="pill"
-            transition="scale-transition"
+            transition="scroll-y-transition"
             dense
             top
             :timeout="timeout"
@@ -28,14 +28,6 @@ export default {
     }),
 
     methods: {},
-    // watch: {
-    //     status() {
-    //         if (this.status != null) {
-    //             setTimeout(function() {
-    //                 this.status = null;
-    //             }, 5000);
-    //         }
-    //     }
-    // }
+
 };
 </script>

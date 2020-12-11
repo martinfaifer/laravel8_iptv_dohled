@@ -12,7 +12,7 @@ class start_all_streams_for_diagnostic extends Command
      *
      * @var string
      */
-    protected $signature = 'command:start_all_streams_for_diagnostic';
+    protected $signature = 'stream:start_all_streams_for_diagnostic';
 
     /**
      * The console command description.

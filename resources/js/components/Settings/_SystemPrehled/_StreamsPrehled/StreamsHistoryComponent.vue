@@ -1,89 +1,324 @@
 <template>
     <v-main>
-        <v-row>
+        <div class="ml-12 body-1">
+            <v-row>
+                <strong>
+                    Posledních 8 záznamů z historie výpadků
+                </strong>
+            </v-row>
+        </div>
+        <v-card flat class="mt-7" elevation="0" color="#202020">
             <div v-if="history != null">
-                <!-- tabulka s výpisem posledních 10 záznamů -->
-                <v-card flat color="transparent elevation-0">
-                    <div class="text-center">
-                        <span class="body-2">
-                            Posledních 10 záznamů z historie
-                        </span>
-                    </div>
-                    <v-data-table
-                        :headers="headers"
-                        :items="history"
-                        flat
-                        dense
-                        class="elevation-0 mt-2"
+                <v-timeline dense>
+                    <v-timeline-item
+                        v-for="stream in history"
+                        :key="stream.id"
+                        :color="stream.color"
+                        small
                     >
-                        <template v-slot:item.data="{ item }">
+                        <template v-slot:opposite>
                             <span
-                                v-if="item.data == 'no_audio_bitrate'"
-                                class="red--text"
-                            >
-                                Není datový tok na audiu
-                            </span>
-                            <span
-                                v-if="item.data == 'no_video_bitrate'"
-                                class="red--text"
-                            >
-                                Není datový tok na videu
-                            </span>
-                            <span
-                                v-if="item.data == 'no_dekrypt'"
-                                class="red--text"
-                            >
-                                Stream se nedekryptuje
-                            </span>
-                            <span v-if="item.data == 'issue'" class="red--text">
-                                Ve streamu se vyskytl problém
-                            </span>
-                            <span
-                                v-if="item.data == 'no_audio'"
-                                class="red--text"
-                            >
-                                Nepodařilo se detekovat audio
-                            </span>
-                            <span
-                                v-if="item.data == 'diagnostic_crash'"
-                                class="red--text"
-                            >
-                                Problém s diagnostikou
-                            </span>
-                            <span
-                                v-if="item.data == 'stream_error'"
-                                class="red--text"
-                            >
-                                Stream nefunguje
-                            </span>
-                            <span
-                                v-if="item.data == 'transporterrors_warning'"
-                                class="red--text"
-                            >
-                                Objevily se TS chyby
-                            </span>
-                            <span
-                                v-if="item.data == 'scrambledPids_warning'"
-                                class="red--text"
-                            >
-                                Změněno pořadí Pidů
-                            </span>
-                            <span
-                                v-if="item.data == 'stream_ok'"
-                                class="green--text"
-                            >
-                                Stream je v pořádku
-                            </span>
+                                class="
+                                                body-2 font-weight-bold
+                                            "
+                                v-text="stream.created_at"
+                            ></span>
                         </template>
-                    </v-data-table>
-                </v-card>
+                        <div class="py-4">
+                            <div v-if="stream.status == 'stream_ok'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Stream je v pořádku
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="
+                                    stream.status == 'scrambledPids_warning'
+                                "
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Změněno pořadí Pidů
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="
+                                    stream.status == 'transporterrors_warning'
+                                "
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Objevily se TS chyby
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+
+                            <div v-else-if="stream.status == 'stream_error'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Stream nefunguje
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="stream.status == 'diagnostic_crash'"
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Problém s diagnostikou
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div v-else-if="stream.status == 'no_audio'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Nepodařilo se detekovat audio
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div v-else-if="stream.status == 'issue'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Ve streamu se vyskytl problém
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div v-else-if="stream.status == 'no_dekrypt'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Stream se nedekryptuje
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="stream.status == 'no_video_bitrate'"
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Video nemá datový tok
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="stream.status == 'no_audio_bitrate'"
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Audio nemá datový tok
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="stream.status == 'sheduler_disable'"
+                            >
+                                <v-row>
+                                    <small class="green--text">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small class="green--text ml-12">
+                                        <strong>
+                                            Aplikováno automatické vypnutí
+                                            alertů
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div
+                                v-else-if="
+                                    stream.status == 'streamCrash_tryToStart'
+                                "
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Přestala fungovat diagnostika,
+                                            stream se pokusí automaticky spustit
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                            <div v-else-if="stream.status == 'sheduler_enable'">
+                                <v-row>
+                                    <small class="green--text">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        :class="`${stream.color}--text`"
+                                        class="ml-12"
+                                    >
+                                        <strong>
+                                            Aplikováno automatické zapnutí
+                                            alertů
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+                        </div>
+                    </v-timeline-item>
+                </v-timeline>
             </div>
+
             <div v-else>
                 <v-alert text type="info">
                     Neexistuje žádná historie
                 </v-alert>
             </div>
-        </v-row>
+        </v-card>
     </v-main>
 </template>
 <script>
@@ -121,14 +356,14 @@ export default {
                     this.history = response.data;
                 }
             });
-        },
+        }
     },
     mounted() {
         this.interval = setInterval(
             function() {
                 this.loadHistory();
             }.bind(this),
-            60000
+            10000
         );
     }
 };

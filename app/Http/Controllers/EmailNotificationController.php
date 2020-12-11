@@ -10,9 +10,11 @@ use App\Mail\SendUserNotificationWelcomeMessage;
 use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\EmailNotification;
 use App\Models\Stream;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use PharIo\Manifest\Email;
 
 class EmailNotificationController extends Controller
 {
@@ -247,8 +249,21 @@ class EmailNotificationController extends Controller
                 'status' => "empty"
             ];
         }
+        foreach (EmailNotification::get() as $email) {
+            $output[] = array(
+                'id' => $email->id,
+                'email' => $email->email,
+                'channels' => $email->channels,
+                'system' => $email->system,
+                'channels_issues' => $email->channels_issues,
+                'belongsTo' => User::where('id', $email->belongsTo)->first()->name
+            );
+        }
 
-        return EmailNotification::get();
+        return [
+            'status' => "success",
+            'data' => $output
+        ];
     }
 
     /**
@@ -398,6 +413,30 @@ class EmailNotificationController extends Controller
                 'isAlert' => "isAlert",
                 'status' => "error",
                 'msg' => "Nepodařilo se editovat"
+            ];
+        }
+    }
+
+
+    /**
+     * fn pro vyhledaní emailových adress pagřících k nademu uzivateli
+     *
+     * @return array
+     */
+    public function return_emails_by_user(): array
+    {
+        $user = Auth::user();
+
+        if (EmailNotification::where('belongsTo', $user->id)->first()) {
+
+
+            return [
+                'status' => "success",
+                'data' => EmailNotification::where('belongsTo', $user->id)->get(['id', 'email', 'channels', 'channels_issues'])->toArray()
+            ];
+        } else {
+            return [
+                'status' => "error"
             ];
         }
     }

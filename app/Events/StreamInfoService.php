@@ -19,18 +19,22 @@ class StreamInfoService implements ShouldBroadcastNow
     public $tsid;
     public $pmtpid;
     public $pcrpid;
+    public $name;
+    public $provider;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $tsid, $pmtpid, $pcrpid)
+    public function __construct($streamId, $tsid, $pmtpid, $pcrpid, $name, $provider)
     {
         $this->streamId = $streamId;
         $this->tsid = $tsid;
         $this->pmtpid = $pmtpid;
         $this->pcrpid = $pcrpid;
+        $this->name = $name;
+        $this->provider = $provider;
     }
 
     /**
@@ -48,7 +52,9 @@ class StreamInfoService implements ShouldBroadcastNow
         return [
             'pcrpid' => $this->pcrpid,
             'pmtpid' => $this->pmtpid,
-            'tsid' => $this->tsid
+            'tsid' => $this->tsid,
+            'name' => $this->name,
+            'provider' => $this->provider
         ];
     }
 }

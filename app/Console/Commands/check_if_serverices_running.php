@@ -12,7 +12,7 @@ class check_if_serverices_running extends Command
      *
      * @var string
      */
-    protected $signature = 'command:check_if_serverices_running';
+    protected $signature = 'stream:check_if_serverices_running';
 
     /**
      * The console command description.

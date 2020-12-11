@@ -26,20 +26,24 @@
             </div>
             <v-row no-gutters>
                 <v-col class="col-3">
-                    <img-component></img-component>
-                    <doku-component></doku-component>
-                    <streaminfosheduler-component></streaminfosheduler-component>
+                    <img-component ></img-component>
+                    <doku-component ></doku-component>
+                    <streaminfosheduler-component ></streaminfosheduler-component>
                 </v-col>
 
                 <!-- konec náhledu na kanál -->
                 <v-spacer></v-spacer>
-                <v-col class="col-5">
+                <v-col class="col-9">
                     <ts-component></ts-component>
                 </v-col>
-                <v-spacer></v-spacer>
-                <v-col class="col-4">
+                <!-- <v-spacer></v-spacer> -->
+                <!-- <v-col class="col-3">
                     <history-component></history-component
-                ></v-col>
+                ></v-col> -->
+            </v-row>
+            <v-divider></v-divider>
+            <v-row class="mt-6">
+                <history-component></history-component>
             </v-row>
         </v-container>
     </v-main>

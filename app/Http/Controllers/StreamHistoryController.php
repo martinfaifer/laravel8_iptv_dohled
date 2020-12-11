@@ -131,13 +131,27 @@ class StreamHistoryController extends Controller
      */
     public function return_last_10_history()
     {
-        if (StreamHistory::orderBy('id', 'desc')->take(10)->first()) {
-            foreach (StreamHistory::orderBy('id', 'desc')->take(10)->get() as $history) {
-                $data[] = array(
-                    'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,
-                    'data' => $history->status,
-                    'created_at' => substr($history->created_at, 0, 10)
-                );
+        if (StreamHistory::first()) {
+            foreach (StreamHistory::orderBy('id', 'desc')->take(8)->get() as $history) {
+                if (Stream::where('id', $history->stream_id)->first()) {
+                    if ($history->status === "stream_ok") {
+                        $data[] = array(
+                            'id' => $history->id,
+                            'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,
+                            'status' => $history->status,
+                            'color' => "success",
+                            'created_at' => substr($history->created_at, 0, 19)
+                        );
+                    } else {
+                        $data[] = array(
+                            'id' => $history->id,
+                            'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,
+                            'status' => $history->status,
+                            'color' => "error",
+                            'created_at' => substr($history->created_at, 0, 19)
+                        );
+                    }
+                }
             }
 
             return $data;
@@ -201,6 +215,19 @@ class StreamHistoryController extends Controller
             return $historie;
         } else {
             return [];
+        }
+    }
+
+
+    /**
+     * fn pro odebrání záznamů starších než 12h z tabulky stream_history
+     *
+     * @return void
+     */
+    public static function get_last_twelve_hours_records_last_delete(): void
+    {
+        if (StreamHistory::where('created_at', '<=', now()->subHours(12))->first()) {
+            StreamHistory::where('created_at', '<=', now()->subHours(12))->delete();
         }
     }
 }

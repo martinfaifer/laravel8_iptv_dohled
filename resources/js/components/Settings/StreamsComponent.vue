@@ -6,7 +6,7 @@
                 :status="status"
             ></alert-component>
         </div>
-        <v-container>
+        <v-container fluid>
             <v-card color="transparent" class="elevation-0 body-2">
                 <v-card-title>
                     <v-text-field
@@ -92,6 +92,9 @@
                         </span>
                         <span v-else-if="item.status == 'stop'">
                             <v-icon color="blue">mdi-stop</v-icon>
+                        </span>
+                        <span v-else-if="item.status == 'issue'">
+                            <v-icon color="orange">mdi-exclamation</v-icon>
                         </span>
                         <span v-else>
                             <v-icon color="blue">mdi-repeat</v-icon>

@@ -23,13 +23,14 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
     public $audioScrambled;
     public $audioLanguage;
     public $audioAccess;
+    public $audioDescription;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess)
+    public function __construct($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioDescription)
     {
         $this->streamId = $streamId;
         $this->audioBitrate = $audioBitrate;
@@ -38,6 +39,7 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
         $this->audioScrambled = $audioScrambled;
         $this->audioLanguage = $audioLanguage;
         $this->audioAccess = $audioAccess;
+        $this->audioDescription = $audioDescription;
     }
 
     /**
@@ -59,7 +61,8 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
             'audioDiscontinuities' => $this->audioDiscontinuities,
             'audioScrambled' => $this->audioScrambled,
             'audioLanguage' => $this->audioLanguage,
-            'audioAccess' => $this->audioAccess
+            'audioAccess' => $this->audioAccess,
+            'audioDescription' => $this->audioDescription
         ];
     }
 }

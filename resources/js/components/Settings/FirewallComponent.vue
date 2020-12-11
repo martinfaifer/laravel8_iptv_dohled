@@ -20,10 +20,10 @@
                 <strong>Firewall je aktivní</strong>
             </v-alert>
         </v-container>
-        <v-container>
-            <v-row>
+        <v-container fluid>
+            <v-row class="ml-12">
                 <!-- Logy -->
-                <v-row>
+                <v-row >
                     <v-card color="transparent" class="elevation-0 body-2">
                         <v-card-title>
                             <v-text-field

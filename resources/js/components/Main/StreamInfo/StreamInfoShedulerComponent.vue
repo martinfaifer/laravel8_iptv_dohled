@@ -20,7 +20,11 @@
                 <v-container v-else>
                     <div>
                         <v-alert dense text type="info">
-                            <strong>Není plánovaná žádná událost</strong>
+                            <small>
+                                <strong
+                                    >Není plánovaná žádná událost</strong
+                                ></small
+                            >
                         </v-alert>
                     </div>
                 </v-container>
