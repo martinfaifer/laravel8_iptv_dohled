@@ -9,7 +9,11 @@
                 Nastavení prostředí
             </v-alert>
 
-            <v-card flat class="text-center transition-fast-in-fast-out" width="80%">
+            <v-card
+                flat
+                class="text-center transition-fast-in-fast-out"
+                width="80%"
+            >
                 <v-card-text>
                     <span>
                         Nastavení počtu zobrazených kanálů na stránce v mozaice
@@ -45,14 +49,17 @@
                     </v-col>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn
-                        @click="GuiEdit()"
-                        small
-                        class="mr-12"
-                        color="success"
-                    >
-                        Editovat
-                    </v-btn>
+                    <v-row>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            @click="GuiEdit()"
+                            small
+                            class="mr-12"
+                            color="success"
+                        >
+                            Editovat
+                        </v-btn>
+                    </v-row>
                 </v-card-actions>
             </v-card>
         </v-container>

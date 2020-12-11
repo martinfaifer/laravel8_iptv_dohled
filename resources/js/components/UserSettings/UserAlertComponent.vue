@@ -24,65 +24,85 @@
                     </v-btn>
                 </v-toolbar>
                 <div v-if="items != null">
-                    <v-list two-line subheader dense>
-                        <v-list-item v-for="item in items" :key="item.id">
-                            <v-list-item-avatar color="#1E1E1E">
-                                <v-icon dark>
-                                    mdi-email
-                                </v-icon>
-                            </v-list-item-avatar>
+                    <v-virtual-scroll
+                        :bench="benched"
+                        :items="items"
+                        height="260"
+                        item-height="64"
+                    >
+                        <!-- <v-list two-line subheader dense> -->
+                        <template v-slot:default="{ item }">
+                            <v-list-item>
+                                <v-list-item-avatar>
+                                    <v-icon>
+                                        mdi-email
+                                    </v-icon>
+                                </v-list-item-avatar>
 
-                            <v-list-item-content>
-                                <v-list-item-title class="ml-3">
-                                    <strong>
-                                        {{ item.email }}
-                                    </strong>
-                                </v-list-item-title>
-                                <v-list-item-subtitle class="ml-3 mt-1">
-                                    <v-row class="ml-3">
-                                        <div>
-                                            Výpadky kanálu:
-                                            <span
-                                                v-if="item.channels === 'yes'"
-                                            >
-                                                <v-icon small color="success">
-                                                    mdi-check
-                                                </v-icon>
-                                            </span>
-                                            <span v-else>
-                                                <v-icon small color="error">
-                                                    mdi-close
-                                                </v-icon>
-                                            </span>
-                                        </div>
-                                        <div class="ml-6">
-                                            Problémy s kanálem:
-                                            <span
-                                                v-if="
-                                                    item.channels_issues ===
-                                                        'yes'
-                                                "
-                                            >
-                                                <v-icon small color="success">
-                                                    mdi-check
-                                                </v-icon>
-                                            </span>
-                                            <span v-else>
-                                                <v-icon small color="error">
-                                                    mdi-close
-                                                </v-icon>
-                                            </span>
-                                        </div>
-                                    </v-row>
-                                </v-list-item-subtitle>
-                            </v-list-item-content>
-                            <v-list-item-action>
-                                <v-btn icon  @click="deleteEmail(item.id)">
-                                    <v-icon small color="red">mdi-delete</v-icon>
-                                </v-btn>
-                            </v-list-item-action>
-                        </v-list-item>
-                    </v-list>
+                                <v-list-item-content>
+                                    <v-list-item-title class="ml-3">
+                                        <strong>
+                                            {{ item.email }}
+                                        </strong>
+                                    </v-list-item-title>
+                                    <v-list-item-subtitle class="ml-3 mt-1">
+                                        <v-row class="ml-3">
+                                            <div>
+                                                Výpadky kanálu:
+                                                <span
+                                                    v-if="
+                                                        item.channels === 'yes'
+                                                    "
+                                                >
+                                                    <v-icon
+                                                        small
+                                                        color="success"
+                                                    >
+                                                        mdi-check
+                                                    </v-icon>
+                                                </span>
+                                                <span v-else>
+                                                    <v-icon small color="error">
+                                                        mdi-close
+                                                    </v-icon>
+                                                </span>
+                                            </div>
+                                            <div class="ml-6">
+                                                Problémy s kanálem:
+                                                <span
+                                                    v-if="
+                                                        item.channels_issues ===
+                                                            'yes'
+                                                    "
+                                                >
+                                                    <v-icon
+                                                        small
+                                                        color="success"
+                                                    >
+                                                        mdi-check
+                                                    </v-icon>
+                                                </span>
+                                                <span v-else>
+                                                    <v-icon small color="error">
+                                                        mdi-close
+                                                    </v-icon>
+                                                </span>
+                                            </div>
+                                        </v-row>
+                                    </v-list-item-subtitle>
+                                </v-list-item-content>
+                                <v-list-item-action>
+                                    <v-btn icon @click="deleteEmail(item.id)">
+                                        <v-icon small color="red"
+                                            >mdi-delete</v-icon
+                                        >
+                                    </v-btn>
+                                </v-list-item-action>
+                            </v-list-item>
+                            <v-divider inset></v-divider>
+                            <!-- </v-list> -->
+                        </template>
+                    </v-virtual-scroll>
                 </div>
                 <div v-else class="text-center">
                     <v-card-subtitle>
@@ -162,28 +182,6 @@ export default {
         createDialog: false,
         newEmail: null,
         items: null
-        // items: [
-        //     {
-        //         title: "Brunch this weekend?"
-        //     },
-        //     { divider: true, inset: true },
-        //     {
-        //         title:
-        //             'Summer BBQ <span class="grey--text text--lighten-1">4</span>'
-        //     },
-        //     { divider: true, inset: true },
-        //     {
-        //         title: "Oui oui"
-        //     },
-        //     { divider: true, inset: true },
-        //     {
-        //         title: "Birthday gift"
-        //     },
-        //     { divider: true, inset: true },
-        //     {
-        //         title: "Recipe to try"
-        //     }
-        // ]
     }),
     components: {
         "alert-component": AlertComponent

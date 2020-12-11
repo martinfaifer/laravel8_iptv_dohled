@@ -104,7 +104,7 @@ class EmailNotificationController extends Controller
      * STATUS STREAMU JE ERROR
      * @return void
      */
-    public static function notify_crashed_stream()
+    public static function notify_crashed_stream(): void
     {
         // zjistení zda je email, na který by se dalo odeslat data
         $checkIfExistAnyEmailToNotify = self::check_if_is_mail_to_notify("channels");
@@ -142,7 +142,7 @@ class EmailNotificationController extends Controller
      * @param string $streamId
      * @return void
      */
-    public static function notify_success_stream(string $streamId)
+    public static function notify_success_stream(string $streamId): void
     {
         // zjistení zda je email, na který by se dalo odeslat data
         $checkIfExistAnyEmailToNotify = self::check_if_is_mail_to_notify("channels");
@@ -242,7 +242,7 @@ class EmailNotificationController extends Controller
      *
      * @return void
      */
-    public function return_emails()
+    public function return_emails(): array
     {
         if (!EmailNotification::first()) {
             return [

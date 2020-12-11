@@ -9,7 +9,7 @@
                             :elevation="hover ? 1 : 0"
                             height="100%"
                             width="40em"
-                            class="text-center"
+                            class="text-center transition-fast-in-fast-out"
                             flat
                         >
                             <v-card-text>
@@ -34,40 +34,6 @@
                                         </strong>
                                     </span>
                                 </v-list-item>
-                                <div v-if="user.userDetail != 'false'">
-                                    <v-list-item
-                                        v-if="user.userDetail.company != null"
-                                    >
-                                        Společnost:
-                                        <span class="ml-3">
-                                            <strong>
-                                                {{ user.userDetail.company }}
-                                            </strong>
-                                        </span>
-                                    </v-list-item>
-                                    <v-list-item
-                                        v-if="
-                                            user.userDetail.tel_number != null
-                                        "
-                                    >
-                                        Tel:
-                                        <span class="ml-3">
-                                            <strong>
-                                                {{ user.userDetail.tel_number }}
-                                            </strong>
-                                        </span>
-                                    </v-list-item>
-                                    <v-list-item
-                                        v-if="user.userDetail.nickname != null"
-                                    >
-                                        Přezdívka:
-                                        <span class="ml-3">
-                                            <strong>
-                                                {{ user.userDetail.nickname }}
-                                            </strong>
-                                        </span>
-                                    </v-list-item>
-                                </div>
                             </v-card-text>
                         </v-card>
                     </v-hover>
@@ -80,7 +46,7 @@
                             :elevation="hover ? 1 : 0"
                             height="100%"
                             width="40em"
-                            class="text-center"
+                            class="text-center transition-fast-in-fast-out"
                             flat
                         >
                             <v-card-text>
@@ -137,7 +103,7 @@
                         :elevation="hover ? 1 : 0"
                         height="100%"
                         width="100%"
-                        class="text-center"
+                        class="text-center transition-fast-in-fast-out"
                         flat
                     >
                         <v-card-text>

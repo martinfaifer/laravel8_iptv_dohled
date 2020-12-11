@@ -50,7 +50,6 @@
                                 <v-avatar color="transparent" small>
                                     <span v-if="todayEventsCount != '0'">
                                         <v-badge
-                                            bordered
                                             bottom
                                             color="#65C9FF"
                                             :content="todayEventsCount"
@@ -105,7 +104,7 @@
                                     >mdi-settings</v-icon
                                 >
                             </v-list-item>
-                            <v-divider ></v-divider>
+                            <v-divider></v-divider>
                             <v-list-item @click="logOut()">
                                 Odhlásit se <v-spacer></v-spacer
                                 ><v-icon color="red" right small
@@ -158,7 +157,6 @@
                 </template>
                 <!-- end User Part -->
                 <v-badge
-                    bordered
                     bottom
                     color="#65C9FF"
                     :content="alertCount"

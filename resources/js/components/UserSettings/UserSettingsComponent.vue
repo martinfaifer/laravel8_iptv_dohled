@@ -17,7 +17,7 @@
                         <v-card
                             :elevation="hover ? 1 : 0"
                             flat
-                            class="text-center ransition-fast-in-fast-out"
+                            class="text-center transition-fast-in-fast-out"
                         >
                             <v-card-text>
                                 <span>
@@ -44,7 +44,10 @@
                                                 required
                                             ></v-text-field>
                                         </v-col>
-                                        <v-card-actions>
+                                    </v-row>
+                                    <v-card-actions>
+                                        <v-row>
+                                            <v-spacer></v-spacer>
                                             <v-btn
                                                 @click="ObecneNastaveniEdit()"
                                                 :disabled="
@@ -56,8 +59,8 @@
                                                 color="success"
                                                 >Editovat</v-btn
                                             >
-                                        </v-card-actions>
-                                    </v-row>
+                                        </v-row>
+                                    </v-card-actions>
                                 </v-container>
                             </v-card-text>
                         </v-card>
@@ -67,10 +70,9 @@
                 <v-row>
                     <v-hover v-slot:default="{ hover }">
                         <v-card
-                            color="#202020"
                             :elevation="hover ? 1 : 0"
                             flat
-                            class="text-center ransition-fast-in-fast-out"
+                            class="text-center transition-fast-in-fast-out"
                         >
                             <v-card-text>
                                 <span>
@@ -101,16 +103,19 @@
                                         </v-col>
                                     </v-row>
                                     <v-card-actions>
-                                        <v-btn
-                                            @click="ZmenaHesla()"
-                                            :disabled="
-                                                password != passwordCheck
-                                            "
-                                            type="submit"
-                                            small
-                                            color="success"
-                                            >Editovat</v-btn
-                                        >
+                                        <v-row>
+                                            <v-spacer></v-spacer>
+                                            <v-btn
+                                                @click="ZmenaHesla()"
+                                                :disabled="
+                                                    password != passwordCheck
+                                                "
+                                                type="submit"
+                                                small
+                                                color="success"
+                                                >Editovat</v-btn
+                                            >
+                                        </v-row>
                                     </v-card-actions>
                                 </v-container>
                             </v-card-text>

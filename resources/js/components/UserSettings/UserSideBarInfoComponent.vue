@@ -32,11 +32,6 @@
                         {{ user.role }}
                     </strong>
                 </span>
-                <v-file-input
-                    v-if="openNewImage === true"
-                    accept="image/*"
-                    label="File input"
-                ></v-file-input>
             </div>
         </v-navigation-drawer>
     </v-main>
