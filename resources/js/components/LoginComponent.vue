@@ -80,8 +80,18 @@ export default {
 
     created() {
         this.loadUser();
+        this.consoleshowmessage();
     },
     methods: {
+        consoleshowmessage() {
+
+            console.log("II  PPPPPPPP  TTTTTTTT  VV        VV   DDDDDDDD     OOOOOOOO  HH    HH  LL      EEEEEEEE  DDDDDDDD");
+            console.log("II  PP   PPP     TT      VV     VV     DD      DD   OO    OO  HH    HH  LL      EE        DD     DD");
+            console.log("II  PPPPPPP      TT       VV   VV      DD       DD  OO    OO  HHHHHHHH  LL      EEEEEEEE  DD       DD");
+            console.log("II  PP           TT        VV VV       DD      DD   OO    OO  HH    HH  LL      EE        DD      DD");
+            console.log("II  PP           TT         VV         DDDDDDDD     OOOOOOOO  HH    HH  LLLLLL  EEEEEEEE  DDDDDDDD");
+
+        },
         login() {
             let currentObj = this;
             axios
