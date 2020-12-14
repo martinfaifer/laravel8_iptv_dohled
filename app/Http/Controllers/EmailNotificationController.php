@@ -9,6 +9,7 @@ use App\Mail\SendSystemWarningAlert;
 use App\Mail\SendUserNotificationWelcomeMessage;
 use App\Models\ChannelsWhichWaitingForNotification;
 use App\Models\EmailNotification;
+use App\Models\EmailStats;
 use App\Models\Stream;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -131,13 +132,17 @@ class EmailNotificationController extends Controller
 
                     // update záznamu ChannelsWhichWaitingForNotification -> notified => true
                     ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->update(['notified' => "true"]);
+
+                    EmailStats::create([
+                        'sendedMail' => "1"
+                    ]);
                 }
             }
         }
     }
 
     /**
-     * Undocumented function
+     * odeslání notifikae,když stream je již funkcni
      *
      * @param string $streamId
      * @return void
@@ -165,6 +170,11 @@ class EmailNotificationController extends Controller
 
                     // odebrání záznamu z tabulky
                     ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
+
+                    // přidání +1 do tabulky pro denní statistiky vykreslení odeslaných mailů
+                    EmailStats::create([
+                        'sendedMail' => "1"
+                    ]);
                 }
             }
         }

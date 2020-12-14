@@ -511,7 +511,7 @@ class StreamController extends Controller
     {
 
         $user = Auth::user();
-        return Stream::where('dohledovano', true)->orderBy('nazev', 'asc')->paginate($user->pagination, ['id', 'image', 'nazev', 'status']);
+        return Stream::where('dohledovano', true)->where('status', "!=", 'stop')->orderBy('nazev', 'asc')->paginate($user->pagination, ['id', 'image', 'nazev', 'status']);
     }
 
 

@@ -23,11 +23,13 @@
                             height="160"
                             width="280"
                             :class="{
-                                success: stream.status == 'success',
-                                green: stream.status == 'diagnostic_crash',
-                                error: stream.status == 'error',
-                                warning: stream.status == 'issue',
-                                transparent: stream.status == 'waiting'
+                                'green darken-1': stream.status == 'success',
+                                'green darken-3':
+                                    stream.status == 'diagnostic_crash',
+                                'red darken-4': stream.status == 'error',
+                                'deep-orange accent-1':
+                                    stream.status == 'issue',
+                                '#202020': stream.status == 'waiting'
                             }"
                         >
                             <!-- mdi-loading -->

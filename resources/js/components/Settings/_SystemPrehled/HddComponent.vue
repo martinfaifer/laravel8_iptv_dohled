@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            <alert-component :status="status"></alert-component>
+            <!-- <alert-component :status="status"></alert-component> -->
         </div>
         <div>
             <v-card

@@ -23,11 +23,14 @@
                                 height="143"
                                 width="250"
                                 :class="{
-                                    success: stream.status == 'success',
-                                    green: stream.status == 'diagnostic_crash',
-                                    error: stream.status == 'error',
-                                    warning: stream.status == 'issue',
-                                    transparent: stream.status == 'waiting'
+                                    'green darken-1':
+                                        stream.status == 'success',
+                                    'green darken-3':
+                                        stream.status == 'diagnostic_crash',
+                                    'red darken-4': stream.status == 'error',
+                                    'deep-orange accent-1':
+                                        stream.status == 'issue',
+                                    '#202020': stream.status == 'waiting'
                                 }"
                                 @contextmenu="show($event, stream.id)"
                             >
@@ -529,7 +532,7 @@
                     <v-card-text>
                         <v-container>
                             <v-row>
-                                <v-col >
+                                <v-col>
                                     <v-text-field
                                         label="Název kanálu"
                                         v-model="
@@ -543,18 +546,10 @@
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
-                        <v-btn
-                            color="red darken-1"
-                            text
-                            @click="closeDialog()"
-                        >
+                        <v-btn color="red darken-1" text @click="closeDialog()">
                             Zavřít
                         </v-btn>
-                        <v-btn
-                            color="green darken-1"
-                            text
-                            @click="saveEdit()"
-                        >
+                        <v-btn color="green darken-1" text @click="saveEdit()">
                             Editovat
                         </v-btn>
                     </v-card-actions>
@@ -636,24 +631,23 @@ export default {
     created() {
         this.getStreams();
         this.smallEditStreamData = null;
+        console.log("WEBSOCKET " +Echo.connect());
     },
     methods: {
         saveEdit() {
-             window.axios
+            window.axios
                 .post("stream/mozaika/edit/save", {
                     streamId: this.streamId,
-                    streamName: this.smallEditStreamData.stream_name,
+                    streamName: this.smallEditStreamData.stream_name
                 })
                 .then(response => {
                     if (response.data.status === "success") {
-
                         this.smallEditDialog = false;
                     }
                 });
         },
         closeDialog() {
             this.smallEditDialog = false;
-
         },
         OpenSmallEditDialog() {
             window.axios
@@ -742,15 +736,13 @@ export default {
         async getStreams() {
             try {
                 await axios
-                .get("pagination?page=" + this.pagination.current)
-                .then(response => {
-                    this.streams = response.data.data;
-                    this.pagination.current = response.data.current_page;
-                    this.pagination.total = response.data.last_page;
-                });
-            } catch (error) {
-
-            }
+                    .get("pagination?page=" + this.pagination.current)
+                    .then(response => {
+                        this.streams = response.data.data;
+                        this.pagination.current = response.data.current_page;
+                        this.pagination.total = response.data.last_page;
+                    });
+            } catch (error) {}
         },
         onPageChange() {
             this.getStreams();

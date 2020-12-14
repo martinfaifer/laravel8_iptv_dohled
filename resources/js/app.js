@@ -32,6 +32,7 @@ import StreamsComponent from "./components/Settings/StreamsComponent";
 import UsersComponent from "./components/Settings/UsersComponent";
 import FirewallComponent from './components/Settings/FirewallComponent';
 import AlertComponent from './components/Settings/AlertComponent'
+import PageNotFoundComponent from './components/PageNotFoundComponent'
 
 let routes = [
     {
@@ -81,11 +82,11 @@ let routes = [
     {
         path: "/login",
         component: LoginComponent
-    }
-    // {
-    //     path: '*',
-    //     component: PageNotFoundComponent
-    // },
+    },
+    {
+        path: '*',
+        component: PageNotFoundComponent
+    },
 ];
 
 // definice konstant

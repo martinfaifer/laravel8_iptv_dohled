@@ -238,7 +238,6 @@
             class="mt-12"
             absolute
             right
-            rounded="pill"
             top
         >
             <span class="ml-12" v-if="iptvDokuStatus == 'success'">
@@ -248,12 +247,30 @@
                 Nepodařilo se připojit k IPTV dokumentaci
             </span>
         </v-snackbar>
+        <v-snackbar
+            v-if="internetConnection === false"
+            :timeout="-1"
+            :value="true"
+            absolute
+            bottom
+            color="warning"
+            left
+            class="text--center"
+        >
+            <v-icon>
+                mdi-wifi
+            </v-icon>
+            <strong class="ml-12">
+                Nejste Online
+            </strong>
+        </v-snackbar>
     </v-app>
 </template>
 
 <script>
 export default {
     data: () => ({
+        internetConnection: true,
         loadingApp: true,
         status: null,
         dark: true,
@@ -293,6 +310,7 @@ export default {
     },
 
     created() {
+        this.checkIfisOnline();
         this.notifywhenisloggedtoconsole();
         this.loadAlerts();
         this.loadUser();
@@ -405,11 +423,28 @@ export default {
         },
 
         notifywhenisloggedtoconsole() {
-            console.log("II  PPPPPPPP  TTTTTTTT  VV        VV   DDDDDDDD     OOOOOOOO  HH    HH  LL      EEEEEEEE  DDDDDDDD");
-            console.log("II  PP   PPP     TT      VV     VV     DD      DD   OO    OO  HH    HH  LL      EE        DD     DD");
-            console.log("II  PPPPPPP      TT       VV   VV      DD       DD  OO    OO  HHHHHHHH  LL      EEEEEEEE  DD       DD");
-            console.log("II  PP           TT        VV VV       DD      DD   OO    OO  HH    HH  LL      EE        DD      DD");
-            console.log("II  PP           TT         VV         DDDDDDDD     OOOOOOOO  HH    HH  LLLLLL  EEEEEEEE  DDDDDDDD");
+            console.log(
+                "II  PPPPPPPP  TTTTTTTT  VV        VV   DDDDDDDD     OOOOOOOO  HH    HH  LL      EEEEEEEE  DDDDDDDD"
+            );
+            console.log(
+                "II  PP   PPP     TT      VV     VV     DD      DD   OO    OO  HH    HH  LL      EE        DD     DD"
+            );
+            console.log(
+                "II  PPPPPPP      TT       VV   VV      DD       DD  OO    OO  HHHHHHHH  LL      EEEEEEEE  DD       DD"
+            );
+            console.log(
+                "II  PP           TT        VV VV       DD      DD   OO    OO  HH    HH  LL      EE        DD      DD"
+            );
+            console.log(
+                "II  PP           TT         VV         DDDDDDDD     OOOOOOOO  HH    HH  LLLLLL  EEEEEEEE  DDDDDDDD"
+            );
+        },
+
+        async checkIfisOnline() {
+            try {
+                this.internetConnection = window.navigator.onLine;
+                console.log(this.internetConnection);
+            } catch (error) {}
         }
 
         // checkTheme() {
@@ -427,14 +462,7 @@ export default {
             function() {
                 try {
                     this.loadAlerts();
-                } catch (error) {}
-            }.bind(this),
-            2000
-        );
-
-        setInterval(
-            function() {
-                try {
+                    this.checkIfisOnline();
                     this.loadUser();
                 } catch (error) {}
             }.bind(this),
@@ -448,6 +476,13 @@ export default {
         }, 60000);
     },
     watch: {
+        internetConnection: function() {
+            if (this.internetConnection === false) {
+                // this.networkChangeNotification = true;
+            } else {
+                this.networkChangeNotification = false;
+            }
+        },
         search() {
             if (this.items.length > 0) return;
 
