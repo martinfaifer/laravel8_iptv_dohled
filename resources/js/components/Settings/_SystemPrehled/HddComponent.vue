@@ -25,7 +25,7 @@
                         </v-toolbar>
                         <v-row no-gutters>
                             <div class="body-2 text-center white--text">
-                                <small> <strong> Využití HDD</strong> </small>
+                                <small> <strong> Volné místo HDD</strong> </small>
                             </div>
                             <v-progress-linear
                                 v-model="percent"

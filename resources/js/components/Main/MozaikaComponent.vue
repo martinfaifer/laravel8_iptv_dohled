@@ -141,7 +141,7 @@
                                         Zobrazit rychlí náhled
                                     </v-list-item-title>
                                 </v-list-item>
-                                <v-list-item @click="OpenSmallEditDialog">
+                                <v-list-item @click="OpenSmallEditDialog" v-show="loggedUser.role_id != '4'">
                                     <v-list-item-icon>
                                         <v-icon color="#1287A5" x-small
                                             >mdi-pencil</v-icon
@@ -631,7 +631,6 @@ export default {
     created() {
         this.getStreams();
         this.smallEditStreamData = null;
-        console.log("WEBSOCKET " +Echo.connect());
     },
     methods: {
         saveEdit() {
@@ -682,7 +681,6 @@ export default {
             Echo.channel("streamInfoTsAudioBitrate" + this.streamId).listen(
                 "StreamInfoAudioBitrate",
                 eAudio => {
-                    // console.log(e["bitrate"]);
                     this.stream.audio.bitrate = eAudio["bitrate"];
 
                     this.stream.audio.pid = eAudio["audioPid"];

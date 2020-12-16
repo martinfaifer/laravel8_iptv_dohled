@@ -113,10 +113,10 @@
                             </v-list-item>
 
                             <v-divider
-                                v-show="isIptvDoku == 'success'"
+                                v-show="isIptvDoku == 'success' || userRole != '4'"
                             ></v-divider>
                             <v-list-item
-                                v-show="isIptvDoku == 'success'"
+                                v-show="isIptvDoku == 'success' || userRole != '4'"
                                 href="http://iptvdoku.grapesc.cz/#/"
                                 target="_blink"
                             >
@@ -126,6 +126,7 @@
                                 >
                             </v-list-item>
                             <v-list-item
+                                v-show="isIptvDoku == 'success' || userRole != '4'"
                                 href="http://10.239.254.130/#/"
                                 target="_blink"
                             >
@@ -443,7 +444,7 @@ export default {
         async checkIfisOnline() {
             try {
                 this.internetConnection = window.navigator.onLine;
-                console.log(this.internetConnection);
+
             } catch (error) {}
         }
 

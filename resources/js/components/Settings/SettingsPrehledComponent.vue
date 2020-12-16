@@ -18,17 +18,11 @@
         <v-container fluid>
             <v-row>
                 <v-col class="col-9">
-                    <v-card
-                        class="mt-1"
-                        flat
-                        light
-                        elevation="0"
-                        :color="cardColor"
-                    >
+                    <v-card class="mt-1" flat elevation="0">
                         <v-card-text>
                             <v-container fluid>
                                 <div class="text-center">
-                                    <span class="body-1 white--text">
+                                    <span class="body-1">
                                         <strong>
                                             Historie počtu dohledovaných streamů
                                         </strong>
@@ -140,105 +134,6 @@
                 </v-col>
                 <v-col class="col-3">
                     <streamhistory-component></streamhistory-component>
-                </v-col>
-            </v-row>
-        </v-container>
-        <v-container fluid>
-            <v-row class="ml-1">
-                <v-col class="col-4">
-                    <!-- naposledy pridaní uživatelé -->
-                    <v-card flat>
-                        <v-card-text>
-                            <div class="text-center">
-                                <span class="body-1 white--text">
-                                    <strong>
-                                        Naposledy přidaní uživatelé
-                                    </strong>
-                                </span>
-                            </div>
-                        </v-card-text>
-                        <v-virtual-scroll
-                            :bench="benched"
-                            :items="users"
-                            height="300"
-                            item-height="64"
-                        >
-                            <!-- <v-list
-                            two-line
-                            v-for="userData in users"
-                            :key="userData.id"
-                        > -->
-                            <template v-slot:default="{ item }">
-                                <v-list-item>
-                                    <v-list-item-avatar>
-                                        <v-icon dark>
-                                            mdi-account-circle
-                                        </v-icon>
-                                    </v-list-item-avatar>
-
-                                    <v-list-item-content>
-                                        <v-list-item-title
-                                            class="subtitle-1"
-                                            v-html="item.email"
-                                        ></v-list-item-title>
-                                        <v-list-item-subtitle
-                                            v-html="item.role"
-                                        ></v-list-item-subtitle>
-                                    </v-list-item-content>
-                                </v-list-item>
-                                <v-divider inset></v-divider>
-                                <!-- </v-list> -->
-                            </template>
-                        </v-virtual-scroll>
-                    </v-card>
-                </v-col>
-                <v-col class="col-4">
-                    <!-- naposledy pridané kanály -->
-                    <v-card flat>
-                        <v-card-text>
-                            <div class="text-center">
-                                <span class="body-1 white--text">
-                                    <strong>
-                                        Naposledy přidané streamy
-                                    </strong>
-                                </span>
-                            </div>
-                        </v-card-text>
-
-                        <v-virtual-scroll
-                            :bench="benched"
-                            :items="streams"
-                            height="300"
-                            item-height="64"
-                        >
-                            <template v-slot:default="{ item }">
-                                <!-- <v-list
-                                    dense
-                                    v-for="streamData in streams"
-                                    :key="streamData.id"
-                                > -->
-                                <v-list-item dense>
-                                    <v-list-item-avatar>
-                                        <v-icon dark>
-                                            mdi-television-guide
-                                        </v-icon>
-                                    </v-list-item-avatar>
-
-                                    <v-list-item-content>
-                                        <v-list-item-title
-                                            class="subtitle-1"
-                                            v-html="item.nazev"
-                                        ></v-list-item-title>
-                                    </v-list-item-content>
-                                </v-list-item>
-                                <v-divider inset></v-divider>
-                                <!-- </v-list> -->
-                            </template>
-                        </v-virtual-scroll>
-                    </v-card>
-                </v-col>
-                <v-col class="col-4">
-                    <!-- naposledy pridaní uživatelé -->
                 </v-col>
             </v-row>
         </v-container>

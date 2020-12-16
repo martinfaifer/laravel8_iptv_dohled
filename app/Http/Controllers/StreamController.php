@@ -684,7 +684,7 @@ class StreamController extends Controller
         }
         if ($request->dohledovano) {
             // Zjistení puvodního statusu, pokud je jiný než stop, nemění se
-            if (Stream::where('id', $request->streamId)->firs()->status === "stop") {
+            if (Stream::where('id', $request->streamId)->first()->status === "stop") {
                 $status = "waiting";
             }
             // odebrání z tabulky stopedStreams

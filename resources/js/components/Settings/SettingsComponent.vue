@@ -15,7 +15,7 @@
                     <v-toolbar color="transparent" flat dense dark>
                         <v-spacer></v-spacer>
 
-                        <v-tooltip bottom>
+                        <!-- <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
                                 <v-btn
                                     link
@@ -41,7 +41,7 @@
                                 </v-btn>
                             </template>
                             <span>Dashboard Streamů</span>
-                        </v-tooltip>
+                        </v-tooltip> -->
 
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
@@ -97,7 +97,7 @@
                             <span>Kanály</span>
                         </v-tooltip>
 
-                        <div v-if="userRole == '1'">
+                        <div v-if="userRole == '1' || userRole =='2'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -129,7 +129,7 @@
                             </v-tooltip>
                         </div>
 
-                        <div v-if="userRole == '1'">
+                        <div v-if="userRole == '1' || userRole =='2'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
@@ -158,7 +158,7 @@
                                 <span>Nastavení Alertingu</span>
                             </v-tooltip>
                         </div>
-                        <div v-if="userRole == '1'">
+                        <div v-if="userRole == '1' || userRole =='2'">
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
