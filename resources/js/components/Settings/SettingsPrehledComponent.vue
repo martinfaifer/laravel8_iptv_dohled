@@ -18,11 +18,11 @@
         <v-container fluid>
             <v-row>
                 <v-col class="col-9">
-                    <v-card class="mt-1" flat elevation="0">
+                    <v-card class="mt-1" flat elevation="0" light :color="cardColor">
                         <v-card-text>
                             <v-container fluid>
                                 <div class="text-center">
-                                    <span class="body-1">
+                                    <span class="body-1 white--text">
                                         <strong>
                                             Historie počtu dohledovaných streamů
                                         </strong>
