@@ -3,7 +3,7 @@
         <div class="ml-12 body-1">
             <v-row>
                 <strong>
-                    Výpis TOP 9 streamů s cc errory za poslední 2h
+                    Náhodný výpis 9 streamů s cc errory za poslední 2h
                 </strong>
             </v-row>
         </div>

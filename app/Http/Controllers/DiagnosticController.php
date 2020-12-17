@@ -157,6 +157,14 @@ class DiagnosticController extends Controller
                             // před aktualizací statusu, oveření zda kanál již posledním uloženým statusem není označen jako nefunkční
 
                             // FFprobeController::ffprobe_diagnostic($streamUrl, $streamId, null);
+                            if (Stream::where('id', $streamId)->first()->status != "error") {
+                                Stream::where('id', $streamId)->update(['status' => "error"]);
+
+                                StreamHistory::create([
+                                    'stream_id' => $streamId,
+                                    'status' => "stream_without_signal"
+                                ]);
+                            }
                         } else if (empty($tsDuckData)) {
                             // prádná data => stream nefunguje
                             if ($streamInfoData->status != "error") {

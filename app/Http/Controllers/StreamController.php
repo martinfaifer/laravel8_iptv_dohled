@@ -176,6 +176,7 @@ class StreamController extends Controller
                     $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToStart->stream_url} {$streamToStart->id}" . ' > /dev/null 2>&1 & echo $!; ');
 
                     self::check_and_store_pid("process_pid", $processPid, $streamToStart->id);
+                } else {
                 }
             }
         }
@@ -693,7 +694,7 @@ class StreamController extends Controller
             }
         } else {
             $status = "stop";
-            $streamData = Stream::where('id', $request->sreamId)->first();
+            $streamData = Stream::where('id', $request->streamId)->first();
             // kill vsech procesů co běží na pozadí u streamu
             if (!is_null($streamData->process_pid)) {
                 self::stop_diagnostic_stream_from_backend($streamData->process_pid);

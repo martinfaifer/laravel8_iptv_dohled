@@ -48,7 +48,7 @@ class killStopedStreams extends Command
                     StreamController::stop_diagnostic_stream_from_backend($stream->process_pid);
                     // změna statusu
                     Stream::where('id', $stoppedStream->streamId)
-                        ->update(['status' => "stop"]);
+                        ->update(['status' => "stop", 'process_pid' => null]);
                 }
             }
         }
