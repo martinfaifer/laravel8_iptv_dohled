@@ -82,8 +82,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('stream:take_count_of_working_streams')->everyMinute()->runInBackground();
         // system -> peridické získávání dat
         $schedule->command('system:get_periodicaly_data')->everyMinute()->runInBackground();
-        // cistení tabulek z systemHistory
-        $schedule->command('systemHistory:prum_older_than_twelve_hours')->everyMinute()->runInBackground();
+        // cistení tabulek z systemHistory a Stream History
+        $schedule->command('systemAndStreamHistory:prum_older_than_twelve_hours')->everyMinute()->runInBackground();
     }
 
     /**

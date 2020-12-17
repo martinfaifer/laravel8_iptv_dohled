@@ -12,7 +12,7 @@ class prum_older_than_twelve_hours extends Command
      *
      * @var string
      */
-    protected $signature = 'systemHistory:prum_older_than_twelve_hours';
+    protected $signature = 'systemAndStreamHistory:prum_older_than_twelve_hours';
 
     /**
      * The console command description.
