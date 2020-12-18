@@ -704,11 +704,11 @@ class StreamController extends Controller
             }
 
             // založení do stopedStreams pokud jiz neexistuje
-            if (!StopedStream::where('streamId', $request->streamId)->first()) {
-                StopedStream::create([
-                    'streamId' => $request->streamId
-                ]);
-            }
+            // if (!StopedStream::where('streamId', $request->streamId)->first()) {
+            //     StopedStream::create([
+            //         'streamId' => $request->streamId
+            //     ]);
+            // }
         }
 
         if ($request->streamIssues) {
