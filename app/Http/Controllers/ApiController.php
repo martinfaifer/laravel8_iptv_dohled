@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Http;
 
 class ApiController extends Controller
 {
-    public $hello_dokumentace = "d4c3ed93-3768-48c0-98b6-1717108157e9";
-    public $hello_dohled = "873134d5-6324-4555-aa6d-fcdb1f7a9f4f";
-    public $iptvdokuUriApiConnectionTest = "http://iptvdoku.grapesc.cz/api/connectionTest";
-    public $iptvdokuUriApiStreamInfo = "http://iptvdoku.grapesc.cz/api/channel/search";
-    public $iptvdokuUriApiStreams = "http://iptvdoku.grapesc.cz/api/channel/return";
+    public $hello_dokumentace = ""; // api klíč doku 
+    public $hello_dohled = ""; // api klíč dohledu
+    public $iptvdokuUriApiConnectionTest = ""; // url pro auth pripojení
+    public $iptvdokuUriApiStreamInfo = ""; // url pro vyhledání informací o streamu v docu
+    public $iptvdokuUriApiStreams = ""; // url pro výpis všech streamů pro založení zde do dohledu 
 
     /**
      * funkce na testování pripojení do dokumentace
