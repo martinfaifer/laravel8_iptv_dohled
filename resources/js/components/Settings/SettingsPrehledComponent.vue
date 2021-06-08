@@ -1,24 +1,32 @@
 <template>
     <v-main class="mt-12">
         <v-container fluid class="mt-12">
-            <v-card flat color="transparent" fixed>
-                <v-row>
-                    <fiveminload-component class="ml-3"></fiveminload-component>
-                    <v-spacer></v-spacer>
+            <v-row>
+                <v-col cols="12" sm="12" md="3" lg="3">
+                    <fiveminload-component></fiveminload-component>
+                </v-col>
+                <v-col cols="12" sm="12" md="3" lg="3">
                     <ram-component></ram-component>
-                    <v-spacer></v-spacer>
+                </v-col>
+                <v-col cols="12" sm="12" md="3" lg="3">
                     <hdd-component></hdd-component>
-                    <v-spacer></v-spacer>
-                    <swap-component class="mr-3"></swap-component>
-                    <!-- <sslexpiration-Component></sslexpiration-Component> -->
-                </v-row>
-            </v-card>
+                </v-col>
+                <v-col cols="12" sm="12" md="3" lg="3">
+                    <swap-component></swap-component>
+                </v-col>
+            </v-row>
         </v-container>
-        <v-divider class="mt-2 mb-2"></v-divider>
+        <v-divider class="mt-6 mb-2"></v-divider>
         <v-container fluid>
             <v-row>
-                <v-col class="col-9">
-                    <v-card class="mt-1" flat elevation="0" light :color="cardColor">
+                <v-col cols="12" sm="12" md="9" lg="9">
+                    <v-card
+                        class="mt-1"
+                        flat
+                        elevation="0"
+                        light
+                        :color="cardColor"
+                    >
                         <v-card-text>
                             <v-container fluid>
                                 <div class="text-center">
@@ -36,8 +44,7 @@
                                         "
                                     >
                                         <apexchart
-                                            width="98%"
-                                            height="280"
+                                            height="285"
                                             type="area"
                                             :options="chartOptions"
                                             :series="series"
@@ -70,7 +77,7 @@
                         </v-card-text>
                     </v-card>
                 </v-col>
-                <v-col class="col-3">
+                <v-col cols="12" sm="12" md="3" lg="3">
                     <v-card
                         class="mt-1"
                         flat
@@ -93,6 +100,7 @@
                                         class="mt-12"
                                     >
                                         <apexchart
+                                            height="250"
                                             type="donut"
                                             :options="chartOptionsDonut"
                                             :series="seriesDonut"
@@ -129,10 +137,10 @@
         </v-container>
         <v-container fluid>
             <v-row class="ml-1">
-                <v-col class="col-9">
+                <v-col cols="12" sm="12" md="9" lg="9">
                     <ccerrorstreams-component></ccerrorstreams-component>
                 </v-col>
-                <v-col class="col-3">
+                <v-col cols="12" sm="12" md="3" lg="3">
                     <streamhistory-component></streamhistory-component>
                 </v-col>
             </v-row>

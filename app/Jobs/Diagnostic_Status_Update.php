@@ -14,7 +14,7 @@ class Diagnostic_Status_Update implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
 
-    protected $streamId;
+    protected $stream;
     protected $arrData;
 
     /**
@@ -22,9 +22,9 @@ class Diagnostic_Status_Update implements ShouldQueue
      *
      * @return void
      */
-    public function __construct($streamId, $arrData)
+    public function __construct($stream, $arrData)
     {
-        $this->streamId = $streamId;
+        $this->stream = $stream;
         $this->arrData = $arrData;
     }
 
@@ -37,6 +37,6 @@ class Diagnostic_Status_Update implements ShouldQueue
     {
         //   EmailNotificationController::notify_success_stream($this->streamId);
         // funkce na zpracování a update zaznamů
-        StreamController::queue_diagnostic_update_status_and_create_more_information_about_strea($this->streamId, $this->arrData);
+        StreamController::queue_diagnostic_update_status_and_create_more_information_about_strea($this->stream, $this->arrData);
     }
 }

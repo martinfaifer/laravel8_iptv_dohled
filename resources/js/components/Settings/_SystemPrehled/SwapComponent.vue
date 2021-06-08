@@ -138,15 +138,19 @@ export default {
     },
     methods: {
         loadSwap() {
-            window.axios.get("swap").then(response => {
-                this.percent = response.data;
-                if (this.percent > "80") {
-                    this.status = {
-                        status: "warning",
-                        msg: "System začal swapovat!"
-                    };
-                }
-            });
+            try {
+                axios.get("system/swap").then(response => {
+                    this.percent = response.data;
+                    if (this.percent > "80") {
+                        this.status = {
+                            status: "warning",
+                            msg: "System začal swapovat!"
+                        };
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+            }
         },
         openAreaChartDialog() {
             this.areaChartDialog = true;
@@ -172,7 +176,7 @@ export default {
             function() {
                 this.loadSwap();
             }.bind(this),
-            1000
+            10000
         );
     },
     beforeDestroy: function() {

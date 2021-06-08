@@ -12,7 +12,7 @@ class Stream extends Model
 
     /**
      * ---------------------------------------------------------------------------------------------------------
-     * STATUS OBSAHUJE STAVY ( SUCCESS, WAITING, WARNING , NO_SCRAMBLED, OUT_OF_SYNC, PID_NOT_MATCH, ERROR )
+     * STATUS MŮŽE OBSAHOVAT STAVY ( stop ,waiting (default), running , start_error )
      * ---------------------------------------------------------------------------------------------------------
      */
 
@@ -20,7 +20,6 @@ class Stream extends Model
         'nazev',
         'stream_url',
         'image',
-        // 'pcrPid',
         'dokumentaceUrl',
         'dokumentaceId',
         'dohledovano',

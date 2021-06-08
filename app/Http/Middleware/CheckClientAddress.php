@@ -20,21 +20,22 @@ class CheckClientAddress
     public function handle(Request $request, Closure $next)
     {
         // overení, ze je firewall aktivní
-        if (SystemSetting::where('modul', "firewall")->where('stav', "aktivni")->first()) {
-            if (FirewallController::check_if_is_ip_allowed($_SERVER['REMOTE_ADDR']) == "ok") {
+        // if (SystemSetting::where('modul', "firewall")->where('stav', "aktivni")->first()) {
+        //     if (FirewallController::check_if_is_ip_allowed($_SERVER['REMOTE_ADDR']) == "ok") {
 
-                return $next($request);
-            } else {
+        //         return $next($request);
+        //     } else {
 
-                // uložení do logu
-                FirewallLog::create([
-                    'ip' => $_SERVER['REMOTE_ADDR']
-                ]);
+        //         // uložení do logu
+        //         FirewallLog::create([
+        //             'ip' => $_SERVER['REMOTE_ADDR']
+        //         ]);
 
-                return abort(404);
-            }
-        } else {
-            return $next($request);
-        }
+        //         return abort(404);
+        //     }
+        // } else {
+        //     return $next($request);
+        // }
+        return $next($request);
     }
 }

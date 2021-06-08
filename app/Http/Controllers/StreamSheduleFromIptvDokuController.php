@@ -47,8 +47,8 @@ class StreamSheduleFromIptvDokuController extends Controller
             // $time = date("H:m", time());
             // vyhledání kanálů pro vypnutí dohledu
             if (StreamSheduleFromIptvDoku::where('start_day', $day)->where('start_time', $time)->first()) {
-                echo "exist \n";
-                foreach (StreamSheduleFromIptvDoku::where('start_day', $day)->where('start_time', $time)->get() as $streamForDisableNotification) {
+
+                StreamSheduleFromIptvDoku::where('start_day', $day)->where('start_time', $time)->get()->each(function ($streamForDisableNotification) {
                     Stream::where('id', $streamForDisableNotification->streamId)->update(
                         [
                             'sendMailAlert' => 0,
@@ -60,12 +60,13 @@ class StreamSheduleFromIptvDokuController extends Controller
                         'stream_id' => $streamForDisableNotification->streamId,
                         'status' => "sheduler_disable"
                     ]);
-                }
+                });
             }
 
             // pokud má every_day jinou hodnotu nez null, tak se dohleduje pouze cas
             if (StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('start_time', $time)->first()) {
-                foreach (StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('start_time', $time)->get() as $streamForDisableEveryDayNotification) {
+
+                StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('start_time', $time)->get()->each(function ($streamForDisableEveryDayNotification) {
                     Stream::where('id', $streamForDisableEveryDayNotification->streamId)->update(
                         [
                             'sendMailAlert' => 0,
@@ -77,13 +78,14 @@ class StreamSheduleFromIptvDokuController extends Controller
                         'stream_id' => $streamForDisableEveryDayNotification->streamId,
                         'status' => "sheduler_disable"
                     ]);
-                }
+                });
             }
 
 
             // zapnutí notifikací, pokud nadešel správný čas a odebrání události
             if (StreamSheduleFromIptvDoku::where('end_day', $day)->where('end_time', $time)->first()) {
-                foreach (StreamSheduleFromIptvDoku::where('end_day', $day)->where('end_time', $time)->get() as $streamForEnableNotification) {
+
+                StreamSheduleFromIptvDoku::where('end_day', $day)->where('end_time', $time)->get()->each(function ($streamForEnableNotification) {
                     Stream::where('id', $streamForEnableNotification->streamId)->update(
                         [
                             'sendMailAlert' => 1,
@@ -97,12 +99,13 @@ class StreamSheduleFromIptvDokuController extends Controller
 
                     // odebrání události
                     StreamSheduleFromIptvDoku::where('id', $streamForEnableNotification->id)->delete();
-                }
+                });
             }
 
             // pokud má every_day jinou hodnotu nez null, tak se dohleduje pouze cas
             if (StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('end_time', $time)->first()) {
-                foreach (StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('end_time', $time)->get() as $streamForEnableEveryDayNotification) {
+
+                StreamSheduleFromIptvDoku::where('every_day', "!=", null)->where('end_time', $time)->get()->each(function ($streamForEnableEveryDayNotification) {
                     Stream::where('id', $streamForEnableEveryDayNotification->streamId)->update(
                         [
                             'sendMailAlert' => 1,
@@ -113,7 +116,7 @@ class StreamSheduleFromIptvDokuController extends Controller
                         'stream_id' => $streamForEnableEveryDayNotification->streamId,
                         'status' => "sheduler_enable"
                     ]);
-                }
+                });
             }
         }
     }
@@ -129,6 +132,7 @@ class StreamSheduleFromIptvDokuController extends Controller
         if (StreamSheduleFromIptvDoku::where('streamId', $request->streamId)->first()) {
 
             foreach (StreamSheduleFromIptvDoku::where('streamId', $request->streamId)->get() as $sheduleData) {
+
                 if (is_null($sheduleData->every_day)) {
                     $data[] = array(
                         'start' => $sheduleData->start_day . " " . $sheduleData->start_time,
@@ -288,10 +292,3 @@ class StreamSheduleFromIptvDokuController extends Controller
         }
     }
 }
-
-
-// multicastUri' => $multicastUri,
-//                 'h264Uri' => $h264Uri,
-//                 'h265Uri' => $h265Uri,
-//                 'start_time' => $start_time,
-//                 'end_time' => $end_time

@@ -40,11 +40,8 @@ class create_thumbnail_from_stream extends Command
      */
     public function handle()
     {
-        foreach (Stream::where('status', "success")->orWhere('status', "issue")->get() as $stream) {
-            // spustení jobu pro queue
-            // dispatch(new FFmpegImageCreate($stream['id'], $stream['stream_url']));
-
+        Stream::where('status', "success")->orWhere('status', "issue")->get()->each(function ($stream) {
             FfmpegController::find_image_if_exist_delete_and_create_new($stream['id'], $stream['stream_url'], $stream['image']);
-        }
+        });
     }
 }

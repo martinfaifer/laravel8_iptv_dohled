@@ -88,6 +88,7 @@ class EmailNotificationController extends Controller
             } else {
 
                 foreach (EmailNotification::where('channels_issues', 'yes')->get() as $emailToNotifySystemData) {
+
                     $output[] = $emailToNotifySystemData['email'];
                 }
 
@@ -235,7 +236,6 @@ class EmailNotificationController extends Controller
 
         if ($checkIfExistAnyEmailToNotify['status'] == "exist") {
             // emaily ...
-
 
             // odeslání mailu na všechny email adresy
             foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
@@ -438,7 +438,6 @@ class EmailNotificationController extends Controller
         $user = Auth::user();
 
         if (EmailNotification::where('belongsTo', $user->id)->first()) {
-
 
             return [
                 'status' => "success",

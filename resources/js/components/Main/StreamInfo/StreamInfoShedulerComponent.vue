@@ -51,17 +51,21 @@ export default {
     },
     methods: {
         getShedulerInfo() {
-            window.axios
-                .post("streamInfo/sheduler", {
-                    streamId: this.$route.params.id
-                })
-                .then(response => {
-                    if (response.data.status == "empty") {
-                        this.sheduler = null;
-                    } else {
-                        this.sheduler = response.data;
-                    }
-                });
+            try {
+                axios
+                    .post("streamInfo/sheduler", {
+                        streamId: this.$route.params.id
+                    })
+                    .then(response => {
+                        if (response.data.status == "empty") {
+                            this.sheduler = null;
+                        } else {
+                            this.sheduler = response.data;
+                        }
+                    });
+            } catch (error) {
+                console.log(error);
+            }
         }
     },
 

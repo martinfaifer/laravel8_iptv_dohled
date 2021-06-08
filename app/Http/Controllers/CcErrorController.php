@@ -30,7 +30,6 @@ class CcErrorController extends Controller
         date_default_timezone_set('Europe/Prague');
         if ($error != "0") {
             // vytvoření budoucí expirace
-
             CcError::create(
                 [
                     'streamId' => $streamId,
@@ -53,34 +52,24 @@ class CcErrorController extends Controller
     {
         if (CcError::where('streamId', $request->streamId)->first()) {
 
-
-
             // existuje alespon jeden zaznam s chybou u audia nebo videa
 
             // vyhledání zda záznam je audio nebo video
             if (CcError::where('streamId', $request->streamId)->where('pozition', "audio")->first()) {
 
-                foreach (CcError::where('streamId', $request->streamId)->where('pozition', "audio")->get() as $audio) {
-                    // $this->audio[] = array(
-                    //     substr($audio->created_at, 0, 19), $audio->ccError
-                    // );
+                CcError::where('streamId', $request->streamId)->where('pozition', "audio")->get()->each(function ($audio) {
 
                     $this->audio[] = array(intval($audio->ccError));
                     $this->audioTime[] = array(substr($audio->created_at, 10, 19));
-                }
+                });
             }
 
             if (CcError::where('streamId', $request->streamId)->where('pozition', "video")->first()) {
 
-
-                foreach (CcError::where('streamId', $request->streamId)->where('pozition', "video")->get() as $video) {
-
-                    // $this->video[] = array(
-                    //     substr($video->created_at, 0, 19), $video->ccError
-                    // );
+                CcError::where('streamId', $request->streamId)->where('pozition', "video")->get()->each(function ($video) {
                     $this->video[] = array(intval($video->ccError));
                     $this->videoTime[] = array(substr($video->created_at, 10, 19));
-                }
+                });
             }
 
             return [
@@ -110,9 +99,12 @@ class CcErrorController extends Controller
         // aktuální cas
         $nyni = date("Y-m-d") . " " . date("H:i");
         if (CcError::where('expirace', $nyni)->orWhere('expirace', null)->first()) {
-            foreach (CcError::where('expirace', $nyni)->orWhere('expirace', null)->get() as $dataToDelete) {
-                CcError::where('id', $dataToDelete["id"])->delete();
-            }
+
+            CcError::where('expirace', $nyni)->orWhere('expirace', null)->chunk(50, function ($datasToDelete) {
+                foreach ($datasToDelete as $dataToDelete) {
+                    $dataToDelete->delete();
+                }
+            });
         }
     }
 
@@ -126,7 +118,7 @@ class CcErrorController extends Controller
         $streamCount = 0;
         $ountput = null;
         if (Stream::first()) {
-            foreach (Stream::get() as $stream) {
+            foreach (Stream::all() as $stream) {
                 // vyhledání zda existuje cc error v ccError table dle streamId
                 if (CcError::where('streamId', $stream->id)->first()) {
                     $chartCCRadio = [];
@@ -135,20 +127,16 @@ class CcErrorController extends Controller
                     // existuje minimálně jeden záznam
 
                     foreach (CcError::where('streamId', $stream->id)->get() as $ccErrorRecord) {
-                        if ($ccErrorRecord->pozition == "video") {
-                            $chartCCRvideo[] = $ccErrorRecord->ccError;
-                            // $chartCreated_atVideo[] = substr($ccErrorRecord->created_at, 11, 19);
-                        } else {
-
+                        if ($ccErrorRecord->pozition != "video") {
                             $chartCCRadio[] = $ccErrorRecord->ccError;
                         }
+                        $chartCCRvideo[] = $ccErrorRecord->ccError;
                         $chartCreated_at[] = substr($ccErrorRecord->created_at, 11, 19);
                         // count ccError
                         if (isset($ccErrors)) {
                             $ccErrors = $ccErrors + (int) $ccErrorRecord->ccError;
-                        } else {
-                            $ccErrors = $defaultCCerror + (int) $ccErrorRecord->ccError;
                         }
+                        $ccErrors = $defaultCCerror + (int) $ccErrorRecord->ccError;
                     }
                     // získání záznamů pro vykreslení
                     $ountput[] = array(

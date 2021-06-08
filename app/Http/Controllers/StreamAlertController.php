@@ -3,10 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\StreamAlert;
-use Illuminate\Http\Request;
+
+use App\Traits\StreamAlertTrait;
 
 class StreamAlertController extends Controller
 {
+
+    use StreamAlertTrait;
+
+    public function index(): array
+    {
+        return $this->alerts();
+    }
 
     /**
      * funkce na vyhledání a navrácení informací o spadlém streamu, dle streamId

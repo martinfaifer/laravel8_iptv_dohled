@@ -140,15 +140,19 @@ export default {
     },
     methods: {
         loadRam() {
-            window.axios.get("ram").then(response => {
-                this.percent = response.data;
-                if (this.percent > "80") {
-                    this.status = {
-                        status: "warning",
-                        msg: "Vysoké vytížení Ram"
-                    };
-                }
-            });
+            try {
+                axios.get("system/ram").then(response => {
+                    this.percent = response.data;
+                    if (this.percent > "80") {
+                        this.status = {
+                            status: "warning",
+                            msg: "Vysoké vytížení Ram"
+                        };
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+            }
         },
         openAreaChartDialog() {
             this.areaChartDialog = true;
@@ -174,7 +178,7 @@ export default {
             function() {
                 this.loadRam();
             }.bind(this),
-            1000
+            10000
         );
     },
     beforeDestroy: function() {

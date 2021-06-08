@@ -9,7 +9,7 @@
         </div>
 
         <div v-if="streams != null" class="mt-6">
-            <v-card color="transparent" flat height="600" fixed>
+            <v-card color="transparent" flat>
                 <v-row>
                     <v-card
                         v-for="stream in streams"

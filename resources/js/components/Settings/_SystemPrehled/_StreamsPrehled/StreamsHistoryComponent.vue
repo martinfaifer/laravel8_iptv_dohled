@@ -308,6 +308,30 @@
                                     </small>
                                 </v-row>
                             </div>
+                            <div
+                                v-else-if="
+                                    stream.status == 'stream_without_signal'
+                                "
+                            >
+                                <v-row>
+                                    <small class="red--text">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small
+                                        class="red--text ml-12"
+                                    >
+                                        <strong>
+                                            Přestala fungovat diagnostika,
+                                            stream se pokusí automaticky spustit
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
                         </div>
                     </v-timeline-item>
                 </v-timeline>
@@ -349,7 +373,7 @@ export default {
     },
     methods: {
         loadHistory() {
-            window.axios.get("history").then(response => {
+            window.axios.get("streams/history/" + 10).then(response => {
                 if (response.data.status == "empty") {
                     this.history = null;
                 } else {

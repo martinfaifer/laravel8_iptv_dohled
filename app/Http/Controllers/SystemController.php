@@ -9,6 +9,7 @@ use App\Models\SystemProccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Stmt\TryCatch;
 use Probe\ProviderFactory;
 use React\EventLoop\Factory;
 
@@ -43,7 +44,6 @@ class SystemController extends Controller
             'cpu_model' => $provider->getCpuModel(),
             'cpu_usage' => $provider->getCpuUsage(),
             'cpu_cores' => $provider->getCpuCores(),
-            // 'cpu_physical_cores' => $provider->getPhysicalCpus(),
             'free_memory' => $provider->getFreeMem(),
             'used_memory' => $provider->getUsedMem(),
             'total_memory' => $provider->getTotalMem(),
@@ -53,7 +53,6 @@ class SystemController extends Controller
             'os_release' => $provider->getOsRelease(),
             'os_type' => $provider->getOsType(),
             'server_ip' => $provider->getServerIP(),
-            // 'getCpuinfoByLsCpu' => $provider->getCpuinfoByLsCpu()
         ];
     }
 
@@ -142,44 +141,57 @@ class SystemController extends Controller
      */
     public static function cpu()
     {
-        $load = sys_getloadavg();
-        return round($load[0], 2);
+        try {
+            $load = sys_getloadavg();
+            return round($load[0], 2);
+        } catch (\Throwable $th) {
+            return "0";
+        }
     }
 
     public static function ram()
     {
-        $provider = ProviderFactory::create();
-        $totalRam = $provider->getTotalMem() / 1073741824;
-        $usedRam = $provider->getUsedMem() / 1073741824;
+        try {
+            $provider = ProviderFactory::create();
+            $totalRam = $provider->getTotalMem() / 1073741824;
+            $usedRam = $provider->getUsedMem() / 1073741824;
 
-        return $result = round(($usedRam * 100) / $totalRam);
+            return $result = round(($usedRam * 100) / $totalRam);
+        } catch (\Throwable $th) {
+            return "0";
+        }
     }
 
     public static function swap()
     {
+        try {
+            $provider = ProviderFactory::create();
+            $totalSwap = $provider->getTotalSwap() / 1073741824;
+            $usedSwap = $provider->getUsedSwap() / 1073741824;
 
-        $provider = ProviderFactory::create();
-        $totalSwap = $provider->getTotalSwap() / 1073741824;
-        $usedSwap = $provider->getUsedSwap() / 1073741824;
-
-        $result = ($usedSwap * 100) / $totalSwap;
-        return round($result);
+            $result = ($usedSwap * 100) / $totalSwap;
+            return round($result);
+        } catch (\Throwable $th) {
+            return "0";
+        }
     }
 
     public static function hdd()
     {
-        $disk = disk_total_space("/");
-        $diskGiga = $disk / 1073741824;
+        try {
+            $disk = disk_total_space("/");
+            $diskGiga = $disk / 1073741824;
 
-        $freeDisk = disk_free_space("/");
-        $freeDiskGiga = $freeDisk / 1073741824;
+            $freeDisk = disk_free_space("/");
+            $freeDiskGiga = $freeDisk / 1073741824;
 
+            $onePercent = $diskGiga / 100;
+            $percentsFree = $freeDiskGiga / $onePercent;
 
-        // percents %
-        $onePercent = $diskGiga / 100;
-        $percentsFree = $freeDiskGiga / $onePercent;
-
-        return round($percentsFree);
+            return round($percentsFree);
+        } catch (\Throwable $th) {
+            return "0";
+        }
     }
 
     public static function get_uptime()
@@ -324,13 +336,12 @@ class SystemController extends Controller
      *
      * @return void
      */
-    public static function oldImgOlderThanOneHour()
+    public static function oldImgOlderThanOneHour(): void
     {
         $unixTimeMinusHodina = time() - 3600;  // získání unixtimu, který je starší jak jedna hodina
         foreach (scandir((public_path('/storage/channelsImages/'))) as $img) {
-
             if ($unixTimeMinusHodina > filemtime(public_path('/storage/channelsImages/' . $img))) {
-                unlink(public_path('/storage/' . $img));   // odebrání obrázku z file systemu
+                unlink(public_path('/storage/' . $img));
             }
         }
     }

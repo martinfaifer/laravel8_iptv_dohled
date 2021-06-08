@@ -1,18 +1,12 @@
 <template>
     <div>
-        <div>
-            <alert-component
-                v-if="status != null"
-                :status="status"
-            ></alert-component>
-        </div>
         <v-container fluid>
             <v-card color="transparent" class="elevation-0 body-2">
                 <v-card-title>
                     <v-text-field
                         autofocus
                         v-model="search"
-                        append-icon="mdi-magnify"
+                        prepend-inner-icon="mdi-magnify"
                         label="Vyhledat uživatele ..."
                         single-line
                         hide-details
@@ -22,6 +16,8 @@
                         :loading="loadingCreateBtn"
                         @click="OpenCreateDialog()"
                         small
+                        text
+                        outlined
                         color="success"
                     >
                         <v-icon left dark>
@@ -31,31 +27,65 @@
                     </v-btn>
                 </v-card-title>
                 <v-data-table
-                    dense
                     :headers="usersHeader"
                     :items="users"
                     :search="search"
                 >
                     <!-- ZOBRZAENÍ STAVŮ V TABULCE  -->
+                    <template v-slot:item.avatar="{ item }">
+                        <v-avatar color="indigo">
+                            <v-icon dark>
+                                mdi-account-circle
+                            </v-icon>
+                        </v-avatar>
+                    </template>
                     <template v-slot:item.mozaika="{ item }">
                         <span v-if="item.mozaika == 'default'">
-                            <span>základní</span>
+                            <v-sheet
+                                color="rgba(0, 0, 200, 0.2) "
+                                class="info--text text-center transition-swing rounded-lg"
+                                width="50%"
+                            >
+                                <strong>
+                                    základní
+                                </strong>
+                            </v-sheet>
                         </span>
                         <span v-else>
-                            <span>uživatelem nadefinována</span>
+                              <v-sheet
+                                color="rgba(0, 0, 200, 0.2) "
+                                class="info--text text-center transition-swing rounded-lg"
+                                width="50%"
+                            >
+                                <strong>
+                                    uživatelem nadefinována
+                                </strong>
+                            </v-sheet>
                         </span>
                     </template>
 
                     <template v-slot:item.status="{ item }">
                         <span v-if="item.status == 'active'">
-                            <strong>
-                                <span class="green--text">Aktivní</span>
-                            </strong>
+                            <v-sheet
+                                color="rgba(60, 179, 113, 0.2) "
+                                class="green--text text-center transition-swing rounded-lg"
+                                width="50%"
+                            >
+                                <strong>
+                                    Aktivní
+                                </strong>
+                            </v-sheet>
                         </span>
                         <span v-if="item.status == 'blocket'">
-                            <strong>
-                                <span class="red--text">Blokován</span>
-                            </strong>
+                            <v-sheet
+                                color="rgba(255, 0, 0, 0.2)"
+                                class="red--text text-center transition-swing rounded-lg"
+                                width="50%"
+                            >
+                                <strong>
+                                    Blokován
+                                </strong>
+                            </v-sheet>
                         </span>
                     </template>
 
@@ -234,7 +264,6 @@
 </template>
 
 <script>
-import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
@@ -253,11 +282,8 @@ export default {
             search: "",
             users: [],
             usersHeader: [
-                {
-                    text: "Název",
-                    align: "start",
-                    value: "name"
-                },
+                { text: "Avatar", value: "avatar" },
+                { text: "Název", value: "name" },
                 { text: "E-mail", value: "email" },
                 { text: "Role", value: "role_id" },
                 { text: "Typ mozaiky", value: "mozaika" },
@@ -268,28 +294,23 @@ export default {
             ]
         };
     },
-
-    components: {
-        "alert-component": AlertComponent
-    },
     created() {
         this.loadUsers();
     },
     methods: {
         loadUsers() {
             // get req
-            window.axios.get("users").then(response => {
+            axios.get("users").then(response => {
                 this.users = response.data;
             });
         },
         OpenCreateDialog() {
-            window.axios.get("user/roles").then(response => {
+            axios.get("user/roles").then(response => {
                 this.userRoles = response.data;
                 this.createDialog = true;
             });
         },
         createUser() {
-            let currentObj = this;
             axios
                 .post("user/create", {
                     jmeno: this.jmeno,
@@ -298,36 +319,26 @@ export default {
                     role_id: this.role_id,
                     generatedPassword: this.generatedPassword
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.createDialog = false;
-                        // currentObj.returnToDefalt();
-                        currentObj.loadUsers();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    if (this.data.status == "success") {
+                        this.status = response.data;
+                        this.createDialog = false;
+                        this.loadUsers();
                     }
                 });
         },
         closeCreateDialog() {
             this.createDialog = false;
-
-            // return to default all
         },
         // funkce na generování hesla z backengu
         generatePassword() {
-            window.axios.get("user/password/generator").then(response => {
+            axios.get("user/password/generator").then(response => {
                 this.generatedPassword = response.data;
             });
         },
         openEditDialog() {
-            window.axios.get("user/roles").then(response => {
+            axios.get("user/roles").then(response => {
                 this.userRoles = response.data;
                 this.editDialog = true;
             });
@@ -336,7 +347,6 @@ export default {
             this.editDialog = false;
         },
         editUser() {
-            let currentObj = this;
             axios
                 .post("user/edit", {
                     userId: this.userId,
@@ -345,40 +355,25 @@ export default {
                     role_id: this.role_id,
                     status: this.userActiveStatus
                 })
-                .then(function(response) {
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
                     if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.editDialog = false;
-                        currentObj.loadUsers();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
+                        this.status = response.data;
+                        this.editDialog = false;
+                        this.loadUsers();
                     }
                 });
         },
         removeUser(id) {
-            let currentObj = this;
             axios
                 .post("user/delete", {
                     userId: id
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.loadUsers();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    if (this.data.status == "success") {
+                        this.status = response.data;
+                        this.loadUsers();
                     }
                 });
         }

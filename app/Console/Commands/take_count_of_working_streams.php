@@ -12,7 +12,7 @@ class take_count_of_working_streams extends Command
      *
      * @var string
      */
-    protected $signature = 'stream:take_count_of_working_streams';
+    protected $signature = 'chart:take_count_of_working_streams';
 
     /**
      * The console command description.

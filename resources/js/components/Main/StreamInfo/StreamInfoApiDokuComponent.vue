@@ -303,11 +303,6 @@ export default {
         $route(to, from) {
             this.getStreamDokuInfo();
         }
-        // iptvDokuConnectionStatus() {
-        //     if(this.iptvDokuConnectionStatus == 'success') {
-        //         this.getStreamDokuInfo();
-        //     }
-        // }
     }
 };
 </script>

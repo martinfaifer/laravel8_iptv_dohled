@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\StreamController;
+use App\Http\Controllers\StreamDiagnosticController;
 use Illuminate\Console\Command;
 
 class start_all_streams_for_diagnostic extends Command
@@ -38,6 +39,6 @@ class start_all_streams_for_diagnostic extends Command
      */
     public function handle()
     {
-        StreamController::start_all_streams_for_diagnostic();
+        StreamDiagnosticController::start_streams_for_diagnostic();
     }
 }

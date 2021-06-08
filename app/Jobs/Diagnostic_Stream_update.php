@@ -13,16 +13,16 @@ class Diagnostic_Stream_update implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $streamId;
+    protected $stream;
     protected $status;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($streamId, $status)
+    public function __construct($stream, $status)
     {
-        $this->streamId = $streamId;
+        $this->stream = $stream;
         $this->status = $status;
     }
 
@@ -33,6 +33,6 @@ class Diagnostic_Stream_update implements ShouldQueue
      */
     public function handle()
     {
-        StreamController::queue_diagnostic_update_stream_status($this->streamId, $this->status);
+        StreamController::queue_diagnostic_update_stream_status($this->stream, $this->status);
     }
 }

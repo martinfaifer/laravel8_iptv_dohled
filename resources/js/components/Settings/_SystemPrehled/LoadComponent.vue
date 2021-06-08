@@ -73,15 +73,19 @@ export default {
     },
     methods: {
         loadCpu() {
-            window.axios.get("cpu").then(response => {
-                this.percent = response.data;
-                if (this.percent > "80") {
-                    this.status = {
-                        status: "warning",
-                        msg: "Procesor funguje na moc vysokou úroveň"
-                    };
-                }
-            });
+            try {
+                axios.get("system/cpu").then(response => {
+                    this.percent = response.data;
+                    if (this.percent > "80") {
+                        this.status = {
+                            status: "warning",
+                            msg: "Procesor funguje na moc vysokou úroveň"
+                        };
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+            }
         }
     },
     mounted() {
@@ -89,7 +93,7 @@ export default {
             function() {
                 this.loadCpu();
             }.bind(this),
-            1000
+            10000
         );
     },
     beforeDestroy: function() {

@@ -89,7 +89,6 @@ class SystemProccessController extends Controller
                 'process_name' => "redis_server",
                 'pid' => intval($redisPid)
             ]);
-            return;
         } else {
 
             // záznam existuje, overuje se, zda pid existuje
@@ -103,8 +102,6 @@ class SystemProccessController extends Controller
 
                 // update záznamu
                 SystemProccess::where('process_name', "redis_server")->update(['pid' => intval($redisPid)]);
-
-                return;
             }
         }
     }
@@ -123,7 +120,7 @@ class SystemProccessController extends Controller
 
         // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
         if (!SystemProccess::where('process_name', 'like', "%queue_worker%")->first()) {
-            for ($x = 0; $x <= 200;) {
+            for ($x = 0; $x <= 250;) {
 
 
                 $queuePid = self::start_queue_and_return_pid();
@@ -138,12 +135,10 @@ class SystemProccessController extends Controller
         } else {
             // záznam existuje, overuje se, zda pid existuje
 
-            foreach (SystemProccess::where('process_name', 'like', "%queue_worker%")->get() as $worker) {
-
+            SystemProccess::where('process_name', 'like', "%queue_worker%")->get()->each(function ($worker) {
                 if (SystemController::check_if_process_running($worker['pid']) == "running") {
                     // queue vypadá, že je v pořádku
                 } else {
-
                     // pid se nepodařilo najít, dojde ke spuštění a následnéhu updatu pidu v db
                     $queuePid = self::start_queue_and_return_pid();
 
@@ -154,7 +149,7 @@ class SystemProccessController extends Controller
 
                     return;
                 }
-            }
+            });
         }
     }
 
@@ -207,8 +202,6 @@ class SystemProccessController extends Controller
 
                 // update záznamu
                 SystemProccess::where('process_name', "websocekt_server")->update(['pid' => intval($websocektPid)]);
-
-                return;
             }
         }
     }
@@ -232,7 +225,7 @@ class SystemProccessController extends Controller
      *
      * @return void
      */
-    public static function check_if_streams_running_correctly()
+    public static function check_if_streams_running_correctly(): void
     {
         // pokud neexistuje v tabulce queue worker , vyvolání akce na spustení
         if (!SystemProccess::where('process_name', "stream_check")->first()) {
@@ -243,7 +236,6 @@ class SystemProccessController extends Controller
                 'process_name' => "stream_check",
                 'pid' => intval($pidStreamCheck)
             ]);
-            return;
         } else {
             // záznam existuje, overuje se, zda pid existuje
 
@@ -256,8 +248,6 @@ class SystemProccessController extends Controller
 
                 // update záznamu
                 SystemProccess::where('process_name', "stream_check")->update(['pid' => intval($pidStreamCheck)]);
-
-                return;
             }
         }
     }

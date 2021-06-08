@@ -184,7 +184,7 @@ export default {
                     nickname: this.user.userDetail.nickname
                 })
                 .then(response => {
-                    this.status = response.data;
+                    this.$store.state.alerts = response.data.alert;
                     setTimeout(function() {
                         this.status = null;
                     }, 5000);

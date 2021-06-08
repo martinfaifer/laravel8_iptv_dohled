@@ -11,6 +11,8 @@
             </v-row>
         </div>
         <div v-else>
+            <search-component></search-component>
+            <alert-component></alert-component>
             <v-app-bar :color="navigationColor" fixed dense>
                 <div v-if="this.$route.path != '/'">
                     <v-btn link to="/" color="white" class="white--text" icon>
@@ -18,31 +20,7 @@
                     </v-btn>
                 </div>
                 <v-spacer></v-spacer>
-
-                <v-autocomplete
-                    v-model="model"
-                    :items="items"
-                    :loading="isLoading"
-                    :search-input.sync="search"
-                    color="white"
-                    hide-no-data
-                    dense
-                    filled
-                    rounded
-                    class="mt-6"
-                    hide-selected
-                    item-text="result"
-                    item-value="url"
-                    placeholder="Vyhledejte v aplikaci ... "
-                    prepend-inner-icon="mdi-database-search"
-                    return-object
-                >
-                </v-autocomplete>
-
-                <v-spacer></v-spacer>
-
                 <!-- user Part -->
-
                 <template>
                     <v-menu transition="scroll-y-transition" class="body-1">
                         <template v-slot:activator="{ on }">
@@ -99,7 +77,7 @@
                                 link
                                 to="/settings/prehled"
                             >
-                                Nastavení App<v-spacer></v-spacer
+                                Nastavení<v-spacer></v-spacer
                                 ><v-icon color="#00CCCD" right small
                                     >mdi-settings</v-icon
                                 >
@@ -113,10 +91,10 @@
                             </v-list-item>
 
                             <v-divider
-                                v-show="isIptvDoku == 'success' || userRole != '4'"
+                                v-show="isIptvDoku == 'success'"
                             ></v-divider>
                             <v-list-item
-                                v-show="isIptvDoku == 'success' || userRole != '4'"
+                                v-show="isIptvDoku == 'success'"
                                 href="http://iptvdoku.grapesc.cz/#/"
                                 target="_blink"
                             >
@@ -126,7 +104,6 @@
                                 >
                             </v-list-item>
                             <v-list-item
-                                v-show="isIptvDoku == 'success' || userRole != '4'"
                                 href="http://10.239.254.130/#/"
                                 target="_blink"
                             >
@@ -231,7 +208,7 @@
         </transition>
         <!-- iptv doku -->
 
-        <v-snackbar
+        <!-- <v-snackbar
             transition="scroll-x-reverse-transition"
             v-if="iptvDokuStatus != null"
             :value="iptvDokuStatus"
@@ -247,7 +224,7 @@
             <span class="ml-12" v-if="iptvDokuStatus == 'error'">
                 Nepodařilo se připojit k IPTV dokumentaci
             </span>
-        </v-snackbar>
+        </v-snackbar> -->
         <v-snackbar
             v-if="internetConnection === false"
             :timeout="-1"
@@ -269,6 +246,8 @@
 </template>
 
 <script>
+import SearchComponent from "./Main/Search/SearchComponent";
+import AlertComponent from "./AlertComponent";
 export default {
     data: () => ({
         internetConnection: true,
@@ -286,33 +265,17 @@ export default {
         alertCount: "0",
         newNotifications: [],
         userRole: null,
-
         loggedUser: null,
-
         descriptionLimit: 60,
-        entries: [],
         isLoading: false,
-        model: null,
-        search: null,
-        items: []
     }),
 
-    computed: {
-        fields() {
-            if (!this.model) return [];
-
-            return Object.keys(this.model).map(key => {
-                return {
-                    key,
-                    value: this.model[key] || "n/a"
-                };
-            });
-        }
+    components: {
+        "search-component":SearchComponent,
+        "alert-component": AlertComponent
     },
-
     created() {
         this.checkIfisOnline();
-        this.notifywhenisloggedtoconsole();
         this.loadAlerts();
         this.loadUser();
         setTimeout(
@@ -423,39 +386,11 @@ export default {
             });
         },
 
-        notifywhenisloggedtoconsole() {
-            console.log(
-                "II  PPPPPPPP  TTTTTTTT  VV        VV   DDDDDDDD     OOOOOOOO  HH    HH  LL      EEEEEEEE  DDDDDDDD"
-            );
-            console.log(
-                "II  PP   PPP     TT      VV     VV     DD      DD   OO    OO  HH    HH  LL      EE        DD     DD"
-            );
-            console.log(
-                "II  PPPPPPP      TT       VV   VV      DD       DD  OO    OO  HHHHHHHH  LL      EEEEEEEE  DD       DD"
-            );
-            console.log(
-                "II  PP           TT        VV VV       DD      DD   OO    OO  HH    HH  LL      EE        DD      DD"
-            );
-            console.log(
-                "II  PP           TT         VV         DDDDDDDD     OOOOOOOO  HH    HH  LLLLLL  EEEEEEEE  DDDDDDDD"
-            );
-        },
-
         async checkIfisOnline() {
             try {
                 this.internetConnection = window.navigator.onLine;
-
             } catch (error) {}
         }
-
-        // checkTheme() {
-        //     if (this.$vuetify.theme.isDark === true) {
-
-        //         this.navigationColor = "#121212";
-        //     } else {
-
-        //     }
-        // }
     },
     mounted() {
         // this.checkTheme()
@@ -484,32 +419,7 @@ export default {
                 this.networkChangeNotification = false;
             }
         },
-        search() {
-            if (this.items.length > 0) return;
-
-            this.isLoading = true;
-
-            let currentObj = this;
-            setTimeout(() => {
-                window.axios
-                    .post("search", {
-                        search: this.search
-                    })
-                    .then(function(response) {
-                        currentObj.items = response.data;
-                    })
-                    .finally(() => (this.isLoading = false));
-            }, 500);
-        },
-        model() {
-            if (this.model == undefined) {
-                // nic
-            } else {
-                this.$router.push("/" + this.model.url);
-                this.model = null;
-                this.items = [];
-            }
-        }
+       
     }
 };
 </script>

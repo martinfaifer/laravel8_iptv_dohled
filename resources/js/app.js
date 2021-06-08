@@ -4,7 +4,7 @@ window.Vue = require("vue");
 
 import Chartkick from "vue-chartkick";
 import VueApexCharts from 'vue-apexcharts'
-import Chart from "chart.js";
+// import Chart from "chart.js";
 import Vuetify from "vuetify";
 import VueRouter from "vue-router";
 import { store } from "./store/store";
@@ -14,7 +14,7 @@ import TrendChart from "vue-trend-chart";
 Vue.use(TrendChart);
 Vue.use(Vuetify);
 Vue.use(VueRouter);
-Vue.use(Chartkick.use(Chart));
+// Vue.use(Chartkick.use(Chart));
 Vue.use(VueApexCharts)
 
 Vue.component('apexchart', VueApexCharts)

@@ -12,7 +12,7 @@
                     <v-text-field
                         autofocus
                         v-model="search"
-                        append-icon="mdi-magnify"
+                        prepend-inner-icon="mdi-magnify"
                         label="Vyhledat kanál ..."
                         single-line
                         hide-details
@@ -22,6 +22,8 @@
                         :loading="loadingCreateBtn"
                         @click="OpenCreateDialog()"
                         small
+                        text
+                        outlined
                         color="success"
                     >
                         <v-icon left dark>
@@ -31,7 +33,6 @@
                     </v-btn>
                 </v-card-title>
                 <v-data-table
-                    dense
                     :headers="streamHeader"
                     :items="streams"
                     :search="search"

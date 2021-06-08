@@ -24,27 +24,28 @@ class FfmpegController extends Controller
      */
     public static function find_image_if_exist_delete_and_create_new(string $streamId, string $streamUrl, string $oldImage): void
     {
-
         $newImgName = $streamId . microtime(true) . '.jpg';
         // $imgName = $streamId . ".jpg";
-        $streamUrl = trim($streamUrl);
+
+        $stream = Stream::find($streamId);
+
+        $streamUrl = trim($stream->stream_url);
         // vyhledání stávajícího náhledu, a případné smazání
-        if (file_exists(public_path(Stream::where('id', $streamId)->first()->image))) {
+
+        if (file_exists(public_path($stream->image))) {
             // Náhled existuje => odebrání náhledu z filesystemu
+            unlink(public_path($stream->image));
 
-            unlink(public_path(Stream::where('id', $streamId)->first()->image));
-
-            Stream::where('id', $streamId)->update(['image' => 'false']);
+            $stream->update(['image' => 'false']);
         }
 
         //  vytvoření náhledu
-        shell_exec("timeout -s SIGKILL 10 ffmpeg -i udp://{$streamUrl} -vframes:v 1 storage/app/public/channelsImages/{$newImgName} -timeout 10");
-
+        shell_exec("timeout -s SIGKILL 20 ffmpeg -ss 3 -i udp://{$streamUrl} -vframes:v 1 storage/app/public/channelsImages/{$newImgName} -timeout 15");
 
         // kontrola, zda se náhled zkutečně vytvořil
 
         if (file_exists(public_path("storage/channelsImages/{$newImgName}"))) {
-            Stream::where('id', $streamId)->update(['image' => "storage/channelsImages/{$newImgName}"]);
+            $stream->update(['image' => "storage/channelsImages/{$newImgName}"]);
 
             // odeslání eventu do frontendu
             event(new StreamImage($streamId, "storage/channelsImages/{$newImgName}"));
@@ -62,12 +63,12 @@ class FfmpegController extends Controller
         if (Stream::where('ffmpeg_pid', "!=", null)->first()) {
 
             // existují streamy, kterým běží na pozadí ffmpeg
-            foreach (Stream::where('ffmpeg_pid', "!=", null)->get() as $ffmpegToKill) {
-                StreamController::stop_diagnostic_stream_from_backend($ffmpegToKill->ffmpeg_pid);
+            Stream::where('ffmpeg_pid', "!=", null)->get()->each(function ($ffmpegToKill) {
 
+                StreamController::stop_diagnostic_stream_from_backend($ffmpegToKill->ffmpeg_pid);
                 //  update záznamu
                 Stream::where('id', $ffmpegToKill->id)->update(['ffmpeg_pid' => null]);
-            }
+            });
 
             return [
                 'status' => "success",

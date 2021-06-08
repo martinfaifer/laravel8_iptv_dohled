@@ -8,62 +8,14 @@ use Illuminate\Http\Request;
 
 class StreamHistoryController extends Controller
 {
-    /**
-     * funkce pro výpis posledních 10 záznamů do timeline v streamInfo
-     *
-     * @param Request $request->streamId
-     * @return void
-     */
-    public function stream_info_history_ten(Request $request)
+
+    public static function create(int $streamId, string $status): void
     {
-        // vyhledání zda existuje nějaký záznam se streamId
-        if (StreamHistory::where('stream_id', $request->streamId)->first()) {
-            foreach (StreamHistory::where('stream_id', $request->streamId)->orderBy('id', 'desc')->take(10)->get() as $streamHistory) {
-                $created_at = explode(".", $streamHistory['created_at']);
-                if ($streamHistory['status'] == 'stream_ok') {
-                    $historie[] = array(
-                        'id' => $streamHistory['id'],
-                        'status' => $streamHistory['status'],
-                        'color' => "green",
-                        'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'sheduler_disable') {
-                    $historie[] = array(
-                        'id' => $streamHistory['id'],
-                        'status' => $streamHistory['status'],
-                        'color' => "green",
-                        'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'sheduler_enable') {
-                    $historie[] = array(
-                        'id' => $streamHistory['id'],
-                        'status' => $streamHistory['status'],
-                        'color' => "green",
-                        'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'issue') {
-                    $historie[] = array(
-                        'id' => $streamHistory['id'],
-                        'status' => $streamHistory['status'],
-                        'color' => "orange",
-                        'created_at' => $created_at[0]
-                    );
-                } else {
-                    $historie[] = array(
-                        'id' => $streamHistory['id'],
-                        'status' => $streamHistory['status'],
-                        'color' => "red",
-                        'created_at' => $created_at[0]
-                    );
-                }
-            }
-            return $historie;
-        } else {
-            return "none";
-        }
+        StreamHistory::create([
+            'stream_id' => $streamId,
+            'status' => $status
+        ]);
     }
-
-
 
     /**
      * funkce pro výpis posledních 10 záznamů do timeline v streamInfo
@@ -71,57 +23,53 @@ class StreamHistoryController extends Controller
      * @param Request $request->streamId
      * @return void
      */
-    public function stream_info_history_five(Request $request)
+    public function stream_info_history(Request $request)
     {
         // vyhledání zda existuje nějaký záznam se streamId
         if (StreamHistory::where('stream_id', $request->streamId)->first()) {
-            foreach (StreamHistory::where('stream_id', $request->streamId)
-                ->orderBy('id', 'desc')
-                ->take(5)
-                ->get() as $streamHistory) {
+            foreach (StreamHistory::where('stream_id', $request->streamId)->orderBy('id', 'desc')->take($request->records)->get() as $streamHistory) {
+
                 $created_at = explode(".", $streamHistory['created_at']);
-                if ($streamHistory['status'] == 'stream_ok') {
-                    $historie[] = array(
+
+                $historie[] = match ($streamHistory['status']) {
+                    'stream_ok' => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "green",
                         'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'sheduler_disable') {
-                    $historie[] = array(
+                    ],
+                    'sheduler_disable' => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "green",
                         'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'sheduler_enable') {
-                    $historie[] = array(
+                    ],
+                    'sheduler_enable' => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "green",
                         'created_at' => $created_at[0]
-                    );
-                } else if ($streamHistory['status'] == 'issue') {
-                    $historie[] = array(
+                    ],
+                    'issue' => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "orange",
                         'created_at' => $created_at[0]
-                    );
-                } else {
-                    $historie[] = array(
+                    ],
+                    default => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
                         'color' => "red",
                         'created_at' => $created_at[0]
-                    );
-                }
+                    ]
+                };
             }
             return $historie;
         } else {
             return "none";
         }
     }
+
 
 
     /**
@@ -129,10 +77,10 @@ class StreamHistoryController extends Controller
      *
      * @return void
      */
-    public function return_last_10_history()
+    public function streams_history(int $records)
     {
         if (StreamHistory::first()) {
-            foreach (StreamHistory::orderBy('id', 'desc')->take(8)->get() as $history) {
+            foreach (StreamHistory::orderBy('id', 'desc')->take($records)->get() as $history) {
                 if (Stream::where('id', $history->stream_id)->first()) {
                     if ($history->status === "stream_ok") {
                         $data[] = array(

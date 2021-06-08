@@ -3,62 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Stream;
-use App\Models\Uri;
 use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
+    public $result = [];
 
-    /**
-     * funkce na vyhledání napříč celou aplikací
-     *
-     * klíč: kanal
-     * klíč: url
-     * klíč: editace
-     * klíč: nastavení
-     * klíč: ...
-     *
-     * @param Request $request
-     * @return
-     */
-    public function search_in_app(Request $request)
+
+    public function search(Request $request): array
     {
-
-        // return $request->search;
-
         if (empty($request->search)) {
-            return [];
+            return $this->result;
         }
 
-        // return [Uri::where('popis', "like", "%" . $request->search . "%")->first()];
-        // pokus o vyhledání napříč kanály, vyhledání v názvu nebo v url
+        if (is_null($request->search)) {
+            return $this->result;
+        }
 
-        if (Stream::where('nazev', "like", "%" . $request->search . "%")->first()) {
-            foreach (Stream::where('nazev', "like", "%" . $request->search . "%")->get() as $stream) {
-                $output[] = array(
-                    'result' => $stream->nazev,
-                    'url' => "stream/{$stream->id}"
-                );
+        // vyhledávání kanálů dle názvu
+        $result_streams = Stream::where('nazev', 'like', "%" . $request->search . "%")->get()->toArray();
+        if (!empty($result_streams)) {
+            foreach ($result_streams as $result_stream) {
+                $this->result[] = [
+                    'id' => uniqid(),
+                    'nazev' => $result_stream['nazev'],
+                    'description' => "stream",
+                    'url' => "/stream/{$result_stream['id']}"
+                ];
             }
-
-            // pole musí obsahovat název a url
-            unset($request);
-            return $output;
         }
 
-        if (Uri::where('popis', "like", "%" . $request->search . "%")->first()) {
-            foreach (Uri::where('popis', "like", "%" . $request->search . "%")->get() as $stream) {
-                $output[] = array(
-                    'result' => $stream->popis,
-                    'url' => $stream->uri
-                );
-            }
-            unset($request);
-            return $output;
-        } else {
-            return [
-                'status' => "none"
-            ];
-        }
+        return $this->result;
     }
 }

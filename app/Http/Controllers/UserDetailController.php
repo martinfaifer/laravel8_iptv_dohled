@@ -23,7 +23,7 @@ class UserDetailController extends Controller
         try {
             if (UserDetail::where('user_id', $user->id)->first()) {
                 // jiz existuje zaznam
-                UserDetail::where('id', $user->id)->update(['company' => $request->company, 'tel_number' => $request->tel_number, 'nickname' => $request->nickname]);
+                UserDetail::find($user->id)->update(['company' => $request->company, 'tel_number' => $request->tel_number, 'nickname' => $request->nickname]);
             } else {
 
                 // vytvari se novy

@@ -51,7 +51,6 @@
                             <v-spacer></v-spacer>
                             <v-btn
                                 @click="login()"
-                                :disabled="password === null || email === null"
                                 type="submit"
                                 color="success"
                                 >Přihlášení</v-btn

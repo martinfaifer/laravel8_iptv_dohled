@@ -55,7 +55,7 @@ class FFprobeController extends Controller
                     // OBECNÁ FN PRO UKOCENI PIDU + VYRESETOVÁNÍ HODNOTY DO NULL
 
                     if ($streamInfoData->status != "error") {
-                        Stream::where('id', $streamId)->update(['status' => "error"]);
+                        $streamInfoData->update(['status' => "error"]);
 
                         StreamHistory::create([
                             'stream_id' => $streamId,
@@ -81,7 +81,7 @@ class FFprobeController extends Controller
 
                     // v teto fázy zatím jen ulozit stav success , zatím se nehledají žádné chyby a pod...
                     if ($streamInfoData->status != 'success') {
-                        Stream::where('id', $streamId)->update(['status' => "success"]);
+                        $streamInfoData->update(['status' => "success"]);
 
                         StreamHistory::create([
                             'stream_id' => $streamId,

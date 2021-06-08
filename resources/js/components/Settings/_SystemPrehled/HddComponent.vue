@@ -25,7 +25,9 @@
                         </v-toolbar>
                         <v-row no-gutters>
                             <div class="body-2 text-center white--text">
-                                <small> <strong> Volné místo HDD</strong> </small>
+                                <small>
+                                    <strong> Volné místo HDD</strong>
+                                </small>
                             </div>
                             <v-progress-linear
                                 v-model="percent"
@@ -39,38 +41,39 @@
                 <v-dialog v-model="areaChartDialog" persistent max-width="1920">
                     <v-card :color="cardColor" flat light>
                         <v-card-text>
-                        <div v-if="loading === false">
-                            <div
-                                v-if="chartOptions.xaxis.categories != null"
-                                class="pt-12"
-                            >
-                                <apexchart
-                                    width="98%"
-                                    height="280"
-                                    type="area"
-                                    :options="chartOptions"
-                                    :series="series"
-                                ></apexchart>
+                            <div v-if="loading === false">
+                                <div
+                                    v-if="chartOptions.xaxis.categories != null"
+                                    class="pt-12"
+                                >
+                                    <apexchart
+                                        width="98%"
+                                        height="280"
+                                        type="area"
+                                        :options="chartOptions"
+                                        :series="series"
+                                    ></apexchart>
+                                </div>
+                                <div v-else>
+                                    <v-alert text type="info" class="mt-6">
+                                        <strong
+                                            >Zatím neexistuje žádný
+                                            záznam</strong
+                                        >
+                                    </v-alert>
+                                </div>
                             </div>
                             <div v-else>
-                                <v-alert text type="info" class="mt-6">
-                                    <strong
-                                        >Zatím neexistuje žádný záznam</strong
-                                    >
-                                </v-alert>
+                                <!-- loading animace -->
+                                <v-row align="center" justify="space-around">
+                                    <span class="mt-12">
+                                        <i
+                                            style="color:#EAF0F1"
+                                            class="fas fa-spinner fa-spin fa-5x"
+                                        ></i>
+                                    </span>
+                                </v-row>
                             </div>
-                        </div>
-                        <div v-else>
-                            <!-- loading animace -->
-                            <v-row align="center" justify="space-around">
-                                <span class="mt-12">
-                                    <i
-                                        style="color:#EAF0F1"
-                                        class="fas fa-spinner fa-spin fa-5x"
-                                    ></i>
-                                </span>
-                            </v-row>
-                        </div>
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
@@ -137,15 +140,19 @@ export default {
     },
     methods: {
         loadhdd() {
-            window.axios.get("hdd").then(response => {
-                this.percent = response.data;
-                if (this.percent > "80") {
-                    this.status = {
-                        status: "warning",
-                        msg: "Zbývá málo místa na disku"
-                    };
-                }
-            });
+            try {
+                axios.get("system/hdd").then(response => {
+                    this.percent = response.data;
+                    if (this.percent > "80") {
+                        this.status = {
+                            status: "warning",
+                            msg: "Zbývá málo místa na disku"
+                        };
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+            }
         },
         openAreaChartDialog() {
             this.areaChartDialog = true;

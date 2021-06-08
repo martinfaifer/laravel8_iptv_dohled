@@ -26,7 +26,7 @@
         <style> *{ text-transform: none !important; } </style>
         <style>
             body {
-                font-family: Numito;
+                font-family: Sans-Serif;
             }
         </style>
     </head>

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\StreamHistory;
 use App\Models\SystemHistory;
-use Illuminate\Http\Request;
 
 class SystemHistoryController extends Controller
 {

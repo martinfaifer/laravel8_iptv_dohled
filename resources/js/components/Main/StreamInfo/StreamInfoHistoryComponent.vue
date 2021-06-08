@@ -20,7 +20,7 @@
                         :color="stream.color"
                         small
                     >
-                        <template v-slot:opposite>
+                        <template>
                             <span
                                 class="
                                                 body-2 font-weight-bold
@@ -116,6 +116,15 @@
                                     >> Aplikováno automatická zapnutí alertů
                                 </strong>
                             </div>
+                            <div
+                                v-else-if="
+                                    stream.status == 'stream_without_signal'
+                                "
+                            >
+                                <strong class="red--text">
+                                    Přestala fungovat automatická diagnostika
+                                </strong>
+                            </div>
                         </div>
                     </v-timeline-item>
                 </v-timeline>
@@ -142,13 +151,18 @@ export default {
     },
     methods: {
         getStreamHistory() {
-            window.axios
-                .post("streamInfo/history/5", {
-                    streamId: this.$route.params.id
-                })
-                .then(response => {
-                    this.streamHistory = response.data;
-                });
+            try {
+                axios
+                    .post("streamInfo/history", {
+                        streamId: this.$route.params.id,
+                        records: "5"
+                    })
+                    .then(response => {
+                        this.streamHistory = response.data;
+                    });
+            } catch (error) {
+                console.log(error);
+            }
         }
     },
 
@@ -159,7 +173,7 @@ export default {
                     this.getStreamHistory();
                 } catch (error) {}
             }.bind(this),
-            5000
+            60000
         );
     },
     watch: {
