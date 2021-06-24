@@ -12,7 +12,7 @@ class start_realtime_diagnostic_and_return_pid extends Command
      *
      * @var string
      */
-    protected $signature = 'command:start_realtime_diagnostic_and_return_pid {stream} {--queue}';
+    protected $signature = 'command:start_realtime_diagnostic_and_return_pid {streamurl} {streamId} {--queue}';
 
     /**
      * The console command description.
@@ -38,6 +38,6 @@ class start_realtime_diagnostic_and_return_pid extends Command
      */
     public function handle()
     {
-        DiagnosticController::stream_realtime_diagnostic_and_return_status($this->argument('stream'));
+        DiagnosticController::stream_realtime_diagnostic_and_return_status($this->argument('streamurl'), $this->argument('streamId'));
     }
 }

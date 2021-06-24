@@ -1,144 +1,34 @@
 <template>
     <v-main class="mt-12">
-        <v-container fluid class="mt-12">
-            <v-row>
-                <v-col cols="12" sm="12" md="3" lg="3">
-                    <fiveminload-component></fiveminload-component>
-                </v-col>
-                <v-col cols="12" sm="12" md="3" lg="3">
-                    <ram-component></ram-component>
-                </v-col>
-                <v-col cols="12" sm="12" md="3" lg="3">
-                    <hdd-component></hdd-component>
-                </v-col>
-                <v-col cols="12" sm="12" md="3" lg="3">
-                    <swap-component></swap-component>
-                </v-col>
-            </v-row>
-        </v-container>
+        <v-row class="mb-3 mt-3 ml-3 mr-3">
+            <v-col cols="12" sm="12" md="4" lg="4">
+                <ram-component></ram-component>
+            </v-col>
+            <v-col cols="12" sm="12" md="4" lg="4">
+                <hdd-component></hdd-component>
+            </v-col>
+            <v-col cols="12" sm="12" md="4" lg="4">
+                <swap-component></swap-component>
+            </v-col>
+        </v-row>
+
+        <cpu-component></cpu-component>
+
         <v-divider class="mt-6 mb-2"></v-divider>
         <v-container fluid>
             <v-row>
                 <v-col cols="12" sm="12" md="9" lg="9">
-                    <v-card
-                        class="mt-1"
-                        flat
-                        elevation="0"
-                        light
-                        :color="cardColor"
-                    >
-                        <v-card-text>
-                            <v-container fluid>
-                                <div class="text-center">
-                                    <span class="body-1 white--text">
-                                        <strong>
-                                            Historie počtu dohledovaných streamů
-                                        </strong>
-                                    </span>
-                                </div>
-                                <div v-if="loadingAreaChart === false">
-                                    <div
-                                        v-if="
-                                            chartOptions.xaxis.categories !=
-                                                null
-                                        "
-                                    >
-                                        <apexchart
-                                            height="285"
-                                            type="area"
-                                            :options="chartOptions"
-                                            :series="series"
-                                        ></apexchart>
-                                    </div>
-                                    <div v-else>
-                                        <v-alert text type="info" class="mt-6">
-                                            <strong
-                                                >Zatím neexistuje žádný
-                                                záznam</strong
-                                            >
-                                        </v-alert>
-                                    </div>
-                                </div>
-                                <div v-else>
-                                    <!-- loading animace -->
-                                    <v-row
-                                        align="center"
-                                        justify="space-around"
-                                    >
-                                        <span class="mt-12">
-                                            <i
-                                                style="color:#EAF0F1"
-                                                class="fas fa-spinner fa-spin fa-5x"
-                                            ></i>
-                                        </span>
-                                    </v-row>
-                                </div>
-                            </v-container>
-                        </v-card-text>
-                    </v-card>
+                    <monitoredstreams-component></monitoredstreams-component>
                 </v-col>
                 <v-col cols="12" sm="12" md="3" lg="3">
-                    <v-card
-                        class="mt-1"
-                        flat
-                        light
-                        elevation="0"
-                        :color="cardColor"
-                    >
-                        <v-card-text>
-                            <v-container fluid>
-                                <div class="text-center">
-                                    <span class="body-1 white--text">
-                                        <strong>
-                                            Přehled stavů streamů
-                                        </strong>
-                                    </span>
-                                </div>
-                                <div v-if="loadingDonutChart === false">
-                                    <div
-                                        v-if="chartOptionsDonut != null"
-                                        class="mt-12"
-                                    >
-                                        <apexchart
-                                            height="250"
-                                            type="donut"
-                                            :options="chartOptionsDonut"
-                                            :series="seriesDonut"
-                                        ></apexchart>
-                                    </div>
-                                    <div v-else>
-                                        <v-alert text type="info" class="mt-6">
-                                            <strong
-                                                >Zatím neexistuje žádný
-                                                záznam</strong
-                                            >
-                                        </v-alert>
-                                    </div>
-                                </div>
-                                <div v-else>
-                                    <!-- loading animace -->
-                                    <v-row
-                                        align="center"
-                                        justify="space-around"
-                                    >
-                                        <span class="mt-12">
-                                            <i
-                                                style="color:#EAF0F1"
-                                                class="fas fa-spinner fa-spin fa-5x"
-                                            ></i>
-                                        </span>
-                                    </v-row>
-                                </div>
-                            </v-container>
-                        </v-card-text>
-                    </v-card>
+                    <donutstreamschart-component></donutstreamschart-component>
                 </v-col>
             </v-row>
         </v-container>
-        <v-container fluid>
-            <v-row class="ml-1">
+        <v-container fluid class="mt-2">
+            <v-row>
                 <v-col cols="12" sm="12" md="9" lg="9">
-                    <ccerrorstreams-component></ccerrorstreams-component>
+                    <!-- <ccerrorstreams-component></ccerrorstreams-component> -->
                 </v-col>
                 <v-col cols="12" sm="12" md="3" lg="3">
                     <streamhistory-component></streamhistory-component>
@@ -148,148 +38,32 @@
     </v-main>
 </template>
 <script>
-import Loadomponent from "./_SystemPrehled/LoadComponent";
 import RamComponent from "./_SystemPrehled/RamComponent";
 import SwapComponent from "./_SystemPrehled/SwapComponent";
 import HddComponent from "./_SystemPrehled/HddComponent";
-import UptimeComponent from "./_SystemPrehled/UptimeComponent";
+import CpuComponent from "./_SystemPrehled/CpuComponent.vue";
 
-// firewall
-import FirewallStatusComponent from "./_SystemPrehled/FirewallComponent";
-// stream blok
-import WorkingStreamsComponent from "./_SystemPrehled/_StreamsPrehled/WorkingStreamsComponent";
-// serverInformation
-import ServerInformationComponent from "./_SystemPrehled/ServerInformationComponent";
-// notifikace nefunkčních streamů
-import CrashedOrIssuedStreamsComponent from "./_SystemPrehled/_StreamsPrehled/CrashedOrIssuedStreamsComponent";
-// historie streamů
+import MonitoredStreamsComponent from "./_SystemPrehled/_StreamsPrehled/MonitoredStreamsComponent.vue";
+import DonutStreamsChartComponent from "./_SystemPrehled/_StreamsPrehled/DonutStreamsChartComponent.vue";
 import StreamHistoryComponent from "./_SystemPrehled/_StreamsPrehled/StreamsHistoryComponent";
-// admin zona
-import AdminInformationComponent from "./_SystemPrehled/AdminInformationComponent";
-// ssl epirace
-import SslExpirationComponent from "./_SystemPrehled/SslExpirationComponent";
-// ccErrory
-import CCerrorStreamsComponent from "./_SystemPrehled/_StreamsPrehled/CCerrorStreamsComponent";
-
-// zatez systemu 5min prumer
-import fiveminload from "./_SystemPrehled/fiveminload";
 
 export default {
     data() {
-        return {
-            benched: 0,
-            streams: [],
-            users: [],
-            loadingAreaChart: true,
-            loadingDonutChart: true,
-            interval: null,
-            seriesDonut: null,
-            chartOptionsDonut: null,
-            cardColor: "#1F1F1F",
-            userRole: null,
-            chartOptions: {
-                dataLabels: {
-                    enabled: false
-                },
-                chart: {
-                    id: "Historie Streamů"
-                },
-                xaxis: {
-                    categories: null // cas
-                }
-            },
-            series: [
-                {
-                    name: "počet aktivních streamů",
-                    data: null // data
-                }
-            ]
-        };
+        return {};
     },
 
-    created() {
-        this.loadUser();
-        this.loadStreamsAreaData();
-        this.loadStreamsPie();
-        this.loadStatsUsers();
-        this.loadStatsStreams();
-    },
+    created() {},
     components: {
-        "load-component": Loadomponent,
-        "uptime-component": UptimeComponent,
         "ram-component": RamComponent,
         "swap-component": SwapComponent,
         "hdd-component": HddComponent,
-        "workingstreams-component": WorkingStreamsComponent,
-        "serverinformation-component": ServerInformationComponent,
-        "firewallstatus-component": FirewallStatusComponent,
-        "crashedorissuedstreams-component": CrashedOrIssuedStreamsComponent,
-        "streamhistory-component": StreamHistoryComponent,
-        "admininformation-component": AdminInformationComponent,
-        "fiveminload-component": fiveminload,
-        "sslexpiration-Component": SslExpirationComponent,
-        "ccerrorstreams-component": CCerrorStreamsComponent
+        "cpu-component": CpuComponent,
+        "monitoredstreams-component": MonitoredStreamsComponent,
+        "donutstreamschart-component": DonutStreamsChartComponent,
+
+        "streamhistory-component": StreamHistoryComponent
     },
-    methods: {
-        loadUser() {
-            let currentObj = this;
-            window.axios.get("user").then(response => {
-                currentObj.userRole = response.data.role_id;
-            });
-        },
-
-        loadStatsUsers() {
-            axios.get("users/get/last/ten").then(resposne => {
-                this.users = resposne.data.data;
-            });
-        },
-
-        async loadStreamsAreaData() {
-            try {
-                await axios.get("working_streams/areacharts").then(response => {
-                    if (response.data.status === "exist") {
-                        this.chartOptions.xaxis.categories =
-                            response.data.xaxis;
-                        this.series[0].data = response.data.seriesData;
-                        this.loadingAreaChart = false;
-                    } else {
-                        this.loadingAreaChart = false;
-                    }
-                });
-            } catch (error) {}
-        },
-
-        loadStatsStreams() {
-            axios.get("streams/get/last/ten").then(response => {
-                this.streams = response.data;
-            });
-        },
-
-        async loadStreamsPie() {
-            try {
-                await axios.get("streams/donutChart").then(response => {
-                    if (response.data.status === "success") {
-                        this.chartOptionsDonut =
-                            response.data.chartOptionsDonut;
-                        this.seriesDonut = response.data.seriesDonut;
-                        this.loadingDonutChart = false;
-                    } else {
-                        this.loadingDonutChart = false;
-                    }
-                });
-            } catch (error) {}
-        }
-    },
-
-    mounted() {
-        this.interval = setInterval(
-            function() {
-                this.loadStreamsAreaData();
-                this.loadStreamsPie();
-            }.bind(this),
-            60000
-        );
-    },
+    methods: {},
     watch: {}
 };
 </script>

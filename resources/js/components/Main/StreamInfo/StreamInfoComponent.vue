@@ -6,7 +6,7 @@
                 v-if="status === 'waiting' || status === 'stop'"
                 class="text-center"
             >
-                <v-alert transition="scale-transition" text type="warning">
+                <v-alert transition="scale-transition" outlined text type="warning">
                     <strong>
                         Stream se nedohleduje
                     </strong>
@@ -15,7 +15,7 @@
 
             <!-- notifikace, pokud má stream na dnesni den plánovanou udalost -->
             <div v-if="todayEvent != null" class="text-center">
-                <v-alert transition="scale-stransition" text type="info">
+                <v-alert transition="scale-stransition" outlined text type="info">
                     <span v-for="event in todayEvent" :key="event.id">
                         <strong>
                             Plánovaný výpadek od {{ event.start }} do
@@ -31,14 +31,19 @@
 
                 <!-- konec náhledu na kanál -->
 
-                <v-col cols="12" sm="12" md="8" lg="8">
+                <v-col cols="12" sm="12" md="8" lg="8" class="mb-12">
                     <ts-component></ts-component>
-                    <doku-component></doku-component>
                 </v-col>
             </v-row>
             <v-divider></v-divider>
             <v-row class="mt-6">
-                <history-component></history-component>
+                <v-col cols="12" sm="12" md="6" lg="6">
+                    <history-component></history-component>
+                </v-col>
+                <v-divider vertical></v-divider>
+                <v-col cols="12" sm="12" md="6" lg="6">
+                    <doku-component></doku-component>
+                </v-col>
             </v-row>
         </v-container>
     </v-main>
@@ -65,7 +70,7 @@ export default {
         "img-component": ImgComponent,
         "ts-component": TsComponent,
         "history-component": HistoryComponent,
-        "doku-component": DokuComponent,
+        "doku-component": DokuComponent
     },
     methods: {
         getStreamStatus() {

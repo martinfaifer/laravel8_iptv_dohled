@@ -1,150 +1,154 @@
 <template>
-    <v-main>
-        <div>
-            <alert-component
-                transition="scroll-y-transition"
-                v-if="status != null"
-                :status="status"
-            ></alert-component>
-        </div>
-        <v-container fluid>
-            <v-alert type="info" text width="80%">
-                Zde si můžete přidat na jaké adresy se mají zasílat notifikace o
-                streamech
-            </v-alert>
-            <v-card flat width="80%">
-                <v-toolbar color="transparent" flat>
-                    <v-spacer> </v-spacer>
-                    <v-btn
-                        type="submit"
-                        small
-                        color="success"
-                        @click="openCreateDialog()"
-                        >Založit novou adresu
-                    </v-btn>
-                </v-toolbar>
-                <div v-if="items != null">
-                    <v-virtual-scroll
-                        :bench="benched"
-                        :items="items"
-                        height="260"
-                        item-height="64"
-                    >
-                        <!-- <v-list two-line subheader dense> -->
-                        <template v-slot:default="{ item }">
-                            <v-list-item>
-                                <v-list-item-avatar>
-                                    <v-icon>
-                                        mdi-email
-                                    </v-icon>
-                                </v-list-item-avatar>
+    <v-main class="ml-12">
+        <v-container>
+            <v-col cols="12" sm="12" md="12" lg="12">
+                <v-alert type="info" text outlined>
+                    Zde si můžete přidat na jaké adresy se mají zasílat
+                    notifikace o streamech
+                </v-alert>
+            </v-col>
+            <v-col cols="12" sm="12" md="12" lg="12">
+                <v-card flat>
+                    <v-toolbar color="transparent" flat>
+                        <v-spacer> </v-spacer>
+                        <v-btn
+                            outlined
+                            text
+                            type="submit"
+                            small
+                            color="success"
+                            @click="openCreateDialog()"
+                            >Založit novou adresu
+                        </v-btn>
+                    </v-toolbar>
+                    <div v-if="items != null">
+                        <v-virtual-scroll
+                            :bench="benched"
+                            :items="items"
+                            height="260"
+                            item-height="64"
+                            class="mb-12"
+                        >
+                            <!-- <v-list two-line subheader dense> -->
+                            <template v-slot:default="{ item }">
+                                <v-list-item>
+                                    <v-list-item-avatar>
+                                        <v-icon>
+                                            mdi-email
+                                        </v-icon>
+                                    </v-list-item-avatar>
 
-                                <v-list-item-content>
-                                    <v-list-item-title class="ml-3">
-                                        <strong>
-                                            {{ item.email }}
-                                        </strong>
-                                    </v-list-item-title>
-                                    <v-list-item-subtitle class="ml-3 mt-1">
-                                        <v-row class="ml-3">
-                                            <div>
-                                                Výpadky kanálu:
-                                                <span
-                                                    v-if="
-                                                        item.channels === 'yes'
-                                                    "
-                                                >
-                                                    <v-icon
-                                                        small
-                                                        color="success"
+                                    <v-list-item-content>
+                                        <v-list-item-title class="ml-3">
+                                            <strong>
+                                                {{ item.email }}
+                                            </strong>
+                                        </v-list-item-title>
+                                        <v-list-item-subtitle class="ml-3 mt-1">
+                                            <v-row class="ml-3">
+                                                <div>
+                                                    Výpadky kanálu:
+                                                    <span
+                                                        v-if="
+                                                            item.channels ===
+                                                                'yes'
+                                                        "
                                                     >
-                                                        mdi-check
-                                                    </v-icon>
-                                                </span>
-                                                <span v-else>
-                                                    <v-icon small color="error">
-                                                        mdi-close
-                                                    </v-icon>
-                                                </span>
-                                            </div>
-                                            <div class="ml-6">
-                                                Problémy s kanálem:
-                                                <span
-                                                    v-if="
-                                                        item.channels_issues ===
-                                                            'yes'
-                                                    "
-                                                >
-                                                    <v-icon
-                                                        small
-                                                        color="success"
+                                                        <v-icon
+                                                            small
+                                                            color="success"
+                                                        >
+                                                            mdi-check
+                                                        </v-icon>
+                                                    </span>
+                                                    <span v-else>
+                                                        <v-icon
+                                                            small
+                                                            color="error"
+                                                        >
+                                                            mdi-close
+                                                        </v-icon>
+                                                    </span>
+                                                </div>
+                                                <div class="ml-6">
+                                                    Problémy s kanálem:
+                                                    <span
+                                                        v-if="
+                                                            item.channels_issues ===
+                                                                'yes'
+                                                        "
                                                     >
-                                                        mdi-check
-                                                    </v-icon>
-                                                </span>
-                                                <span v-else>
-                                                    <v-icon small color="error">
-                                                        mdi-close
-                                                    </v-icon>
-                                                </span>
-                                            </div>
-                                        </v-row>
-                                    </v-list-item-subtitle>
-                                </v-list-item-content>
-                                <v-list-item-action>
-                                    <v-btn icon @click="deleteEmail(item.id)">
-                                        <v-icon small color="red"
-                                            >mdi-delete</v-icon
+                                                        <v-icon
+                                                            small
+                                                            color="success"
+                                                        >
+                                                            mdi-check
+                                                        </v-icon>
+                                                    </span>
+                                                    <span v-else>
+                                                        <v-icon
+                                                            small
+                                                            color="error"
+                                                        >
+                                                            mdi-close
+                                                        </v-icon>
+                                                    </span>
+                                                </div>
+                                            </v-row>
+                                        </v-list-item-subtitle>
+                                    </v-list-item-content>
+                                    <v-list-item-action>
+                                        <v-btn
+                                            icon
+                                            @click="deleteEmail(item.id)"
                                         >
-                                    </v-btn>
-                                </v-list-item-action>
-                            </v-list-item>
-                            <v-divider inset></v-divider>
-                            <!-- </v-list> -->
-                        </template>
-                    </v-virtual-scroll>
-                </div>
-                <div v-else class="text-center">
-                    <v-card-subtitle>
-                        Zatím není založen žádný email u Vašeho účtu
-                    </v-card-subtitle>
-                </div>
-            </v-card>
-
+                                            <v-icon small color="red"
+                                                >mdi-delete</v-icon
+                                            >
+                                        </v-btn>
+                                    </v-list-item-action>
+                                </v-list-item>
+                                <v-divider inset></v-divider>
+                                <!-- </v-list> -->
+                            </template>
+                        </v-virtual-scroll>
+                    </div>
+                    <div v-else class="text-center">
+                        <v-card-subtitle>
+                            Zatím není založen žádný email u Vašeho účtu
+                        </v-card-subtitle>
+                    </div>
+                </v-card>
+            </v-col>
             <!-- dialog -->
             <template>
                 <v-row justify="center">
-                    <v-dialog v-model="createDialog" persistent max-width="600">
+                    <v-dialog v-model="createDialog" persistent max-width="800">
                         <v-card>
                             <v-card-text>
                                 <v-container>
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="12">
-                                            <v-text-field
-                                                autofocus
-                                                v-model="newEmail"
-                                                label="Emailová adresa"
-                                                required
-                                            ></v-text-field>
-                                        </v-col>
-                                    </v-row>
+                                    <v-col cols="12" sm="12" md="12" lg="12">
+                                        <v-text-field
+                                            autofocus
+                                            v-model="newEmail"
+                                            label="Emailová adresa"
+                                            required
+                                        ></v-text-field>
+                                    </v-col>
 
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="12">
-                                            <v-switch
-                                                v-model="streamAlerts"
-                                                label="Zasílání alertů při výpadku kanálu"
-                                            ></v-switch>
-                                        </v-col>
-                                    </v-row>
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="12">
-                                            <v-switch
-                                                v-model="streamAlertsIssue"
-                                                label="Zasílání alertů při problému s kanálem"
-                                            ></v-switch>
-                                        </v-col>
-                                    </v-row>
+                                    <v-col cols="12" sm="12" md="12" lg="12">
+                                        <v-switch
+                                            v-model="streamAlerts"
+                                            label="Zasílání alertů při výpadku kanálu"
+                                        ></v-switch>
+                                    </v-col>
+
+                                    <v-col cols="12" sm="12" md="12" lg="12">
+                                        <v-switch
+                                            v-model="streamAlertsIssue"
+                                            label="Zasílání alertů při problému s kanálem"
+                                        ></v-switch>
+                                    </v-col>
                                 </v-container>
                             </v-card-text>
                             <v-card-actions>
@@ -152,13 +156,16 @@
                                 <v-btn
                                     color="red darken-1"
                                     text
+                                    outlined
                                     @click="createDialog = false"
                                 >
                                     Zavřít
                                 </v-btn>
                                 <v-btn
+                                    :loading="loading"
                                     color="green darken-1"
                                     text
+                                    outlined
                                     @click="saveCreateDialog()"
                                 >
                                     Uložit
@@ -172,9 +179,10 @@
     </v-main>
 </template>
 <script>
-import AlertComponent from "../AlertComponent";
 export default {
     data: () => ({
+        loading: false,
+        benched: 0,
         status: null,
         streamAlerts: false,
         streamAlertsIssue: false,
@@ -183,9 +191,6 @@ export default {
         newEmail: null,
         items: null
     }),
-    components: {
-        "alert-component": AlertComponent
-    },
     created() {
         this.loadAccountAlerts();
     },
@@ -205,7 +210,7 @@ export default {
         },
 
         saveCreateDialog() {
-            let currentObj = this;
+            this.loading = true;
             axios
                 .post("notifications/create", {
                     email: this.newEmail,
@@ -213,46 +218,25 @@ export default {
                     systemAlerts: this.systemAlerts,
                     streamAlertsIssue: this.streamAlertsIssue
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.createDialog = false;
-                        // currentObj.returnToDefalt();
-                        currentObj.loadAccountAlerts();
-                        currentObj.newEmail = null;
-                        currentObj.streamAlerts = false;
-                        currentObj.systemAlerts = false;
-                        currentObj.streamAlertsIssue = false;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    }
+                .then(response => {
+                    this.loading = false;
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadAccountAlerts();
+                    this.createDialog = false;
+                    this.newEmail = null;
+                    this.streamAlerts = false;
+                    this.systemAlerts = false;
+                    this.streamAlertsIssue = false;
                 });
         },
         deleteEmail(id) {
-            let currentObj = this;
             axios
                 .post("notifications/delete", {
                     emailId: id
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.loadAccountAlerts();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    }
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadAccountAlerts();
                 });
         }
     }

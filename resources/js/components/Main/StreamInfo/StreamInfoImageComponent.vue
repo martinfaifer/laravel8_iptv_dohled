@@ -1,17 +1,10 @@
 <template>
     <v-main>
-        <v-container fluid>
+        <v-container fluid class="mt-6">
             <v-row>
-                <div class="text-center mt-2 pd-12">
-                    <small>
-                        <strong>
-                            {{ stream.nazev }}
-                        </strong>
-                    </small>
-                </div>
                 <v-hover v-slot:default="{ hover }">
                     <v-card
-                        :elevation="hover ? 24 : 0"
+                        :elevation="hover ? 12 : 0"
                         class="mx-auto ma-0 transition-fast-in-fast-out"
                         height="100%"
                         width="100%"
@@ -22,58 +15,28 @@
                             transparent: stream.status == 'waiting'
                         }"
                     >
-                        <!-- status stream waiting -->
                         <v-img
-                            v-if="stream.status == 'waiting'"
+                            v-if="stream.is_problem === 0 && stream.image === 'false'"
                             :elevation="hover ? 12 : 0"
                             class="transition-fast-in-fast-out"
                         >
                             <v-row
-                                class="fill-height ma-0 mt-12"
+                                class="fill-height ma-0 mt-12 mb-12"
                                 justify="center"
                             >
-                                <v-progress-circular
-                                    indeterminate
-                                    color="blue lighten-2"
-                                ></v-progress-circular>
-                                <div class="ml-2">
-                                    {{ stream.nazev }}
-                                    <v-row>
-                                        <small class="ml-3 blue--text">
-                                            čeká na zpracování ...
-                                        </small>
-                                    </v-row>
-                                </div>
-                            </v-row>
-                        </v-img>
-
-                        <v-img
-                            v-else-if="stream.image == 'false'"
-                            :elevation="hover ? 24 : 0"
-                            class="transition-fast-in-fast-out"
-                        >
-                            <v-row
-                                class="fill-height ma-0 mt-12"
-                                justify="center"
-                            >
-                                <div class="ml-2">
+                                <div class="ml-2 md-12 mb-12">
                                     {{ stream.nazev }}
                                     <v-row
-                                        v-if="
-                                            stream.status == 'success' ||
-                                                stream.status == 'issue' ||
-                                                stream.status ==
-                                                    'diagnostic_crash'
-                                        "
+                                        v-if="stream.is_problem === 0"
                                     >
-                                        <small class="ml-3 white--text">
+                                        <small class="ml-3 mt-12 white--text">
                                             <strong>
                                                 čeká se na vytvoření náhledu ...
                                             </strong>
                                         </small>
                                     </v-row>
-                                    <v-row v-if="stream.status == 'error'">
-                                        <small class="ml-3 white--text">
+                                    <v-row v-if="stream.is_problem === 1">
+                                        <small class="ml-3 mt-12 white--text">
                                             <strong>
                                                 stream je ve výpadku ...
                                             </strong>
@@ -84,7 +47,7 @@
                         </v-img>
                         <v-img
                             v-else
-                            height="98%"
+                            height="100%"
                             width="100%"
                             :lazy-src="stream.image"
                             :src="stream.image"
@@ -93,15 +56,12 @@
                         </v-img>
                     </v-card>
                 </v-hover>
-                <!-- <doku-component></doku-component> -->
-
                 <streaminfosheduler-component></streaminfosheduler-component>
             </v-row>
         </v-container>
     </v-main>
 </template>
 <script>
-// import DokuComponent from "./StreamInfoApiDokuComponent";
 import StreamInfoShedulerComponent from "./StreamInfoShedulerComponent";
 export default {
     data: () => ({
@@ -111,7 +71,6 @@ export default {
     }),
 
     components: {
-        // "doku-component": DokuComponent,
         "streaminfosheduler-component": StreamInfoShedulerComponent
     },
     created() {
@@ -145,7 +104,7 @@ export default {
                     }
                 );
             } catch (error) {
-                this.stream = 'false';
+                this.stream = "false";
             }
         },
 
@@ -157,7 +116,7 @@ export default {
     },
 
     mounted() {
-       this.websocketData();
+        this.websocketData();
     },
     watch: {
         $route(to, from) {

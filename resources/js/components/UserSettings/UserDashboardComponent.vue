@@ -1,23 +1,16 @@
 <template>
-    <div>
-        <!-- container pro sum informací -->
-        <v-container fluid>
-            <v-row>
-                <v-row>
-                    <v-hover v-slot:default="{ hover }">
-                        <v-card
-                            :elevation="hover ? 1 : 0"
-                            height="100%"
-                            width="40em"
-                            class="text-center transition-fast-in-fast-out"
-                            flat
-                        >
-                            <v-card-text>
-                                <span>
-                                    <strong>
-                                        Informace o uživateli
-                                    </strong>
-                                </span>
+    <v-main class="ml-12">
+        <v-container>
+            <v-row class="mr-3 ml-3">
+                <v-col cols="12" sm="12" md="6" lg="6">
+                    <v-card class="text-center" height="100%" flat>
+                        <v-card-text>
+                            <span>
+                                <strong class="white--text">
+                                    Informace o uživateli
+                                </strong>
+                            </span>
+                            <v-col cols="12" sm="12" md="6" lg="6">
                                 <v-list-item>
                                     Jméno:
                                     <span class="ml-3">
@@ -26,35 +19,32 @@
                                         </strong>
                                     </span>
                                 </v-list-item>
+                            </v-col>
+
+                            <v-col cols="12" sm="12" md="6" lg="6">
                                 <v-list-item>
-                                    email:
+                                    Email:
                                     <span class="ml-3">
                                         <strong>
                                             {{ user.email }}
                                         </strong>
                                     </span>
                                 </v-list-item>
-                            </v-card-text>
-                        </v-card>
-                    </v-hover>
-                </v-row>
+                            </v-col>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
                 <!-- {{ user }} -->
                 <!-- container pro nastavení GUI -->
-                <v-row class="ml-12">
-                    <v-hover v-slot:default="{ hover }">
-                        <v-card
-                            :elevation="hover ? 1 : 0"
-                            height="100%"
-                            width="40em"
-                            class="text-center transition-fast-in-fast-out"
-                            flat
-                        >
-                            <v-card-text>
-                                <span>
-                                    <strong>
-                                        Nastavení prostředí:
-                                    </strong>
-                                </span>
+                <v-col cols="12" sm="12" md="6" lg="6">
+                    <v-card height="100%" class="text-center" flat>
+                        <v-card-text>
+                            <span>
+                                <strong class="white--text">
+                                    Nastavení prostředí:
+                                </strong>
+                            </span>
+                            <v-col cols="12" sm="12" lg="12" md="12">
                                 <v-list-item>
                                     Nastavení mozaiky:
                                     <span
@@ -71,44 +61,51 @@
                                         </strong>
                                     </span>
                                 </v-list-item>
-                                <br />
-                                <span
-                                    class="text-start"
-                                    v-if="user.mozaika == 'custom'"
+                            </v-col>
+
+                            <v-divider
+                                v-if="user.mozaika == 'custom'"
+                                class="mb-6"
+                            ></v-divider>
+                            <span
+                                class="text-start"
+                                v-if="user.mozaika == 'custom'"
+                            >
+                                <strong class="white--text">
+                                    Statické kanály
+                                </strong>
+                            </span>
+                            <v-col
+                                cols="12"
+                                sm="12"
+                                lg="12"
+                                md="12"
+                                v-if="user.mozaika == 'custom'"
+                            >
+                                <v-list-item
+                                    v-for="staticChannel in user.staticChannels"
+                                    :key="staticChannel.id"
                                 >
-                                    <strong>
-                                        Statické kanály
-                                    </strong>
-                                </span>
-                                <v-list-item v-if="user.mozaika == 'custom'">
-                                    <ul>
-                                        <li
-                                            v-for="staticChannel in user.staticChannels"
-                                            :key="staticChannel.id"
-                                            class="ml-3"
-                                        >
-                                            {{ staticChannel.nazev }}
-                                        </li>
-                                    </ul>
+                                    <v-list-item-content class="ml-3">
+                                        <v-list-item-subtitle
+                                            v-text="staticChannel.nazev"
+                                        ></v-list-item-subtitle>
+                                    </v-list-item-content>
                                 </v-list-item>
-                            </v-card-text>
-                        </v-card>
-                    </v-hover>
-                </v-row>
-                <!-- container pro historii uzivatele -->
+                            </v-col>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
             </v-row>
-            <v-row class="mt-8">
-                <v-hover v-slot:default="{ hover }">
-                    <v-card
-                        :elevation="hover ? 1 : 0"
-                        height="100%"
-                        width="100%"
-                        class="text-center transition-fast-in-fast-out"
-                        flat
-                    >
+
+            <!-- container pro historii uzivatele -->
+
+            <v-row class="mt-8 ml-3 mr-3">
+                <v-col cols="12" sm="12" md="12" lg="12">
+                    <v-card class="text-center" flat>
                         <v-card-text>
                             <span>
-                                <strong>
+                                <strong class="white--text">
                                     Historie
                                 </strong>
                             </span>
@@ -129,15 +126,11 @@
                                         </template>
                                         <div class="py-4">
                                             <div>
-                                                <small class="green--text">
-                                                    <strong>
-                                                        {{
-                                                            userHist.created_at
-                                                        }}
-                                                        =>
-                                                        {{ userHist.message }}
-                                                    </strong>
-                                                </small>
+                                                <strong class="green--text">
+                                                    {{ userHist.created_at }}
+                                                    =>
+                                                    {{ userHist.message }}
+                                                </strong>
                                             </div>
                                         </div>
                                     </v-timeline-item>
@@ -145,20 +138,18 @@
                             </v-container>
                             <v-container v-else>
                                 <div>
-                                    <v-alert dense text type="info">
-                                        <strong
-                                            >Není evidována žádná historie
-                                        </strong>
+                                    <v-alert outlined text type="info">
+                                        Není evidována žádná historie
                                     </v-alert>
                                 </div>
                             </v-container>
                         </v-card-text>
                     </v-card>
-                </v-hover>
+                </v-col>
             </v-row>
         </v-container>
         <br />
-    </div>
+    </v-main>
 </template>
 <script>
 export default {

@@ -1,16 +1,7 @@
 <template>
-    <div>
+    <v-main>
         <div>
-            <!-- <alert-component :status="status"></alert-component> -->
-        </div>
-        <div>
-            <v-card
-                class="mx-auto text-center"
-                flat
-                color="#202020"
-                dark
-                width="400"
-            >
+            <v-card class="mx-auto text-center" flat color="#202020" dark>
                 <v-card-text>
                     <v-container>
                         <v-toolbar dense flat color="transparent" justify-end>
@@ -54,8 +45,8 @@
                                         :series="series"
                                     ></apexchart>
                                 </div>
-                                <div v-else>
-                                    <v-alert text type="info" class="mt-6">
+                                <div v-else class="pt-12">
+                                    <v-alert text outlined type="info" class="pt-6">
                                         <strong
                                             >Zatím neexistuje žádný
                                             záznam</strong
@@ -89,7 +80,7 @@
                 </v-dialog>
             </v-row>
         </div>
-    </div>
+    </v-main>
 </template>
 <script>
 import AlertComponent from "../../AlertComponent";
@@ -112,6 +103,12 @@ export default {
                 },
                 xaxis: {
                     categories: null // cas
+                },
+                yaxis: {
+                    show: false,
+                    labels: {
+                        show: false
+                    }
                 }
             },
             series: [

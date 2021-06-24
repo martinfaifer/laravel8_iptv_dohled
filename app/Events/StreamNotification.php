@@ -12,7 +12,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StreamNotification implements ShouldBroadcastNow
+class StreamNotification implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -25,7 +25,7 @@ class StreamNotification implements ShouldBroadcastNow
      */
     public function __construct()
     {
-        $this->streamsStatuses = StreamController::show_problematic_streams_as_alerts();
+        // $this->streamsStatuses = StreamController::show_problematic_streams_as_alerts();
         // $this->streamsStatuses = $streamsStatuses;
     }
 

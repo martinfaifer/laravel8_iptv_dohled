@@ -12,7 +12,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StreamInfoHistory implements ShouldBroadcastNow
+class StreamInfoHistory implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 

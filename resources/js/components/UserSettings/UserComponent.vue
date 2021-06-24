@@ -68,22 +68,23 @@
                 <v-spacer></v-spacer>
             </v-toolbar>
         </v-row>
-        <v-container class="rightFromSIdePanel">
-            <div>
-                <v-row>
-                    <userdashboard-component
-                        v-if="prehled == true"
-                        :user="user"
-                    ></userdashboard-component>
-                    <usersettings-component v-if="editace == true" :user="user">
-                    </usersettings-component>
-                    <usergui-component
-                        v-if="gui == true"
-                        :user="user"
-                    ></usergui-component>
-                    <useralert-component v-if="alert == true" :user="user"></useralert-component>
-                </v-row>
-            </div>
+        <v-container class="mr-12">
+            <v-row>
+                <userdashboard-component
+                    v-if="prehled == true"
+                    :user="user"
+                ></userdashboard-component>
+                <usersettings-component v-if="editace == true" :user="user">
+                </usersettings-component>
+                <usergui-component
+                    v-if="gui == true"
+                    :user="user"
+                ></usergui-component>
+                <useralert-component
+                    v-if="alert == true"
+                    :user="user"
+                ></useralert-component>
+            </v-row>
         </v-container>
     </v-main>
 </template>
@@ -92,7 +93,7 @@ import UserSideNavBarInfoComponent from "./UserSideBarInfoComponent";
 import UserDashboardComponent from "./UserDashboardComponent";
 import UserSettingsComponent from "./UserSettingsComponent";
 import UserGuiComponent from "./UserGuiComponent";
-import UserAlertComponent from "./UserAlertComponent"
+import UserAlertComponent from "./UserAlertComponent";
 export default {
     data: () => ({
         userId: null,

@@ -1,18 +1,10 @@
 <template>
-    <div>
-        <div>
-            <alert-component
-                v-if="status != null"
-                :status="status"
-            ></alert-component>
-        </div>
+    <v-main>
         <v-container fluid>
             <!-- Soupis e-mailů, na které se zasílají alerty -->
-
             <v-card color="transparent" class="elevation-0 body-2">
                 <v-card-title>
                     <v-text-field
-                        dense
                         v-model="search"
                         append-icon="mdi-magnify"
                         label="Hledat ..."
@@ -23,7 +15,8 @@
                     <v-btn
                         :loading="loadingCreateBtn"
                         @click="OpenCreateDialog()"
-                        small
+                        text
+                        outlined
                         color="success"
                     >
                         <v-icon left dark>
@@ -34,20 +27,21 @@
                 </v-card-title>
                 <v-data-table
                     v-if="emails === null"
-                    dense
-                    loading
+                    :loading="loadingTable"
+                    :search="search"
                     loading-text="Načítají se data"
                 >
                 </v-data-table>
                 <v-data-table
                     v-if="emails.status === 'empty'"
-                    dense
                     no-data-text="Nejsou zde žádná data"
+                    :loading="loadingTable"
+                    :search="search"
                 >
                 </v-data-table>
                 <v-data-table
+                    :loading="loadingTable"
                     v-else
-                    dense
                     :headers="header"
                     :items="emails"
                     :search="search"
@@ -155,6 +149,7 @@
                         <v-btn
                             color="red darken-1"
                             text
+                            outlined
                             @click="createDialog = false"
                         >
                             Zavřít
@@ -162,6 +157,7 @@
                         <v-btn
                             color="green darken-1"
                             text
+                            outlined
                             @click="sendCreate()"
                         >
                             Vytvořit
@@ -223,11 +219,17 @@
                         <v-btn
                             color="red darken-1"
                             text
+                            outlined
                             @click="closeEditDialog()"
                         >
                             Zavřít
                         </v-btn>
-                        <v-btn color="green darken-1" text @click="sendEdit()">
+                        <v-btn
+                            color="green darken-1"
+                            text
+                            @click="sendEdit()"
+                            outlined
+                        >
                             Upravit
                         </v-btn>
                     </v-card-actions>
@@ -236,14 +238,14 @@
         </v-row>
 
         <!-- konec edit dialogu -->
-    </div>
+    </v-main>
 </template>
 
 <script>
-import AlertComponent from "../AlertComponent";
 export default {
     data() {
         return {
+            loadingTable: true,
             streamAlertsIssue: false,
             editDialog: false,
             alertId: null,
@@ -274,9 +276,6 @@ export default {
             ]
         };
     },
-    components: {
-        "alert-component": AlertComponent
-    },
     created() {
         this.loadEmails();
     },
@@ -285,8 +284,9 @@ export default {
             this.editDialog = false;
         },
         loadEmails() {
-            window.axios.get("notifications/mails").then(response => {
-                if(response.data.status === 'success') {
+            axios.get("notifications/mails").then(response => {
+                this.loadingTable = false;
+                if (response.data.status === "success") {
                     this.emails = response.data.data;
                 } else {
                     this.emails = null;
@@ -303,7 +303,6 @@ export default {
             this.systemAlerts = false;
         },
         sendCreate() {
-            let currentObj = this;
             axios
                 .post("notifications/create", {
                     email: this.email,
@@ -311,25 +310,14 @@ export default {
                     systemAlerts: this.systemAlerts,
                     streamAlertsIssue: this.streamAlertsIssue
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.createDialog = false;
-                        // currentObj.returnToDefalt();
-                        currentObj.loadEmails();
-                        (currentObj.email = null),
-                            (currentObj.streamAlerts = false),
-                            (currentObj.systemAlerts = false);
-                        currentObj.streamAlertsIssue = false;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    }
+                .then(response => {
+                    this.createDialog = false;
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadEmails();
+                    this.email = null;
+                    this.streamAlerts = false;
+                    this.systemAlerts = false;
+                    this.streamAlertsIssue = false;
                 });
         },
         closeCreateDialog() {
@@ -339,25 +327,14 @@ export default {
                 (this.systemAlerts = false);
         },
         deleteNotification(id) {
-            let currentObj = this;
             axios
                 .post("notifications/delete", {
                     emailId: id
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.createDialog = false;
-                        currentObj.loadEmails();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    }
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.createDialog = false;
+                    this.loadEmails();
                 });
         },
         openEditDialog() {
@@ -368,7 +345,6 @@ export default {
             this.email = null;
         },
         sendEdit() {
-            let currentObj = this;
             axios
                 .post("notifications/edit", {
                     emailId: this.emailId,
@@ -377,20 +353,10 @@ export default {
                     systemAlerts: this.systemAlerts,
                     streamAlertsIssue: this.streamAlertsIssue
                 })
-                .then(function(response) {
-                    if (response.data.status == "success") {
-                        currentObj.status = response.data;
-                        currentObj.editDialog = false;
-                        currentObj.loadEmails();
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    } else {
-                        currentObj.status = response.data;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 5000);
-                    }
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.editDialog = false;
+                    this.loadEmails();
                 });
         }
     }

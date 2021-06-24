@@ -4,8 +4,4 @@
     Nefunguje kanál {{$stream}} !
 @endcomponent
 
-@component('mail::button', ['url' => $url, 'color' => 'success'])
-Proklik na kanál
-@endcomponent
-
 @endcomponent

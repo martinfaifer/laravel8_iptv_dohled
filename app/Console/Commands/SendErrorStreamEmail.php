@@ -12,7 +12,7 @@ class SendErrorStreamEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'command:SendErrorStreamEmail';
+    protected $signature = 'email:SendErrorStreamEmail';
 
     /**
      * The console command description.

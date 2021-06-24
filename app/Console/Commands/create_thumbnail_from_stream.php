@@ -6,15 +6,18 @@ use App\Http\Controllers\FfmpegController;
 use App\Jobs\FFmpegImageCreate;
 use App\Models\Stream;
 use Illuminate\Console\Command;
+use App\Traits\FfmpegTrait;
 
 class create_thumbnail_from_stream extends Command
 {
+    use FfmpegTrait;
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'command:create_thumbnail_from_stream';
+    protected $signature = 'ffmpeg:create_thumbnail_from_stream';
 
     /**
      * The console command description.
@@ -40,8 +43,8 @@ class create_thumbnail_from_stream extends Command
      */
     public function handle()
     {
-        Stream::where('status', "success")->orWhere('status', "issue")->get()->each(function ($stream) {
-            FfmpegController::find_image_if_exist_delete_and_create_new($stream['id'], $stream['stream_url'], $stream['image']);
+        Stream::where([['status', "running"], ['is_problem', false], ['vytvaretNahled', true]])->get()->each(function ($stream) {
+            $this->ffmpeg_create_image($stream);
         });
     }
 }

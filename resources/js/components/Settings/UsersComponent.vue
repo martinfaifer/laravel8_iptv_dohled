@@ -15,7 +15,6 @@
                     <v-btn
                         :loading="loadingCreateBtn"
                         @click="OpenCreateDialog()"
-                        small
                         text
                         outlined
                         color="success"
@@ -30,10 +29,11 @@
                     :headers="usersHeader"
                     :items="users"
                     :search="search"
+                    :loading="tableLoading"
                 >
                     <!-- ZOBRZAENÍ STAVŮ V TABULCE  -->
                     <template v-slot:item.avatar="{ item }">
-                        <v-avatar color="indigo">
+                        <v-avatar color="transparent">
                             <v-icon dark>
                                 mdi-account-circle
                             </v-icon>
@@ -42,7 +42,7 @@
                     <template v-slot:item.mozaika="{ item }">
                         <span v-if="item.mozaika == 'default'">
                             <v-sheet
-                                color="rgba(0, 0, 200, 0.2) "
+                                color="rgba(0, 0, 200, 0.1) "
                                 class="info--text text-center transition-swing rounded-lg"
                                 width="50%"
                             >
@@ -52,8 +52,8 @@
                             </v-sheet>
                         </span>
                         <span v-else>
-                              <v-sheet
-                                color="rgba(0, 0, 200, 0.2) "
+                            <v-sheet
+                                color="rgba(0, 0, 200, 0.1) "
                                 class="info--text text-center transition-swing rounded-lg"
                                 width="50%"
                             >
@@ -64,8 +64,14 @@
                         </span>
                     </template>
 
+                    <template v-slot:item.pagination="{ item }">
+                        <span class="blue--text">
+                            {{ item.pagination }}
+                        </span>
+                    </template>
+
                     <template v-slot:item.status="{ item }">
-                        <span v-if="item.status == 'active'">
+                        <span v-if="item.status == 'access'">
                             <v-sheet
                                 color="rgba(60, 179, 113, 0.2) "
                                 class="green--text text-center transition-swing rounded-lg"
@@ -97,7 +103,8 @@
                                 openEditDialog(),
                                     (userId = item.id),
                                     (jmeno = item.name),
-                                    (email = item.email)
+                                    (email = item.email),
+                                    (role_id = item.role_id)
                             "
                             small
                             class="mr-2"
@@ -116,66 +123,75 @@
         <!-- dialogs -->
         <!-- create dialog -->
         <v-row justify="center">
-            <v-dialog v-model="createDialog" persistent max-width="600px">
+            <v-dialog v-model="createDialog" persistent max-width="800px">
                 <v-card>
                     <v-card-title> </v-card-title>
                     <v-card-text>
-                        <v-container>
-                            <v-row>
-                                <v-col cols="12" sm="6" md="6">
-                                    <v-text-field
-                                        autofocus
-                                        v-model="jmeno"
-                                        label="Jméno"
-                                        required
-                                    ></v-text-field>
-                                </v-col>
-                                <v-col cols="12" sm="6" md="6">
-                                    <v-text-field
-                                        v-model="email"
-                                        label="email"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
+                        <v-row>
+                            <v-col cols="12" sm="12" md="6" lg="6">
+                                <v-text-field
+                                    autofocus
+                                    v-model="jmeno"
+                                    label="Jméno"
+                                    required
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" sm="12" md="6" lg="6">
+                                <v-text-field
+                                    v-model="email"
+                                    label="email"
+                                ></v-text-field>
+                            </v-col>
 
-                            <v-row>
-                                <v-col cols="12" sm="6" md="6">
-                                    <v-btn
-                                        @click="generatePassword()"
-                                        small
-                                        color="primary"
-                                        >Generovat Heslo</v-btn
-                                    >
-                                </v-col>
-                            </v-row>
-                            <v-row v-if="generatedPassword != null">
-                                <v-col cols="12" sm="12" md="12">
-                                    <v-text-field
-                                        autofocus
-                                        v-model="generatedPassword"
-                                        label="Heslo"
-                                        readonly
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-                            <v-row v-if="generatedPassword == null">
-                                <v-col cols="12" sm="12" md="12">
-                                    <v-text-field
-                                        v-model="password"
-                                        label="Heslo"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-                            <!-- user role -->
-                            <v-select
-                                :items="userRoles"
-                                v-model="role_id"
-                                item-value="id"
-                                item-text="role_name"
-                                label="Uživatelská role"
-                            ></v-select>
-                            <!-- user role -->
-                        </v-container>
+                            <v-col cols="12" sm="12" md="12" lg="12">
+                                <v-btn
+                                    @click="generatePassword()"
+                                    small
+                                    outlined
+                                    text
+                                    color="primary"
+                                    >Generovat Heslo</v-btn
+                                >
+                            </v-col>
+
+                            <v-col
+                                cols="12"
+                                sm="12"
+                                md="12"
+                                lg="12"
+                                v-if="generatedPassword != null"
+                            >
+                                <v-text-field
+                                    autofocus
+                                    v-model="generatedPassword"
+                                    label="Heslo"
+                                    readonly
+                                ></v-text-field>
+                            </v-col>
+
+                            <v-col
+                                cols="12"
+                                sm="12"
+                                md="12"
+                                lg="12"
+                                v-if="generatedPassword == null"
+                            >
+                                <v-text-field
+                                    v-model="password"
+                                    label="Heslo"
+                                ></v-text-field>
+                            </v-col>
+
+                            <v-col cols="12" sm="12" md="12" lg="12">
+                                <v-select
+                                    :items="userRoles"
+                                    v-model="role_id"
+                                    item-value="id"
+                                    item-text="role_name"
+                                    label="Uživatelská role"
+                                ></v-select>
+                            </v-col>
+                        </v-row>
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
@@ -183,13 +199,16 @@
                             @click="closeCreateDialog()"
                             color="red darken-1"
                             text
+                            outlined
                         >
                             Zavřít
                         </v-btn>
                         <v-btn
+                            :loading="submitLoading"
                             @click="createUser()"
                             color="green darken-1"
                             text
+                            outlined
                         >
                             Vytvořit
                         </v-btn>
@@ -201,46 +220,46 @@
 
         <!-- edit dialog -->
         <v-row justify="center">
-            <v-dialog v-model="editDialog" persistent max-width="600px">
+            <v-dialog v-model="editDialog" persistent max-width="800px">
                 <v-card>
                     <v-card-title> </v-card-title>
                     <v-card-text>
-                        <v-container>
-                            <v-row>
-                                <v-col cols="12" sm="6" md="6">
-                                    <v-text-field
-                                        autofocus
-                                        v-model="jmeno"
-                                        label="Jméno"
-                                        required
-                                    ></v-text-field>
-                                </v-col>
-                                <v-col cols="12" sm="6" md="6">
-                                    <v-text-field
-                                        v-model="email"
-                                        label="email"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-                            <!-- user role -->
-                            <v-select
-                                :items="userRoles"
-                                v-model="role_id"
-                                item-value="id"
-                                item-text="role_name"
-                                label="Uživatelská role"
-                            ></v-select>
-                            <!-- user role -->
+                        <v-row>
+                            <v-col cols="12" sm="12" md="6" lg="6">
+                                <v-text-field
+                                    autofocus
+                                    v-model="jmeno"
+                                    label="Jméno"
+                                    required
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" sm="12" md="6" lg="6">
+                                <v-text-field
+                                    v-model="email"
+                                    label="email"
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" sm="12" md="12" lg="12">
+                                <!-- user role -->
+                                <v-select
+                                    :items="userRoles"
+                                    v-model="role_id"
+                                    item-value="id"
+                                    item-text="role_name"
+                                    label="Uživatelská role"
+                                ></v-select>
+                                <!-- user role -->
+                            </v-col>
 
                             <!-- status -->
-                            <v-row>
+                            <v-col cols="12" sm="12" md="12" lg="12">
                                 <v-switch
                                     v-model="userActiveStatus"
                                     label="blokovat uživatele"
                                 >
                                 </v-switch>
-                            </v-row>
-                        </v-container>
+                            </v-col>
+                        </v-row>
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
@@ -248,10 +267,17 @@
                             @click="closeEditDialog()"
                             color="red darken-1"
                             text
+                            outlined
                         >
                             Zavřít
                         </v-btn>
-                        <v-btn @click="editUser()" color="green darken-1" text>
+                        <v-btn
+                            :loading="submitLoading"
+                            @click="editUser()"
+                            color="green darken-1"
+                            text
+                            outlined
+                        >
                             Upravit
                         </v-btn>
                     </v-card-actions>
@@ -267,6 +293,9 @@
 export default {
     data() {
         return {
+            tableLoading: true,
+            deleteLoading: false,
+            submitLoading: false,
             userActiveStatus: false,
             editDialog: false,
             userId: null,
@@ -283,7 +312,7 @@ export default {
             users: [],
             usersHeader: [
                 { text: "Avatar", value: "avatar" },
-                { text: "Název", value: "name" },
+                { text: "Jméno", value: "name" },
                 { text: "E-mail", value: "email" },
                 { text: "Role", value: "role_id" },
                 { text: "Typ mozaiky", value: "mozaika" },
@@ -299,8 +328,8 @@ export default {
     },
     methods: {
         loadUsers() {
-            // get req
             axios.get("users").then(response => {
+                this.tableLoading = false;
                 this.users = response.data;
             });
         },
@@ -311,6 +340,7 @@ export default {
             });
         },
         createUser() {
+            this.submitLoading = true;
             axios
                 .post("user/create", {
                     jmeno: this.jmeno,
@@ -320,16 +350,19 @@ export default {
                     generatedPassword: this.generatedPassword
                 })
                 .then(response => {
+                    this.submitLoading = false;
                     this.$store.state.alerts = response.data.alert;
-                    if (this.data.status == "success") {
-                        this.status = response.data;
-                        this.createDialog = false;
-                        this.loadUsers();
-                    }
+                    this.closeCreateDialog();
+                    this.loadUsers();
                 });
         },
         closeCreateDialog() {
             this.createDialog = false;
+            this.jmeno = "";
+            this.email = "";
+            this.password = "";
+            this.role_id = "";
+            this.generatedPassword = null;
         },
         // funkce na generování hesla z backengu
         generatePassword() {
@@ -347,6 +380,7 @@ export default {
             this.editDialog = false;
         },
         editUser() {
+            this.submitLoading = true;
             axios
                 .post("user/edit", {
                     userId: this.userId,
@@ -356,12 +390,10 @@ export default {
                     status: this.userActiveStatus
                 })
                 .then(response => {
+                    this.submitLoading = false;
                     this.$store.state.alerts = response.data.alert;
-                    if (response.data.status == "success") {
-                        this.status = response.data;
-                        this.editDialog = false;
-                        this.loadUsers();
-                    }
+                    this.editDialog = false;
+                    this.loadUsers();
                 });
         },
         removeUser(id) {
@@ -371,10 +403,7 @@ export default {
                 })
                 .then(response => {
                     this.$store.state.alerts = response.data.alert;
-                    if (this.data.status == "success") {
-                        this.status = response.data;
-                        this.loadUsers();
-                    }
+                    this.loadUsers();
                 });
         }
     }

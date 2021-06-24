@@ -39,7 +39,7 @@ class StreamSheduleFromIptvDokuController extends Controller
     {
         $checkIfIsSchedule = self::check_if_exist();
 
-        if ($checkIfIsSchedule['status'] == "exist") {
+        if ($checkIfIsSchedule['status'] === "exist") {
             $day = date("Y-m-d", time());
 
             date_default_timezone_set('Europe/Prague');

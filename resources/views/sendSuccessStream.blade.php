@@ -1,3 +1,5 @@
 @component('mail::message')
-    Kanál {{$stream}} je v pořádku!
+    @component('mail::panel')
+        Kanál {{$stream}} je v pořádku!
+    @endcomponent
 @endcomponent

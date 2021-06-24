@@ -1,33 +1,26 @@
 <template>
     <div>
-        <div>
-            <alert-component
-                v-if="status != null"
-                :status="status"
-            ></alert-component>
-        </div>
         <v-container fluid>
             <v-alert
                 class="mt-6"
                 v-if="firewallStatus == false"
-                dense
+                outlined
                 text
                 type="warning"
             >
                 <strong>Firewall není aktivní</strong>
             </v-alert>
-            <v-alert v-else dense class="mt-6" text type="success">
+            <v-alert v-else class="mt-6" text outlined type="success">
                 <strong>Firewall je aktivní</strong>
             </v-alert>
         </v-container>
-        <v-container fluid>
-            <v-row class="ml-12">
+        <v-container fluid class="ml-3 mr-3">
+            <v-row>
                 <!-- Logy -->
-                <v-row >
+                <v-col cols="12" sm="12" md="5" lg="5">
                     <v-card color="transparent" class="elevation-0 body-2">
                         <v-card-title>
                             <v-text-field
-                                dense
                                 v-model="searchLog"
                                 append-icon="mdi-magnify"
                                 label="Hledat v logách ..."
@@ -37,33 +30,29 @@
                         </v-card-title>
                         <v-data-table
                             v-if="firewallLogs == null"
-                            dense
                             class="elevation-0"
                             loading
                             loading-text="Načítám"
                         ></v-data-table>
                         <v-data-table
                             v-else-if="firewallLogs.status == 'empty'"
-                            dense
                             class="elevation-0"
                             loading-text="Žádná data"
                         ></v-data-table>
                         <v-data-table
                             v-else
-                            dense
                             :headers="firewallLogHeader"
                             :items="firewallLogs"
                             :search="searchLog"
                         >
                         </v-data-table>
                     </v-card>
-                </v-row>
+                </v-col>
                 <!-- Povolená IP -->
-                <v-row>
+                <v-col cols="12" sm="12" md="5" lg="5">
                     <v-card color="transparent" class="elevation-0 body-2">
                         <v-card-title>
                             <v-text-field
-                                dense
                                 v-model="searchAllowedIp"
                                 append-icon="mdi-magnify"
                                 label="Hledat v povolených IP ..."
@@ -74,7 +63,8 @@
                             <v-btn
                                 :loading="loadingCreateBtn"
                                 @click="OpenCreateDialog()"
-                                small
+                                text
+                                outlined
                                 color="success"
                             >
                                 <v-icon left dark>
@@ -85,7 +75,6 @@
                         </v-card-title>
                         <v-data-table
                             v-if="firewallAllowedIps == null"
-                            dense
                             class="elevation-0"
                             loading
                             loading-text="Načítám"
@@ -106,7 +95,6 @@
                         </v-data-table>
                         <v-data-table
                             v-else-if="firewallAllowedIps.status == 'empty'"
-                            dense
                             class="elevation-0"
                             loading-text="Žádná data"
                         >
@@ -127,7 +115,6 @@
 
                         <v-data-table
                             v-else
-                            dense
                             :headers="firewallAllowdIpsHeader"
                             :items="firewallAllowedIps"
                             :search="searchAllowedIp"
@@ -147,10 +134,10 @@
                             </template>
                         </v-data-table>
                     </v-card>
-                </v-row>
+                </v-col>
                 <!-- Stav Firewallu -->
 
-                <v-row>
+                <v-col cols="12" sm="12" md="2" lg="2">
                     <v-card color="transparent" class="elevation-0 body-2">
                         <v-switch
                             @change="changeFirewallStatus()"
@@ -158,7 +145,7 @@
                             label="Stav Firewallu"
                         ></v-switch>
                     </v-card>
-                </v-row>
+                </v-col>
             </v-row>
         </v-container>
 
@@ -217,6 +204,7 @@
                             @click="closeCreateDialog()"
                             color="red darken-1"
                             text
+                            outlined
                         >
                             Zavřít
                         </v-btn>
@@ -224,6 +212,7 @@
                             @click="createNewIP()"
                             color="green darken-1"
                             text
+                            outlined
                         >
                             Vytvořit
                         </v-btn>

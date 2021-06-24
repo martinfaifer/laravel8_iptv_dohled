@@ -3,7 +3,7 @@
         <div class="ml-12 body-1">
             <v-row>
                 <strong>
-                    Náhodný výpis 9 streamů s cc errory za poslední 2h
+                    Výpis 9 streamů s cc errory za poslední 1h
                 </strong>
             </v-row>
         </div>
@@ -45,7 +45,7 @@
             </v-card>
         </div>
         <div v-else>
-            <v-alert text type="info" class="mt-6">
+            <v-alert outlined text type="info" class="mt-6">
                 Žádný stream nechyboval
             </v-alert>
         </div>
@@ -89,7 +89,7 @@ export default {
     },
 
     created() {
-        this.loadCC();
+        // this.loadCC();
     },
     methods: {
         async loadCC() {

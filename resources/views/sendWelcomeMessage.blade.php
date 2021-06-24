@@ -8,7 +8,7 @@
 @endcomponent
 
 @component('mail::button', ['url' => $url, 'color' => 'success'])
-Adresa do systemu
+    
 @endcomponent
-
+    Vstup do systému
 @endcomponent

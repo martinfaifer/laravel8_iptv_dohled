@@ -38,7 +38,7 @@
                         mdi-exclamation
                     </v-icon>
                     <span
-                        class="text--secondary ml-12 body-1"
+                        class="text--secondary ml-12 body-1 font-weight-bold"
                         v-html="alert.msg"
                     ></span>
                 </v-row>

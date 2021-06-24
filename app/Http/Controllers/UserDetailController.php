@@ -6,9 +6,11 @@ use App\Events\UserEdit;
 use App\Models\UserDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\NotificationTrait;
 
 class UserDetailController extends Controller
 {
+    use NotificationTrait;
     /**
      * funkce na editaci / pridani detailnich informací o uživateli
      *
@@ -17,7 +19,6 @@ class UserDetailController extends Controller
      */
     public function user_detail_edit(Request $request): array
     {
-
         $user = Auth::user();
 
         try {
@@ -36,17 +37,9 @@ class UserDetailController extends Controller
             }
 
             event(new UserEdit($user->id));
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Editace byla úspěšná"
-            ];
+            return $this->frontend_notification("success", "Upraveno!");
         } catch (\Throwable $th) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se editovat"
-            ];
+            return $this->frontend_notification("error", "Neco se nepovedlo!");
         }
     }
 }

@@ -12,7 +12,8 @@ class ApiController extends Controller
     public $hello_dokumentace = "d4c3ed93-3768-48c0-98b6-1717108157e9";
     public $hello_dohled = "873134d5-6324-4555-aa6d-fcdb1f7a9f4f";
     public $iptvdokuUriApiConnectionTest = "http://iptvdoku.grapesc.cz/api/connectionTest";
-    public $iptvdokuUriApiStreamInfo = "http://iptvdoku.grapesc.cz/api/channel/search";
+    // public $iptvdokuUriApiStreamInfo = "http://iptvdoku.grapesc.cz/api/channel/search";
+    public $iptvdokuUriApiStreamInfo = "http://iptvdoku2021.test/api/v2/channel/info";
     public $iptvdokuUriApiStreams = "http://iptvdoku.grapesc.cz/api/channel/return";
 
     /**
@@ -59,9 +60,10 @@ class ApiController extends Controller
      */
     public function search_stream_data_v_dokumentaci(Request $request)
     {
-        return $response = Http::get($this->iptvdokuUriApiStreamInfo, [
-            'hello' => $this->hello_dokumentace,
-            'stream_url' => Stream::where('id', $request->streamId)->first()->stream_url
+        return $response = Http::timeout(3)->get($this->iptvdokuUriApiStreamInfo, [
+            'dohledId' => $request->streamId,
+            'fromDohled' => true,
+            'api_token' => env("API_TOKEN_IPTVDOKU")
         ]);
     }
 

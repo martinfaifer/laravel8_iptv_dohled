@@ -26,7 +26,7 @@
         <style> *{ text-transform: none !important; } </style>
         <style>
             body {
-                font-family: Sans-Serif;
+                font-family: DejaVu Sans, sans-serif;
             }
         </style>
     </head>

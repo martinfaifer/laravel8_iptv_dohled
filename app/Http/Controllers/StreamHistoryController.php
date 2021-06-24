@@ -38,6 +38,24 @@ class StreamHistoryController extends Controller
                         'color' => "green",
                         'created_at' => $created_at[0]
                     ],
+                    'stream_start' => [
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    ],
+                    'stream_audio_ok' => [
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "green",
+                        'created_at' => $created_at[0]
+                    ],
+                    'stream_stoped_by_user' => [
+                        'id' => $streamHistory['id'],
+                        'status' => $streamHistory['status'],
+                        'color' => "red",
+                        'created_at' => $created_at[0]
+                    ],
                     'sheduler_disable' => [
                         'id' => $streamHistory['id'],
                         'status' => $streamHistory['status'],
@@ -79,10 +97,29 @@ class StreamHistoryController extends Controller
      */
     public function streams_history(int $records)
     {
+
+        $data = [];
+
         if (StreamHistory::first()) {
             foreach (StreamHistory::orderBy('id', 'desc')->take($records)->get() as $history) {
                 if (Stream::where('id', $history->stream_id)->first()) {
                     if ($history->status === "stream_ok") {
+                        $data[] = array(
+                            'id' => $history->id,
+                            'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,
+                            'status' => $history->status,
+                            'color' => "success",
+                            'created_at' => substr($history->created_at, 0, 19)
+                        );
+                    } else if ($history->status === "stream_start") {
+                        $data[] = array(
+                            'id' => $history->id,
+                            'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,
+                            'status' => $history->status,
+                            'color' => "success",
+                            'created_at' => substr($history->created_at, 0, 19)
+                        );
+                    } else if ($history->status === "stream_audio_ok") {
                         $data[] = array(
                             'id' => $history->id,
                             'nazev' => Stream::where('id', $history->stream_id)->first()->nazev,

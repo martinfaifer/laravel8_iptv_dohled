@@ -13,24 +13,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\FFProbeJob;
 use App\Models\ChannelsWhichWaitingForNotification;
-use App\Models\StopedStream;
+use App\Models\Stream;
+use App\Models\StreamHistory;
 use Illuminate\Support\Facades\Log;
 use React\EventLoop\Factory;
 use Illuminate\Support\Facades\Cache;
 
 use App\Traits\StringToReadeableTrait;
 use App\Traits\TSDuckTrait;
+use App\Traits\SystemLogTrait;
 
 class DiagnosticController extends Controller
 {
     use StringToReadeableTrait;
     use TSDuckTrait;
-
-    public $ts_data = null;
-    public $pids = null;
-    public $pids_data = null;
+    use SystemLogTrait;
 
     /**
      * hlavní funkce. která v realném čase dohleduje jednotlivé streamy
@@ -39,11 +37,15 @@ class DiagnosticController extends Controller
      * pro ukonceni je znám pid processu, který se následně killne
      *
      */
-    public static function stream_realtime_diagnostic_and_return_status($stream): void
+    public static function stream_realtime_diagnostic_and_return_status(string $streamUrl, string $streamId): void
     {
         try {
-            Log::info("stream {$stream->id} je spusten");
+            Log::info("stream {$streamId} je spusten");
 
+            StreamHistory::create([
+                'stream_id' => $streamId,
+                'status' => "stream_start"
+            ]);
             /**
              * ---------------------------------------------------------------------------------------------------------------------------------------
              * EVENT LOOP
@@ -52,44 +54,54 @@ class DiagnosticController extends Controller
              */
             $eventLoop = Factory::create();
 
-            $eventLoop->addPeriodicTimer(1, function () use ($stream) {
+            $eventLoop->addPeriodicTimer(1, function () use ($streamId, $streamUrl) {
                 // overení zda stream nemá status stop
                 // získání informací o streamu
+                $stream = Stream::find($streamId);
 
-                if (!StopedStream::where('streamId', "!=", $stream->id)->first()) {
-
+                if ($stream->dohledovano == true) {
                     // spuštění tsducku pro diagnostiku kanálu ip = multicast http = hls
-                    $tsDuckData = self::analyze($stream->stream_url);
-
-                    match ($tsDuckData) {
-                        'Killed' => $this->analyze_is_killed($stream),
-                        empty($tsDuckData) => $this->analyze_is_empty($stream),
-                        default =>  $this->analyze_is_filled($tsDuckData, $stream)
-                    };
+                    $tsDuckData = self::analyze($streamUrl);
+                    if (str_contains($tsDuckData, 'pid:')) {
+                        self::analyze_is_filled($tsDuckData, $stream);
+                    } else {
+                        self::analyze_is_killed($stream);
+                    }
+                } else {
+                    StreamDiagnosticController::stop_diagnostic_stream_from_backend($stream->process_pid, $stream);
                 }
             });
 
             $eventLoop->run();
         } catch (\Throwable $th) {
-            Log::error("{$stream->id} => $th");
+            Log::error("{$streamId} => $th");
+            // odeslání mailu
+            // uložení chyby
+            self::create('diagnostika', $th);
         }
     }
 
 
     /**
-     * analýza proběhla, je i plná dat, 
+     * analýza proběhla, je i plná dat,
      * převedení stringu z analýzi do pole,
-     * předání dále do analýzi 
+     * předání dále do analýzi
      *
      * @param string $tsDuckData
      * @param object $stream
      * @return void
      */
-    protected function analyze_is_filled(string $tsDuckData, object $stream): void
+    protected static function analyze_is_filled(string $tsDuckData, object $stream): void
     {
-        $tsduckArr = $this->convert_tsduck_string_to_array($tsDuckData);
+        $tsduckArr = self::convert_tsduck_string_to_array($tsDuckData);
         if (is_array($tsduckArr)) {
-            $this->analyze_array_from_tsduck($tsduckArr,  $stream);
+            if ($stream->status != 'running') {
+                $stream->update([
+                    'status' => "running"
+                ]);
+            }
+
+            self::analyze_array_from_tsduck($tsduckArr,  $stream);
         }
     }
 
@@ -99,13 +111,24 @@ class DiagnosticController extends Controller
      * @param object $stream
      * @return void
      */
-    protected function analyze_is_killed(object $stream): void
+    protected static function analyze_is_killed(object $stream): void
     {
-        if ($stream->status != "error") {
+        if ($stream->status != 'running') {
+            $stream->update([
+                'status' => "running"
+            ]);
+        }
 
-            $stream->update(['status' => "error"]);
+        if (!Cache::has("stream" . $stream->id)) {
+
+            Cache::put("stream" . $stream->id, [
+                'status' => "error",
+                'stream' => $stream->nazev,
+                'msg' => "stream_ko"
+            ]);
 
             StreamHistoryController::create($stream->id, "stream_without_signal");
+            $stream->update(['is_problem' => true]);
         }
     }
 
@@ -115,10 +138,10 @@ class DiagnosticController extends Controller
      * @param object $stream
      * @return void
      */
-    protected function analyze_is_empty(object $stream): void
+    protected static function analyze_is_empty(object $stream): void
     {
-        if ($stream->status != "error") {
-            $stream->update(['status' => "error"]);
+        if ($stream->is_problem != true) {
+            $stream->update(['is_problem' => true]);
 
             StreamHistoryController::create($stream->id, "stream_error");
 
@@ -133,19 +156,26 @@ class DiagnosticController extends Controller
         }
     }
 
-    protected function analyze_array_from_tsduck(array $tsduck, object $stream): void
+    protected static function analyze_array_from_tsduck(array $tsduck, object $stream): void
     {
+        $ts_data = null;
+        $pids = null;
+        $pids_data = null;
+
+        // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
+        if ($notificationToDelete = ChannelsWhichWaitingForNotification::where('stream_id', $stream->id)->first()) {
+            $notificationToDelete->delete();
+        }
+
         try {
             $eventLoop = Factory::create();
-            // kanál není ve statusu error, dojde k vyhledání, zda existuje v tabulce channels_which_waiting_for_notifications a odebrání
-            ChannelsWhichWaitingForNotification::where('stream_id', $stream->id)->first()->delete();
 
             // zpracování pole
             // vyhledání specifických klíčů, dle kterých se pole zpracuje
             if (array_key_exists('ts', $tsduck)) {
                 // pokud je vse v poradku vraci pole "status" => "success"
                 // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "dataAlert" => ["status" => "status", "message" => "message"]
-                $this->ts_data = Analyze_TransportStreamController::collect_transportStream_from_tsduckArr($tsduck["ts"], $stream->id);
+                $ts_data = Analyze_TransportStreamController::collect_transportStream_from_tsduckArr($tsduck["ts"], $stream->id);
             }
 
             // zobrazení servisních informací
@@ -156,53 +186,64 @@ class DiagnosticController extends Controller
             // array || null video, array || null audio, array || null ca
             // tato funkce je nejdulezitejsi z cele diagnostiky
             if (array_key_exists('pids', $tsduck)) {
-                $this->pids = Analyze_PidStreamController::collect_pids_from_tsduckArr($tsduck["pids"]);
+                $pids = Analyze_PidStreamController::collect_pids_from_tsduckArr($tsduck["pids"]);
                 // Zpracování pidů
                 // od teto analýzy se odvíjí téměř veškeré informace o streamu
                 // pokud je vse v poradku vraci pole "status" => "success"
                 // pokud bude jakakoliv chyba ,  raci pole "status" => "issue" , "alert_status" => "status", "msg" => "Nejaka message"
-                $this->pids_data = Analyze_PidStreamController::analyze_pids_and_storeData($this->pids, $stream->id);
+                $pids_data = Analyze_PidStreamController::analyze_pids_and_storeData($pids, $stream->id);
             }
 
             // analyzování výstupu z jednotlivých podruzných funkcí
-            if (is_array($this->ts_data)) {
-                if (is_array($this->pids_data)) {
+            if (is_array($ts_data)) {
+                if (is_array($pids_data)) {
 
-                    if ($this->ts_data["status"] === "success" && $this->pids_data["status"] === "success") {
-
+                    if ($ts_data["status"] === "success" && $pids_data["status"] === "success") {
                         if (Cache::has("stream" . $stream->id)) {
                             // odebrání z cache
                             Cache::pull("stream" . $stream->id);
                             // zapsání do historie -> stream_ok
                             StreamHistoryController::create($stream->id, "stream_ok");
+
+                            $stream->update([
+                                'is_problem' => false
+                            ]);
                         }
                     }
 
-                    if ($this->ts_data["status"] != "success") {
+                    if ($ts_data["status"] != "success") {
 
-                        if (array_key_exists("alert_status", $this->ts_data)) {
+                        if (array_key_exists("alert_status", $ts_data)) {
                             if (!Cache::has("stream" . $stream->id)) {
 
                                 Cache::put("stream" . $stream->id, [
                                     'status' => "issue",
                                     'stream' => $stream->nazev,
-                                    'msg' => $this->ts_data["msg"]
+                                    'msg' => $ts_data["msg"]
                                 ]);
-                                StreamHistoryController::create($stream->id, $this->ts_data["alert_status"]);
+                                StreamHistoryController::create($stream->id, $ts_data["alert_status"]);
+
+                                $stream->update([
+                                    'is_problem' => true
+                                ]);
                             }
                         }
                     }
 
-                    if ($this->pids_data["status"] != "success") {
+                    if ($pids_data["status"] != "success") {
 
-                        if (array_key_exists("alert_status", $this->pids_data)) {
+                        if (array_key_exists("alert_status", $pids_data)) {
                             if (!Cache::has("stream" . $stream->id)) {
                                 Cache::put("stream" . $stream->id, [
                                     'status' => "issue",
                                     'stream' => $stream->nazev,
-                                    'msg' => $this->pids_data["msg"]
+                                    'msg' => $pids_data["msg"]
                                 ]);
-                                StreamHistoryController::create($stream->id, $this->pids_data["alert_status"]);
+                                StreamHistoryController::create($stream->id, $pids_data["alert_status"]);
+
+                                $stream->update([
+                                    'is_problem' => true
+                                ]);
                             }
                         }
                     }
@@ -211,7 +252,7 @@ class DiagnosticController extends Controller
             $eventLoop->run();
         } catch (\Throwable $th) {
             // log / notifikace adminovi
-
+            self::create('analyze', $th);
         }
     }
 }

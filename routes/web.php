@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\StreamInfoTs;
 use App\Http\Controllers\CcErrorController;
 use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\EmailNotificationController;
@@ -15,10 +16,13 @@ use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDetailController;
 use App\Http\Controllers\UserHistoryController;
+use App\Mail\SendErrorStream;
 use App\Models\Stream;
+use App\Models\SystemLog;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
-
+use App\Traits\FfmpegTrait;
+use Illuminate\Support\Facades\Mail;
 
 Route::group(['middleware' => 'firewall'], function () {
     Route::get('/', function () {
@@ -49,6 +53,9 @@ Route::group(['middleware' => 'firewall'], function () {
         Route::post('sheduler', [StreamSheduleFromIptvDokuController::class, 'return_shedule_data']);
         // StreamInfo -> TodayEvent (sheduler)
         Route::post('todayEvent', [StreamSheduleFromIptvDokuController::class, 'check_if_today_is_shedule']);
+        // vyjresleni audio / video grafu
+        Route::post('audio_bitrate', [StreamController::class, 'show_audio_bitrate_data']);
+        Route::post('video_bitrate', [StreamController::class, 'show_video_bitrate_data']);
     });
 
     // NavigationComponent -> zobrazení notifikace, pokud ke dnesnimu dni jsou plánované nejaké události
@@ -129,6 +136,7 @@ Route::group(['middleware' => 'firewall'], function () {
 
     Route::get('system/usage/areaChart', [SystemController::class, 'create_data_for_area_chart']);
     Route::get('system/cpu"', [SystemController::class, 'cpu']);
+    Route::get('system/cpu/data', [SystemController::class, 'get_cpu_history_data']);
     Route::get('system/avarage/load', function () {
         foreach (sys_getloadavg() as $load) {
             $output[] = round($load, 2);
@@ -158,7 +166,7 @@ Route::group(['middleware' => 'firewall'], function () {
     Route::group(['prefix' => 'stream'], function () {
         Route::post("edit", [StreamController::class, 'edit_stream']);
         Route::post("delete", [StreamController::class, 'delete_stream']);
-        Route::post("add", [StreamController::class, 'create_stream']);
+        Route::post("create", [StreamController::class, 'create_stream']);
         Route::post("issues", [StreamNotificationLimitController::class, 'get_information_for_editation']);
         Route::post('get_name_and_dohled', [StreamController::class, 'get_stream_name_and_dohled']);
         Route::post('mozaika/edit/save', [StreamController::class, 'mozaika_stream_small_edit']);
@@ -199,9 +207,9 @@ Route::group(['middleware' => 'firewall'], function () {
      * DATA PRO VYKRESLOVÁNÍ GRAFŮ
      */
     // vykreslení funkčních || nefunkčních streamů
-    Route::get('working_streams/areacharts', [StreamController::class, 'retun_count_of_working_streams']);
+    Route::get('system/working_streams/areacharts', [StreamController::class, 'retun_count_of_working_streams']);
     // donut chart streamů
-    Route::get('streams/donutChart', [StreamController::class, 'return_streams_data_for_donutChart']);
+    Route::get('system/streams/donutChart', [StreamController::class, 'return_streams_data_for_donutChart']);
     // system -> load history for area chart
     Route::get('system/load/history', [SystemController::class, 'load_history_system_usage']);
     // System -> load history ram
@@ -210,53 +218,78 @@ Route::group(['middleware' => 'firewall'], function () {
     Route::get('system/hdd/history', [SystemController::class, 'hdd_history_system_usage']);
     // System -> load history swap
     Route::get('system/swap/history', [SystemController::class, 'swap_history_system_usage']);
-
-    Route::get('tsDuck/arr', function () {
-        $tsDuckData = shell_exec("tsp -I ip 239.250.2.37:1234 -P until -s 1 -P analyze --normalized -O drop");
-        return DiagnosticController::convert_tsduck_string_to_array($tsDuckData);
-    });
 });
 
+Route::get('test', function () {
+
+    $ffprobeOutput = shell_exec("timeout -s SIGKILL 10 ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs http://172.17.2.3:10224/udp/239.252.12.18:1234 -timeout 1");
+    $ffprobeOutput = json_decode($ffprobeOutput, true);
 
 
-/**
- * test cache
- */
-Route::get('cache/put', function () {
-    foreach (Stream::all() as $stream) {
-        Cache::put("stream" . $stream->id, array(
-            'status' => "issue",
-            'stream' => $stream->nazev,
-            'msg' => "Chyba ve streamu"
-        ));
-    }
-});
+    $start_time = null;
+    $video_start_time = null;
+    $audio_start_time = null;
 
-Route::get('cache/check', function () {
+    if (array_key_exists('programs', $ffprobeOutput)) {
+        foreach ($ffprobeOutput["programs"] as $program) {
+            if (array_key_exists("start_time", $program)) {
+                $start_time = round($program["start_time"], 0);
+            }
 
-    if ($cache = Cache::has("stream" . "1")) {
-        if (Cache::has("stream" . "1")) {
-            $cache =  Cache::get("stream" . "1", 'default');
-            return $cache['status'];
+            foreach ($ffprobeOutput["programs"][0]["streams"] as $streams) {
+                if ($streams["codec_type"] == "video") {
+
+                    if (array_key_exists("start_time", $streams)) {
+                        $video_start_time = round($streams["start_time"], 0);
+                    }
+                }
+
+                if ($streams["codec_type"] == "audio") {
+                    if (array_key_exists("start_time", $streams)) {
+                        $audio_start_time = round($streams["start_time"], 0);
+                    }
+                }
+            }
         }
     }
+    dd($start_time);
+    if (!is_null($start_time) && !is_null($video_start_time) && !is_null($audio_start_time)) {
+        if ($start_time === $video_start_time && $start_time === $audio_start_time) {
 
-    return "neexistuje";
-});
+            dd("ok");
+        } else {
 
-Route::get("cache/delete", function () {
-    foreach (Stream::all() as $stream) {
-        Cache::pull("stream" . "1");
-    }
-});
+            $checkVideo = intval($video_start_time) - intval($start_time);
+            $checkAudio = intval($audio_start_time) - intval($start_time);
 
-Route::get('cache/all', function () {
-    $items = [];
-    foreach (Stream::all() as $stream) {
-        if (Cache::has("stream" . $stream->id)) {
-            $items[] =  Cache::get("stream" . $stream->id, 'default');
+            if ($checkVideo <= 1 &&  $checkAudio <= 1) {
+                // v toleranci => success
+                dd("vse ok");
+            } else {
+                // AV resync
+                dd("resync");
+            }
         }
     }
+});
 
-    return $items;
+
+Route::get('put', function () {
+    Cache::put('stream1001', []);
+});
+
+Route::get('pull', function () {
+    Cache::pull('stream1001');
+});
+
+Route::get('has', function () {
+    return Cache::has("stream1001_sended_notification");
+});
+
+Route::get('email', function () {
+    Mail::to("mfaifer@seznam.cz")->send(new SendErrorStream("TEST", "seznam.cz"));
+    // Mail::send(['text' => 'mail'], ['TEST'], function ($message) {
+    //     $message->to('martinfaifer@gmail.com', 'IPTV DOhled predmet')->subject('Laravel Basic Testing Mail');
+    //     $message->from('dohled@dohled.cz', 'IPTV DOhled');
+    // });
 });

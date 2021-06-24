@@ -3,11 +3,11 @@
         <div class="ml-12 body-1">
             <v-row>
                 <strong>
-                    Posledních 8 záznamů z historie výpadků
+                    Posledních 10 záznamů z historie výpadků
                 </strong>
             </v-row>
         </div>
-        <v-card flat class="mt-7" elevation="0" color="#202020">
+        <v-card flat class="mt-7" elevation="0" color="transparent">
             <div v-if="history != null">
                 <v-timeline dense>
                     <v-timeline-item
@@ -36,16 +36,102 @@
                                 </v-row>
 
                                 <v-row>
-                                    <small
-                                        :class="`${stream.color}--text`"
-                                        class="ml-12"
-                                    >
+                                    <small class="ml-12 green--text">
                                         <strong>
                                             Stream je v pořádku
                                         </strong>
                                     </small>
                                 </v-row>
                             </div>
+                            <div v-else-if="stream.status == 'stream_start'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small>
+                                        <strong class="ml-12 green--text">
+                                            Spuštěn dohled streamu
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+
+                            <div v-else-if="stream.status == 'stream_audio_ok'">
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small>
+                                        <strong class="ml-12 green--text">
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+
+                                            Audio je v pořádku
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+
+                            <div
+                                v-else-if="
+                                    stream.status == 'stream_out_of_sync'
+                                "
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small>
+                                        <strong
+                                            :class="`${stream.color}--text`"
+                                            class="ml-12"
+                                        >
+                                            Nefunguje Audio nebo je posunuté
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+
+                            <div
+                                v-else-if="
+                                    stream.status == 'stream_stoped_by_user'
+                                "
+                            >
+                                <v-row>
+                                    <small :class="`${stream.color}--text`">
+                                        <strong>
+                                            {{ stream.created_at }} =>
+                                            {{ stream.nazev }}
+                                        </strong>
+                                    </small>
+                                </v-row>
+                                <v-row>
+                                    <small>
+                                        <strong
+                                            :class="`${stream.color}--text`"
+                                            class="ml-12"
+                                        >
+                                            Uživatel zastavil dohled streamu
+                                        </strong>
+                                    </small>
+                                </v-row>
+                            </div>
+
                             <div
                                 v-else-if="
                                     stream.status == 'scrambledPids_warning'
@@ -322,9 +408,7 @@
                                     </small>
                                 </v-row>
                                 <v-row>
-                                    <small
-                                        class="red--text ml-12"
-                                    >
+                                    <small class="red--text ml-12">
                                         <strong>
                                             Přestala fungovat diagnostika,
                                             stream se pokusí automaticky spustit
@@ -338,7 +422,7 @@
             </div>
 
             <div v-else>
-                <v-alert text type="info">
+                <v-alert outlined text type="info">
                     Neexistuje žádná historie
                 </v-alert>
             </div>
@@ -373,7 +457,7 @@ export default {
     },
     methods: {
         loadHistory() {
-            window.axios.get("streams/history/" + 10).then(response => {
+            axios.get("streams/history/" + 10).then(response => {
                 if (response.data.status == "empty") {
                     this.history = null;
                 } else {

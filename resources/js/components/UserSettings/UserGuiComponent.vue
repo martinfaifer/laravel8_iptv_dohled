@@ -1,72 +1,67 @@
 <template>
-    <v-main>
-        <alert-component
-            v-if="status != null"
-            :status="status"
-        ></alert-component>
-        <v-container fluid>
-            <v-alert type="info" text width="80%">
-                Nastavení prostředí
-            </v-alert>
-
-            <v-card
-                flat
-                class="text-center transition-fast-in-fast-out"
-                width="80%"
-            >
-                <v-card-text>
-                    <span>
-                        Nastavení počtu zobrazených kanálů na stránce v mozaice
-                    </span>
-                    <v-col cols="4" sm="12" md="12">
-                        <v-text-field
-                            v-model="user.pagination"
-                            type="number"
-                            autofocus
-                        ></v-text-field>
-                    </v-col>
-                    <v-col cols="3" sm="12" md="12">
-                        <v-switch
-                            v-model="customMozaika"
-                            label="vytvoření statických kanálů v mozaice"
-                        ></v-switch>
-                    </v-col>
-                    <v-col
-                        cols="4"
-                        sm="12"
-                        md="12"
-                        v-show="customMozaika === true"
-                    >
-                        <v-autocomplete
-                            v-model="staticChannels"
-                            :items="streams"
-                            item-text="nazev"
-                            item-value="id"
-                            label="Vyberte kanály"
-                            hint="Doporučení 7 kanálu pro 1080p a 14 kanálů pro 4K rozlišení"
-                            multiple
-                        ></v-autocomplete>
-                    </v-col>
-                </v-card-text>
-                <v-card-actions>
-                    <v-row>
+    <v-main class="ml-12">
+        <v-container>
+            <v-col cols="12" sm="12" lg="12" md="12">
+                <v-alert type="info" outlined text>
+                    Nastavení prostředí
+                </v-alert>
+            </v-col>
+            <v-col cols="12" sm="12" md="12" lg="12">
+                <v-card flat class="text-center">
+                    <v-card-text>
+                        <span class="white--text">
+                            Nastavení počtu zobrazených kanálů na stránce v
+                            mozaice
+                        </span>
+                        <v-col cols="4" sm="12" md="12">
+                            <v-text-field
+                                v-model="user.pagination"
+                                type="number"
+                                autofocus
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="3" sm="12" md="12">
+                            <v-switch
+                                v-model="customMozaika"
+                                label="vytvoření statických kanálů v mozaice"
+                            ></v-switch>
+                        </v-col>
+                        <v-col
+                            cols="4"
+                            sm="12"
+                            md="12"
+                            v-show="customMozaika === true"
+                        >
+                            <v-autocomplete
+                                v-model="staticChannels"
+                                :items="streams"
+                                item-text="nazev"
+                                item-value="id"
+                                label="Vyberte kanály"
+                                hint="Doporučení 7 kanálu pro 1080p a 14 kanálů pro 4K rozlišení"
+                                multiple
+                            ></v-autocomplete>
+                        </v-col>
+                    </v-card-text>
+                    <v-card-actions>
                         <v-spacer></v-spacer>
                         <v-btn
                             @click="GuiEdit()"
                             small
+                            text
+                            outlined
                             class="mr-12"
                             color="success"
                         >
                             Editovat
                         </v-btn>
-                    </v-row>
-                </v-card-actions>
-            </v-card>
+                    </v-card-actions>
+                </v-card>
+            </v-col>
         </v-container>
     </v-main>
 </template>
 <script>
-import AlertComponent from "../AlertComponent";
 export default {
     props: ["user"],
     data: () => ({
@@ -75,9 +70,7 @@ export default {
         customMozaika: "",
         streams: []
     }),
-    components: {
-        "alert-component": AlertComponent
-    },
+
     created() {
         this.CustomMozaikaFn();
         this.loadChannels();
@@ -85,9 +78,8 @@ export default {
 
     methods: {
         loadChannels() {
-            let currentObj = this;
-            axios.get("/user/streams").then(function(response) {
-                currentObj.streams = response.data;
+            axios.get("/user/streams").then(response => {
+                this.streams = response.data;
             });
         },
         CustomMozaikaFn() {
@@ -98,20 +90,15 @@ export default {
             }
         },
         GuiEdit() {
-            let currentObj = this;
             axios
                 .post("user/gui/edit", {
                     pagination: this.user.pagination,
                     customMozaika: this.customMozaika,
                     staticChannels: this.staticChannels
                 })
-                .then(function(response) {
-                    currentObj.status = response.data.status;
-                    currentObj.$store.commit("update", response.data.data);
-
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 5000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.$store.commit("update", response.data.data);
                 });
         },
         getStaticChannels() {
@@ -121,13 +108,5 @@ export default {
     mounted() {
         this.CustomMozaikaFn();
     }
-
-    // mutations: {
-    //     status() {
-    //         setTimeout(function() {
-    //             this.status = null;
-    //         }, 5000);
-    //     }
-    // }
 };
 </script>

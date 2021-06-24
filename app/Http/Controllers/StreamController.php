@@ -16,11 +16,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 use App\Traits\NotificationTrait;
+use App\Traits\TSDuckTrait;
 use Illuminate\Support\Facades\Validator;
 
 class StreamController extends Controller
 {
-
+    use TSDuckTrait;
     use NotificationTrait;
 
     /**
@@ -134,15 +135,20 @@ class StreamController extends Controller
      * @param Request $request
      * @return array
      */
-    public function streams_for_mozaiku(): object
+    public function streams_for_mozaiku()
     {
         $user = Auth::user();
-        return Stream::where('dohledovano', true)->where('status', '!=', 'stop')->orderBy('nazev', 'asc')->paginate($user->pagination, ['id', 'image', 'nazev', 'status']);
+
+        if ($user) {
+            return Stream::where('dohledovano', true)->where('status', 'running')->orderBy('nazev', 'asc')->paginate($user->pagination, ['id', 'image', 'nazev', 'is_problem']);
+        }
+
+        return [];
     }
 
     public function error_streams_for_mozaika(): array
     {
-        if (!Stream::where([['dohledovano', true], ['status', 'error']])->first()) {
+        if (!Stream::where([['dohledovano', true], ['is_problem', true]])->first()) {
             return [
                 'status' => "empty"
             ];
@@ -150,7 +156,7 @@ class StreamController extends Controller
 
         return [
             'status' => "success",
-            'data' => Stream::where([['dohledovano', true], ['status', 'error']])->orderBy('nazev', 'asc')->get(['id', 'image', 'nazev', 'status'])
+            'data' => Stream::where([['dohledovano', true], ['is_problem', true]])->orderBy('nazev', 'asc')->get(['id', 'image', 'nazev', 'is_problem'])
         ];
     }
 
@@ -169,7 +175,8 @@ class StreamController extends Controller
             return [
                 'nazev' => $stream['nazev'],
                 'status' => $stream['status'],
-                'image' => $stream["image"]
+                'image' => $stream["image"],
+                'is_problem' => $stream['is_problem']
             ];
         } else {
             redirect(404);
@@ -318,6 +325,10 @@ class StreamController extends Controller
             // kill vsech procesů co běží na pozadí u streamu
             if (!is_null($stream_to_edit->process_pid)) {
                 StreamDiagnosticController::stop_diagnostic_stream_from_backend($stream_to_edit->process_pid);
+                StreamHistory::create([
+                    'stream_id' => $request->streamId,
+                    'status' => "stream_stoped_by_user"
+                ]);
             }
         }
 
@@ -370,7 +381,7 @@ class StreamController extends Controller
             'sendSmsAlert' => $request->sendSmsAlert ?? 0
         ]);
 
-        return $this->frontend_notification("success", "Upraveo!");
+        return $this->frontend_notification("success", "Upraveno!");
     }
 
     /**
@@ -384,6 +395,10 @@ class StreamController extends Controller
         // vyhledání streamu
         $stream = Stream::find($request->streamId);
 
+        if (!$stream) {
+            return self::frontend_notification("error", "Nenalezen stream");
+        }
+
         // killnuti procesu pro diagnostiku
         if (!is_null($stream->process_pid)) {
             StreamDiagnosticController::stop_diagnostic_stream_from_backend($stream->process_pid);
@@ -396,6 +411,7 @@ class StreamController extends Controller
             self::delete_all_stream_information($request->streamId);
         } catch (\Throwable $th) {
             // nemela by vzniknout žádná chyba
+            return self::frontend_notification("success", "Odebráno!");
         }
 
         // unlink náhledu pokud není hodnota "image" = "false"
@@ -466,15 +482,19 @@ class StreamController extends Controller
         $validation = Validator::make($request->all(), [
             'streamUrl' => ['required'],
             'stream_nazev' => ['required'],
-            'dohledovano' => ['required'],
-            'dohledVolume' => ['required'],
-            'vytvaretNahled' => ['required'],
-            'sendMailAlert' => ['required'],
-            'sendSmsAlert' => ['required']
         ]);
 
         if ($validation->fails()) {
             return self::frontend_notification('error', 'Nebylo vše vyplněno!');
+        }
+
+        // otestování streamu
+        if (isset($request->isDohled)) {
+            // napojení na tsduck a report
+            $analyza = self::analyze($request->streamUrl);
+            if (!str_contains($analyza, 'pid:')) {
+                return self::frontend_notification("error", "Nepodařila se analýza streamu, stream nebyl přidán!");
+            }
         }
 
         if (Stream::where('stream_url', $request->streamUrl)->first()) {
@@ -626,10 +646,11 @@ class StreamController extends Controller
     public static function take_count_of_working_streams(): void
     {
         if (Stream::first()) {
-            SystemHistory::create([
-                'value' => Stream::where([['status', "!=", "waiting"], ['status', "!=", 'stop'], ['status', "!=", "error"]])->count(),
-                'value_type' => "streams"
-            ]);
+
+            Cache::put('running_streams' . date('H:i'), [
+                'value' => Stream::where([['is_problem', false], ['dohledovano', true]])->count(),
+                'created_at' => date('H:i')
+            ], now()->addMinutes(480));
         }
     }
 
@@ -640,23 +661,25 @@ class StreamController extends Controller
      */
     public function retun_count_of_working_streams(): array
     {
-        if (SystemHistory::where('value_type', "streams")->first()) {
+        for ($i = 240; $i > 1; $i--) {
+            if (Cache::has('running_streams' . now()->subMinutes($i)->format('H:i'))) {
+                $cache = Cache::get('running_streams' . now()->subMinutes($i)->format('H:i'));
 
-            foreach (SystemHistory::where('value_type', "streams")->get() as $streamsDataHistory) {
-                $seriesData[] = $streamsDataHistory->value;
-                $xaxis[] = substr($streamsDataHistory->created_at, 0, 19);
+                $seriesData[] = $cache['value'];
+                $xaxis[] = $cache['created_at'];
             }
-
+        }
+        if (isset($xaxis)) {
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
                 'seriesData' => $seriesData
             ];
-        } else {
-            return [
-                'status' => "empty"
-            ];
         }
+
+        return [
+            'status' => "empty"
+        ];
     }
 
     /**
@@ -673,12 +696,11 @@ class StreamController extends Controller
         }
         $pocet = array();
         $pocetCekajicich = Stream::where('status', "waiting")->count();
-        $pocetFunkcnich = Stream::where('status', "success")->count();
-        $pocetProblemovych = Stream::where('status', "issue")->count();
+        $pocetFunkcnich = Stream::where([['status', "running"], ['is_problem', false]])->count();
         $pocetStopnutych = Stream::where('status', "stop")->count();
-        $pocetNefunkcnich = Stream::where('status', "error")->count();
+        $pocetNefunkcnich = Stream::where([['is_problem', true], ['status', "running"]])->count();
 
-        array_push($pocet, $pocetCekajicich, $pocetFunkcnich, $pocetProblemovych, $pocetStopnutych, $pocetNefunkcnich);
+        array_push($pocet, $pocetCekajicich, $pocetFunkcnich, $pocetStopnutych, $pocetNefunkcnich);
         // statusy
         // waiting, success, issue, stop
 
@@ -687,7 +709,7 @@ class StreamController extends Controller
             'status' => "success",
             'seriesDonut' => $pocet,
             'chartOptionsDonut' => array(
-                'labels' => ['čekající', 'funkční', 'problémové', 'stopnuté', 'nefunkční']
+                'labels' => ['čekající', 'funkční', 'stopnuté', 'nefunkční']
             )
         ];
     }
@@ -725,5 +747,67 @@ class StreamController extends Controller
         return [
             'status' => "fail"
         ];
+    }
+
+    public function show_video_bitrate_data(Request $request): array
+    {
+        try {
+            for ($i = 120; $i > 1; $i--) {
+                if (Cache::has($request->streamId . '_video_bitrate_' . now()->subSeconds($i)->format('H:i:s'))) {
+
+                    $cache = Cache::get($request->streamId . '_video_bitrate_'  . now()->subSeconds($i)->format('H:i:s'));
+
+                    $seriesData[] = $cache['value'];
+                    $xaxis[] = $cache['created_at'];
+                }
+            }
+
+            if (isset($seriesData)) {
+                return [
+                    'status' => "exist",
+                    'xaxis' => $xaxis,
+                    'seriesData' => $seriesData
+                ];
+            }
+
+            return [
+                'status' => "empty"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "empty"
+            ];
+        }
+    }
+
+    public function show_audio_bitrate_data(Request $request): array
+    {
+        try {
+            for ($i = 120; $i > 1; $i--) {
+                if (Cache::has($request->streamId . '_audio_bitrate_' . now()->subSeconds($i)->format('H:i:s'))) {
+
+                    $cache = Cache::get($request->streamId . '_audio_bitrate_'  . now()->subSeconds($i)->format('H:i:s'));
+
+                    $seriesData[] = $cache['value'];
+                    $xaxis[] = $cache['created_at'];
+                }
+            }
+
+            if (isset($seriesData)) {
+                return [
+                    'status' => "exist",
+                    'xaxis' => $xaxis,
+                    'seriesData' => $seriesData
+                ];
+            }
+
+            return [
+                'status' => "empty"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "empty"
+            ];
+        }
     }
 }

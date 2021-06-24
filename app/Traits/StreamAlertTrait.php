@@ -16,14 +16,23 @@ trait StreamAlertTrait
             if (Cache::has("stream" . $stream->id)) {
                 $alerts[] =  Cache::get("stream" . $stream->id, 'default');
             }
+
+            if (Cache::has("stream" . $stream->id . "_resync")) {
+                $alerts[] =  Cache::get("stream" . $stream->id . "_resync", 'default');
+            }
         }
 
         if (empty($alerts)) {
             return $alerts;
         }
-
         foreach ($alerts as $alert) {
-            $output_array[] = $this->sort_stream_status_by_data($alert);
+            if (array_key_exists('status', $alert)) {
+                $output_array[] = $this->sort_stream_status_by_data($alert);
+            }
+        }
+
+        if (empty($output_array)) {
+            return [];
         }
 
         return $output_array;
@@ -43,10 +52,17 @@ trait StreamAlertTrait
             case "issue":
 
                 switch ($stream['msg']) {
+                    case 'Audio video resync!':
+                        return [
+                            'status' => "warning",
+                            'msg' => "{$stream["stream"]} problém se zvukem"
+                        ];
+                        break;
+
                     case '"Chyba ve streamu':
                         return [
                             'status' => "warning",
-                            'msg' => "{$stream["stream"]} zlobí"
+                            'msg' => "{$stream["stream"]} problém se streamem"
                         ];
                         break;
 

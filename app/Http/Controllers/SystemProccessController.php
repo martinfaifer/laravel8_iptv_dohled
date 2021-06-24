@@ -263,7 +263,7 @@ class SystemProccessController extends Controller
 
         if (SystemProccess::first()) {
             foreach (SystemProccess::all() as $process) {
-                StreamController::stop_diagnostic_stream_from_backend($process['pid']);
+                StreamDiagnosticController::stop_diagnostic_stream_from_backend($process['pid']);
 
                 SystemProccess::where('id', $process['id'])->delete();
             }

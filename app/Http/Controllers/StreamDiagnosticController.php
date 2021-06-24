@@ -38,81 +38,23 @@ class StreamDiagnosticController extends Controller
     {
         Stream::where('status', 'running')->chunk(50, function ($streamsToCheck) {
             foreach ($streamsToCheck as $streamToCheck) {
-                // job
-                FFProbeJob::dispatchNow($streamToCheck->id, $streamToCheck->stream_url);
+                FFProbeJob::dispatch($streamToCheck->id, $streamToCheck->stream_url);
             }
         });
     }
 
 
-    /**
-     * fn pro pokus o spustení streamu, který je ve stavu error
-     *
-     * @return void
-     */
-    public static function try_start_error_stream(): void
+    public static function check_if_streams_running(): void
     {
-        if (Stream::where('status', 'error')->first()) {
-            // existuje minimálně jeden stream. který má process_pid == null a zároveň nemá status stop
-            Stream::where('status', 'error')->each(function ($streamToStart) {
-                if (!StopedStream::where('streamId', "!=", $streamToStart->id)->first()) {
-
-                    // killnutí puvodních pidů
-                    if (!is_null($streamToStart->process_pid)) {
-                        self::stop_diagnostic_stream_from_backend($streamToStart->process_pid);
-                    }
-
-                    // pokud existuje, je uvaha, ze se od tohoto upusti
-                    if (!is_null($streamToStart->socket_process_pid)) {
-                        self::stop_diagnostic_stream_from_backend($streamToStart->socket_process_pid);
-                    }
-
-                    // pro každý stream spustí diagnostiku
-                    // spustení příkazu a vrácení pidu
-                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToStart->stream_url} {$streamToStart->id}" . ' > /dev/null 2>&1 & echo $!; ');
-
-                    self::check_and_store_pid("process_pid", $processPid, $streamToStart->id);
+        Stream::where([['dohledovano', true], ['status', 'running']])->chunk(50, function ($streamsToCheck) {
+            foreach ($streamsToCheck as $streamToCheck) {
+                if (SystemController::check_if_process_running($streamToCheck->process_pid) != "running") {
+                    StreamHistoryController::create($streamToCheck->id, "stream_without_signal");
+                    $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamToCheck->stream_url} {$streamToCheck->id}" . ' > /dev/null 2>&1 & echo $!; ');
+                    self::check_and_store_pid("process_pid", $processPid, $streamToCheck);
                 }
-            });
-        }
-    }
-
-    /**
-     * funkce, která ověřuje, že všechny streamy, které mají u sebe uložené pidy funguje korektně
-     *
-     * pokud pid není nalezen ==> ukončení veškerých dalších processů, které souvysí se streamem
-     *
-     * @return void
-     */
-    public static function check_if_streams_running_corectly(): void
-    {
-        // Vyhledání zda funguje nějaký stream
-        if (Stream::where('dohledovano', true)->where('status', "success")->orWhere('status', "issue")->first()) {   // => zde se berou vsechny streamy, které by se měli dohledovat respektive, které se dohledují
-
-            Stream::where('dohledovano', true)->where('status', "success")->orWhere('status', "issue")->get()->each(function ($streamsToCheck) {
-                // kontrola, zda stream funguje
-                // pokud nefunguje, vrací not_running
-                if (SystemController::check_if_process_running(intval($streamsToCheck->process_pid)) == "not_running") {
-
-                    // ukocení streamu, dle pidu pod var process_pid
-                    self::stop_diagnostic_stream_from_backend(intval($streamsToCheck->process_pid));
-
-                    // kontrola, zda stream neexistuje v tabulce stoped_streams ( kontrola probíhá dle id streamu )
-                    if (!StopedStream::where('streamId', $streamsToCheck->id)->first()) {
-
-                        // zapsaání záznamu do historie
-                        StreamHistory::create([
-                            'stream_id' => $streamsToCheck->id,
-                            'status' => "streamCrash_tryToStart"
-                        ]);
-
-
-                        $processPid = shell_exec("nohup php artisan command:start_realtime_diagnostic_and_return_pid {$streamsToCheck->stream_url} {$streamsToCheck->id}" . ' > /dev/null 2>&1 & echo $!; ');
-                        self::check_and_store_pid("process_pid", intval($processPid), $streamsToCheck->id);
-                    }
-                }
-            });
-        }
+            }
+        });
     }
 
 
@@ -128,24 +70,26 @@ class StreamDiagnosticController extends Controller
         // vyhledání zda existuje jakýkoliv stream pro ukoncení
         if (Stream::first()) {
 
-            foreach (Stream::all() as $streamProUkonceni) {
-                //  ukončení ffmpegu, pokud aktuálně funguje
-                if (!is_null($streamProUkonceni->ffmpeg_pid)) {
-                    self::stop_diagnostic_stream_from_backend($streamProUkonceni->ffmpeg_pid);
-                }
-                if (!is_null($streamProUkonceni->process_pid)) {
-                    self::stop_diagnostic_stream_from_backend($streamProUkonceni->process_pid);
-                }
+            Stream::chunk(50, function ($streamsProUkonceni) {
+                foreach ($streamsProUkonceni as $streamProUkonceni) {
+                    if (!is_null($streamProUkonceni->process_pid)) {
+                        self::stop_diagnostic_stream_from_backend($streamProUkonceni->process_pid);
+                    }
 
-                $streamProUkonceni->update(
-                    [
+                    $streamProUkonceni->update([
                         'status' => "waiting",
                         'process_pid' => null,
                         'ffmpeg_pid' => null,
-                        'socket_process_pid' => null
-                    ]
-                );
-            }
+                        'socket_process_pid' => null,
+                        'is_problem' => false
+                    ]);
+
+                    StreamHistory::create([
+                        'stream_id' => $streamProUkonceni->id,
+                        'status' => "stream_stoped_by_user"
+                    ]);
+                }
+            });
 
             return self::frontend_notification("success", "success", "Streamy byli ukončeny!");
         } else {
@@ -159,9 +103,15 @@ class StreamDiagnosticController extends Controller
      * @param int $pid
      * @return void
      */
-    public static function stop_diagnostic_stream_from_backend($pid): void
+    public static function stop_diagnostic_stream_from_backend($pid, $stream = null): void
     {
-        shell_exec("kill {$pid}");
+        shell_exec("kill -9 {$pid}");
+        if (!is_null($stream)) {
+            $stream->update([
+                'status' => "stop",
+                'process_pid' => null
+            ]);
+        }
     }
 
 

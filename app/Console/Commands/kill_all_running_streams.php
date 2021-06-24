@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamController;
+use App\Http\Controllers\StreamDiagnosticController;
 use Illuminate\Console\Command;
 
 class kill_all_running_streams extends Command
@@ -38,7 +38,7 @@ class kill_all_running_streams extends Command
      */
     public function handle()
     {
-        StreamController::kill_all_running_streams();
+        StreamDiagnosticController::kill_all_running_streams();
         // vycistení queue tabulky po ukoncení vsech streamů => implementace od verze jádra 0.4
         shell_exec('php artisan queue:clear');
     }

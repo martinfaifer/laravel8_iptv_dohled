@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\StreamNotification;
 use App\Jobs\SystemMailAlert;
-use App\Models\SystemHistory;
 use App\Models\SystemProccess;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use PhpParser\Node\Stmt\TryCatch;
 use Probe\ProviderFactory;
 use React\EventLoop\Factory;
 
@@ -115,40 +112,6 @@ class SystemController extends Controller
         }
     }
 
-
-    /**
-     * funknce na vytvoření dat o zátěži systemu, ram a dalších budoucích prostredků
-     *
-     * @return array
-     */
-    public static function create_data_for_area_chart(): array
-    {
-
-        $nyni = date("Y-m-d") . " " . date("H:i");
-        $provider = ProviderFactory::create();
-        // $usedRam = $provider->getUsedMem() / 1073741824;
-
-        return [
-            'nyni' => $nyni,
-            'data' => self::cpu()
-        ];
-    }
-
-    /**
-     * kontrola CPU serveru, výpis vytížení
-     *
-     * @return void
-     */
-    public static function cpu()
-    {
-        try {
-            $load = sys_getloadavg();
-            return round($load[0], 2);
-        } catch (\Throwable $th) {
-            return "0";
-        }
-    }
-
     public static function ram()
     {
         try {
@@ -156,7 +119,9 @@ class SystemController extends Controller
             $totalRam = $provider->getTotalMem() / 1073741824;
             $usedRam = $provider->getUsedMem() / 1073741824;
 
-            return $result = round(($usedRam * 100) / $totalRam);
+            $result = round(($usedRam * 100) / $totalRam);
+
+            return $result;
         } catch (\Throwable $th) {
             return "0";
         }
@@ -170,6 +135,7 @@ class SystemController extends Controller
             $usedSwap = $provider->getUsedSwap() / 1073741824;
 
             $result = ($usedSwap * 100) / $totalSwap;
+
             return round($result);
         } catch (\Throwable $th) {
             return "0";
@@ -363,34 +329,33 @@ class SystemController extends Controller
 
         // ram blok
         $usedRam = $provider->getUsedMem() / 1073741824;
-
-        SystemHistory::create([
+        Cache::put('ram_' . date('H:i'), [
             'value' => $usedRam,
-            'value_type' => "ram"
-        ]);
+            'created_at' => date('H:i')
+        ], now()->addMinutes(60));
 
         // swap
         $usedSwap = $provider->getUsedSwap() / 1073741824;
-        SystemHistory::create([
+        Cache::put('swap_' . date('H:i'), [
             'value' => $usedSwap,
-            'value_type' => "swap"
-        ]);
+            'created_at' => date('H:i')
+        ], now()->addMinutes(60));
 
         // hdd
         $freeDisk = disk_free_space("/");
         $freeDiskGiga = $freeDisk / 1073741824;
-        SystemHistory::create([
+        Cache::put('hdd_' . date('H:i'), [
             'value' => $freeDiskGiga,
-            'value_type' => "hdd"
-        ]);
+            'created_at' => date('H:i')
+        ], now()->addMinutes(60));
 
         // load
         $load = sys_getloadavg();
         $loadfiveminutes = round($load[0], 2);
-        SystemHistory::create([
+        Cache::put('load_' . date('H:i'), [
             'value' => $loadfiveminutes,
-            'value_type' => "load"
-        ]);
+            'created_at' => date('H:i')
+        ], now()->addMinutes(60));
     }
 
 
@@ -401,23 +366,26 @@ class SystemController extends Controller
      */
     public function load_history_system_usage(): array
     {
-        if (SystemHistory::where('value_type', "load")->first()) {
+        for ($i = 60; $i > 1; $i--) {
+            if (Cache::has('load_' . now()->subMinutes($i)->format('H:i'))) {
+                $cache = Cache::get('load_' . now()->subMinutes($i)->format('H:i'));
 
-            foreach (SystemHistory::where('value_type', "load")->get() as $loadDataHistory) {
-                $seriesData[] = $loadDataHistory->value;
-                $xaxis[] = substr($loadDataHistory->created_at, 0, 19);
+                $seriesData[] = $cache['value'];
+                $xaxis[] = $cache['created_at'];
             }
+        }
 
+        if (isset($seriesData)) {
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
                 'seriesData' => $seriesData
             ];
-        } else {
-            return [
-                'status' => "empty"
-            ];
         }
+
+        return [
+            'status' => "empty"
+        ];
     }
 
     /**
@@ -427,23 +395,26 @@ class SystemController extends Controller
      */
     public function ram_history_system_usage(): array
     {
-        if (SystemHistory::where('value_type', "ram")->first()) {
+        for ($i = 60; $i > 1; $i--) {
+            if (Cache::has('ram_' . now()->subMinutes($i)->format('H:i'))) {
+                $cache = Cache::get('ram_' . now()->subMinutes($i)->format('H:i'));
 
-            foreach (SystemHistory::where('value_type', "ram")->get() as $ramDataHistory) {
-                $seriesData[] = $ramDataHistory->value;
-                $xaxis[] = substr($ramDataHistory->created_at, 0, 19);
+                $seriesData[] = $cache['value'];
+                $xaxis[] = $cache['created_at'];
             }
+        }
 
+        if (isset($seriesData)) {
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
                 'seriesData' => $seriesData
             ];
-        } else {
-            return [
-                'status' => "empty"
-            ];
         }
+
+        return [
+            'status' => "empty"
+        ];
     }
 
 
@@ -454,23 +425,26 @@ class SystemController extends Controller
      */
     public function hdd_history_system_usage(): array
     {
-        if (SystemHistory::where('value_type', "hdd")->first()) {
+        for ($i = 60; $i > 1; $i--) {
+            if (Cache::has('hdd_' . now()->subMinutes($i)->format('H:i'))) {
+                $cache = Cache::get('hdd_' . now()->subMinutes($i)->format('H:i'));
 
-            foreach (SystemHistory::where('value_type', "hdd")->get() as $hddDataHistory) {
-                $seriesData[] = $hddDataHistory->value;
-                $xaxis[] = substr($hddDataHistory->created_at, 0, 19);
+                $seriesData[] = $cache['value'];
+                $xaxis[] = $cache['created_at'];
             }
+        }
 
+        if (isset($seriesData)) {
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
                 'seriesData' => $seriesData
             ];
-        } else {
-            return [
-                'status' => "empty"
-            ];
         }
+
+        return [
+            'status' => "empty"
+        ];
     }
 
 
@@ -482,22 +456,141 @@ class SystemController extends Controller
      */
     public function swap_history_system_usage(): array
     {
-        if (SystemHistory::where('value_type', "swap")->first()) {
+        for ($i = 60; $i > 1; $i--) {
+            if (Cache::has('swap_' . now()->subMinutes($i)->format('H:i'))) {
+                $cache = Cache::get('swap_' . now()->subMinutes($i)->format('H:i'));
 
-            foreach (SystemHistory::where('value_type', "swap")->get() as $swapDataHistory) {
-                $seriesData[] = $swapDataHistory->value;
-                $xaxis[] = substr($swapDataHistory->created_at, 0, 19);
+                $seriesData[] = $cache['value'];
+                $xaxis[] = $cache['created_at'];
             }
+        }
 
+        if (isset($seriesData)) {
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
                 'seriesData' => $seriesData
             ];
-        } else {
+        }
+
+        return [
+            'status' => "empty"
+        ];
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------                CPU BLOK                --------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------------------------
+
+    public function get_cpu_history_data()
+    {
+        $xaxis = [];
+        $stats = $this->get_core_information();
+        foreach ($stats as $key => $stat) {
+            for ($i = 120; $i > 1; $i--) {
+                if (Cache::has('cpu' . $key . now()->subMinutes($i)->format('H:i'))) {
+
+                    $cache = Cache::get('cpu' . $key  . now()->subMinutes($i)->format('H:i'));
+
+                    if (!isset($name)) {
+                        $name['cpu' . $key] = 'cpu' . $key;
+                    }
+
+                    if (!array_key_exists('cpu' . $key, $name)) {
+                        $name['cpu' . $key] = 'cpu' . $key;
+                    }
+
+                    if (array_key_exists('cpu' . $key, $name)) {
+                        $data['cpu' . $key][] = $cache['value'];
+                        $xaxis[] = $cache['created_at'];
+                    }
+                }
+            }
+
+            if (isset($name['cpu' . $key])) {
+                $output[] = [
+                    'name' => $name['cpu' . $key],
+                    'data' => $data['cpu' . $key]
+                ];
+            }
+        }
+
+        if (isset($output)) {
             return [
-                'status' => "empty"
+                'status' => "success",
+                'series' => $output,
+                'xaxis' => $xaxis
             ];
         }
+
+        return [
+            'status' => "empty"
+        ];
+    }
+
+    public static function store_cpu_usage(): void
+    {
+        // získání prvního snapshotu 
+        $stat1 = self::get_core_information();
+        // použití usleep pro rychlejsí odbavení
+        usleep(100000);
+        // získání druhého snapshotu 
+        $stat2 = self::get_core_information();
+
+        $cpus_data = self::get_cpu_percentages($stat1, $stat2);
+
+        foreach ($cpus_data as $cpu => $cpu_value) {
+
+            if (100 - $cpu_value['idle'] == 100) {
+                SystemMailAlert::dispatch("cpu");
+            }
+
+            Cache::put($cpu . date('H:i'), [
+                'cpu' => $cpu,
+                'value' => 100 - $cpu_value['idle'],
+                'created_at' => date('H:i')
+            ], now()->addMinutes(120));
+        }
+    }
+
+    protected static function get_core_information(): array
+    {
+        $cores = array();
+
+        $cpu_data_file = file('/proc/stat');
+        foreach ($cpu_data_file as $line) {
+            if (preg_match('/^cpu[0-9]/', $line)) {
+                $info = explode(' ', $line);
+                $cores[] = array(
+                    'user' => $info[1],
+                    'nice' => $info[2],
+                    'sys' => $info[3],
+                    'idle' => $info[4]
+                );
+            }
+        }
+        return $cores;
+    }
+
+    protected static function get_cpu_percentages(array $stat1, array $stat2): array
+    {
+        $cpus = array();
+
+        if (count($stat1) !== count($stat2)) {
+            return [];
+        }
+
+        for ($i = 0, $l = count($stat1); $i < $l; $i++) {
+            $dif = array();
+            $dif['user'] = $stat2[$i]['user'] - $stat1[$i]['user'];
+            $dif['nice'] = $stat2[$i]['nice'] - $stat1[$i]['nice'];
+            $dif['sys'] = $stat2[$i]['sys'] - $stat1[$i]['sys'];
+            $dif['idle'] = $stat2[$i]['idle'] - $stat1[$i]['idle'];
+            $total = array_sum($dif);
+            $cpu = array();
+            foreach ($dif as $x => $y) $cpu[$x] = round($y / $total * 100, 1);
+            $cpus['cpu' . $i] = $cpu;
+        }
+        return $cpus;
     }
 }

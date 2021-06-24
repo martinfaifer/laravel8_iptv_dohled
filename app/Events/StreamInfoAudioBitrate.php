@@ -11,7 +11,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StreamInfoAudioBitrate implements ShouldBroadcastNow
+class StreamInfoAudioBitrate implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -24,13 +24,15 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
     public $audioLanguage;
     public $audioAccess;
     public $audioDescription;
+    public $audioClear;
+    public $audioPackets;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioDescription)
+    public function __construct($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioDescription, $audioClear, $audioPackets)
     {
         $this->streamId = $streamId;
         $this->audioBitrate = $audioBitrate;
@@ -40,6 +42,8 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
         $this->audioLanguage = $audioLanguage;
         $this->audioAccess = $audioAccess;
         $this->audioDescription = $audioDescription;
+        $this->audioClear = $audioClear;
+        $this->audioPackets = $audioPackets;
     }
 
     /**
@@ -62,7 +66,9 @@ class StreamInfoAudioBitrate implements ShouldBroadcastNow
             'audioScrambled' => $this->audioScrambled,
             'audioLanguage' => $this->audioLanguage,
             'audioAccess' => $this->audioAccess,
-            'audioDescription' => $this->audioDescription
+            'audioDescription' => $this->audioDescription,
+            'audioClear' => $this->audioClear,
+            'audioPackets' => $this->audioPackets
         ];
     }
 }

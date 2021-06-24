@@ -35,6 +35,6 @@ class SendUserNotificationWelcomeMessage extends Mailable
     public function build()
     {
         return $this->markdown('sendWelcomeMessage')
-            ->subject('Uživatel vytvořen');
+            ->subject('Vítejte v IPTV Dohledu');
     }
 }

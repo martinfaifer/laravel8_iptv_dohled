@@ -1,6 +1,13 @@
 <template>
     <v-main class="mt-12">
-        <v-container fluid>
+        <v-container v-if="streams !== null && streams.length === 0">
+            <v-alert outlined text type="info" class="mt-12">
+                <span class="font-weight-bold">
+                    Nedohleduje se žádný stream!
+                </span>
+            </v-alert>
+        </v-container>
+        <v-container v-else fluid>
             <v-row>
                 <!-- načtení komponentu pro statickou část mozaiky -->
                 <staticmozaika-component
@@ -20,17 +27,11 @@
                                 :to="'stream/' + stream.id"
                                 :elevation="hover ? 12 : 0"
                                 class="mx-auto ma-0 transition-fast-in-fast-out"
-                                height="143"
+                                height="150"
                                 width="250"
                                 :class="{
-                                    'green darken-1':
-                                        stream.status == 'success',
-                                    'green darken-3':
-                                        stream.status == 'diagnostic_crash',
-                                    'red darken-4': stream.status == 'error',
-                                    'deep-orange accent-1':
-                                        stream.status == 'issue',
-                                    '#202020': stream.status == 'waiting'
+                                    'green darken-1': stream.is_problem === 0,
+                                    'red darken-4': stream.is_problem === 1
                                 }"
                                 @contextmenu="show($event, stream.id)"
                             >
@@ -65,38 +66,31 @@
                                     :elevation="hover ? 24 : 0"
                                     class="transition-fast-in-fast-out"
                                 >
-                                    <v-row
-                                        class="fill-height ma-0 mt-12"
-                                        justify="center"
-                                    >
+                                    <v-row class="fill-height ma-0 mt-6">
                                         <div class="ml-2">
-                                            {{ stream.nazev }}
-                                            <v-row
-                                                v-if="
-                                                    stream.status ==
-                                                        'success' ||
-                                                        stream.status ==
-                                                            'issue' ||
-                                                        stream.status ==
-                                                            'diagnostic_crash'
-                                                "
+                                            <v-col cols="12">
+                                                <strong>
+                                                    {{ stream.nazev }}
+                                                </strong>
+                                            </v-col>
+
+                                            <v-col
+                                                cols="12"
+                                                v-if="stream.is_problem === 0"
                                             >
-                                                <small class="ml-3 white--text">
-                                                    <strong>
-                                                        čeká se na vytvoření
-                                                        náhledu ...
-                                                    </strong>
-                                                </small>
-                                            </v-row>
-                                            <v-row
-                                                v-if="stream.status == 'error'"
+                                                <span class="white--text">
+                                                    čeká se na náhled...
+                                                </span>
+                                            </v-col>
+
+                                            <v-col
+                                                cols="12"
+                                                v-if="stream.is_problem === 1"
                                             >
-                                                <small class="ml-3 white--text">
-                                                    <strong>
-                                                        stream je ve výpadku ...
-                                                    </strong>
-                                                </small>
-                                            </v-row>
+                                                <span class="white--text">
+                                                    stream je ve výpadku ...
+                                                </span>
+                                            </v-col>
                                         </div>
                                     </v-row>
                                 </v-img>
@@ -561,7 +555,10 @@
 
         <!-- konec dialogů -->
 
-        <v-container class="text-center">
+        <v-container
+            class="text-center"
+            v-if="streams !== null && streams.length > 0"
+        >
             <v-pagination
                 v-model="pagination.current"
                 :length="pagination.total"
@@ -581,6 +578,8 @@ export default {
         }
     },
     data: () => ({
+        streamsInterval: null,
+        paginationInterval: null,
         smallEditDialog: false,
         smallEditStreamData: null,
         detailDialog: false,
@@ -631,7 +630,6 @@ export default {
     created() {
         this.getStreams();
         this.smallEditStreamData = null;
-        console.log("WEBSOCKET " +Echo.connect());
     },
     methods: {
         saveEdit() {
@@ -750,7 +748,7 @@ export default {
     },
 
     mounted() {
-        setInterval(
+        this.streamsInterval = setInterval(
             function() {
                 try {
                     this.getStreams();
@@ -759,19 +757,30 @@ export default {
             2000
         );
 
-        setInterval(
+        this.paginationInterval = setInterval(
             function() {
-                if (this.pagination.current <= this.pagination.total - 1) {
-                    this.pagination.current = this.pagination.current + 1;
-                    this.getStreams();
-                } else {
-                    this.pagination.current = 1;
-                    this.getStreams();
-                }
+                try {
+                    if (this.pagination.current <= this.pagination.total - 1) {
+                        this.pagination.current = this.pagination.current + 1;
+                        this.getStreams();
+                    } else {
+                        this.pagination.current = 1;
+                        this.getStreams();
+                    }
+                } catch (error) {}
             }.bind(this),
             30000
         );
     },
-    watch: {}
+    watch: {
+        $route(to, from) {
+            this.streamsInterval;
+            this.paginationInterval;
+        }
+    },
+    beforeDestroy: function() {
+        this.streamsInterval;
+        this.paginationInterval;
+    }
 };
 </script>

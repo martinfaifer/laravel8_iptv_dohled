@@ -16,10 +16,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use PharIo\Manifest\Email;
+use Illuminate\Support\Facades\Cache;
+use App\Traits\NotificationTrait;
 
 class EmailNotificationController extends Controller
 {
-
+    use NotificationTrait;
     /**
      * CONTROLER PRO NOTOFIKACE UŽIVATELÚM O PROBLÉMOVÝCH STREAMECH, PROBLÉMECH V SYSTÉMU ( SERVERU -> OVERLOADING A POD )
      */
@@ -112,33 +114,22 @@ class EmailNotificationController extends Controller
         $checkIfExistAnyEmailToNotify = self::check_if_is_mail_to_notify("channels");
 
         // pokud status == exist , existuje email na který by se dal zaslat alert
-        if ($checkIfExistAnyEmailToNotify['status'] == "exist") {
-            // emaily ...
+        if ($checkIfExistAnyEmailToNotify['status'] === "exist") {
 
-            // vyhkedání streamu, které jsou padlé ...
-            $checkIfExistErrorStream = ChannelsWhichWaitingForNotificationController::return_streams_witch_waiting_for_notify();
-            if ($checkIfExistErrorStream['status'] == "exist") {
-                // id streamů ...
-                foreach ($checkIfExistErrorStream['data'] as $streamId) {
-                    // vyhledání názvu streamu dle id
-                    $streamName = Stream::where('id', $streamId)->first()->nazev;
-                    $url = env("APP_URL") . "/#/stream/{$streamId}";
-                    // odeslání mailu na všechny email adresy
-                    foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
-
-                        // odeslání mailu s parametry email, název kanálu
-                        // odeslat do queue
-                        Mail::to($email)->queue(new SendErrorStream($streamName, $url));
+            Stream::where('sendMailAlert', true)->chunk(50, function ($streams) use ($checkIfExistAnyEmailToNotify) {
+                foreach ($streams as $stream) {
+                    // vyhledání v cache, zda existuje záznam
+                    if (Cache::has("stream" . $stream->id) && !Cache::has("stream" . $stream->id . "_sended_notification")) {
+                        // stream je ve výpadku
+                        foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
+                            // odeslání mailu s parametry email, název kanálu
+                            // odeslat do queue
+                            Mail::to($email)->send(new SendErrorStream($stream->nazev, $stream->stream_url));
+                            Cache::put("stream" . $stream->id . "_sended_notification", []);
+                        }
                     }
-
-                    // update záznamu ChannelsWhichWaitingForNotification -> notified => true
-                    ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->update(['notified' => "true"]);
-
-                    EmailStats::create([
-                        'sendedMail' => "1"
-                    ]);
                 }
-            }
+            });
         }
     }
 
@@ -148,36 +139,29 @@ class EmailNotificationController extends Controller
      * @param string $streamId
      * @return void
      */
-    public static function notify_success_stream(string $streamId): void
+    public static function notify_success_stream(): void
     {
+
         // zjistení zda je email, na který by se dalo odeslat data
         $checkIfExistAnyEmailToNotify = self::check_if_is_mail_to_notify("channels");
 
         // pokud status == exist , existuje email na který by se dal zaslat alert
-        if ($checkIfExistAnyEmailToNotify['status'] == "exist") {
-            // emaily ...
+        if ($checkIfExistAnyEmailToNotify['status'] === "exist") {
 
-            // vyhledání streamu, podle $streamId
-            // podmínka pro odeslání alertu, je notified == true
-            if (ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->where('notified', "true")->first()) {
-                $streamName = Stream::where('id', $streamId)->first()->nazev;
-                // odeslání mailu na všechny email adresy
-                foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
-
-                    // odeslání mailu s parametry email, název kanálu
-                    // odeslat do queue
-
-                    Mail::to($email)->queue(new SendSuccessStream($streamName));
-
-                    // odebrání záznamu z tabulky
-                    ChannelsWhichWaitingForNotification::where('stream_id', $streamId)->delete();
-
-                    // přidání +1 do tabulky pro denní statistiky vykreslení odeslaných mailů
-                    EmailStats::create([
-                        'sendedMail' => "1"
-                    ]);
+            Stream::where('sendMailAlert', true)->chunk(50, function ($streams) use ($checkIfExistAnyEmailToNotify) {
+                foreach ($streams as $stream) {
+                    // vyhledání v cache, zda existuje záznam
+                    if (!Cache::has("stream" . $stream->id) && Cache::has("stream" . $stream->id . "_sended_notification")) {
+                        // stream je ve výpadku
+                        foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
+                            // odeslání mailu s parametry email, název kanálu
+                            // odeslat do queue
+                            Mail::to($email)->send(new SendSuccessStream($stream->nazev));
+                            Cache::pull("stream" . $stream->id . "_sended_notification");
+                        }
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -195,12 +179,8 @@ class EmailNotificationController extends Controller
 
 
         if ($checkIfExistAnyEmailToNotify['status'] == "exist") {
-            // emaily ...
-
-
             // odeslání mailu na všechny email adresy
             foreach ($checkIfExistAnyEmailToNotify['data'] as $email) {
-
                 // odeslat do queue
                 Mail::to($email)->queue(new SendSystemWarningAlert($partOfSystem));
             }
@@ -286,21 +266,12 @@ class EmailNotificationController extends Controller
     {
         $user = Auth::user();
         if (EmailNotification::where('email', $request->email)->first()) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "warning",
-                'msg' => "Tento email je již založen"
-            ];
+            return $this->frontend_notification("warning", "Tento email je již založen!");
         }
-
 
         // overeni ,ze je to emialova adredsa
         if (!filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "warning",
-                'msg' => "Neplatný formát emailové adresy"
-            ];
+            return $this->frontend_notification("warning", "Neplatný formát emailové adresy!");
         }
 
         if ($request->streamAlerts == false) {
@@ -329,17 +300,9 @@ class EmailNotificationController extends Controller
                 'channels_issues' => $channelIssue
             ]);
 
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Založeno"
-            ];
+            return $this->frontend_notification("success", "Založeno!");
         } catch (\Throwable $th) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se založit"
-            ];
+            return $this->frontend_notification("error", "NBepodařilo se založit!");
         }
     }
 
@@ -353,27 +316,15 @@ class EmailNotificationController extends Controller
     public function delete_email(Request $request): array
     {
         if (!EmailNotification::where('id', $request->emailId)->first()) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se vyhledat email ke smazání"
-            ];
+            return $this->frontend_notification("error", "Nepodařilo se vyhledat email ke smazání!");
         }
 
 
         try {
             EmailNotification::where('id', $request->emailId)->delete();
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Email byl odebrán"
-            ];
+            return $this->frontend_notification("success", "Odebráno!");
         } catch (\Throwable $th) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se odebrat email"
-            ];
+            return $this->frontend_notification("error", "Nepodařilo se odebrat!");
         }
     }
 
@@ -386,11 +337,7 @@ class EmailNotificationController extends Controller
     public function edit_email(Request $request): array
     {
         if (!EmailNotification::where('id', $request->emailId)->first()) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se vyhledat email ke smazání"
-            ];
+            return $this->frontend_notification("error", "Nepodařilo se vyhledat email ke smazání");
         }
 
         if ($request->streamAlerts == false) {
@@ -412,18 +359,9 @@ class EmailNotificationController extends Controller
 
         try {
             EmailNotification::where('id', $request->emailId)->update(['channels' => $streamAlert, 'channels_issues' => $channelIssue, 'system' => $systemAlerts]);
-
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Editováno"
-            ];
+            return $this->frontend_notification("success", "Upraveno!");
         } catch (\Throwable $th) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se editovat"
-            ];
+            return $this->frontend_notification("error", "Nepodařilo se upravit!");
         }
     }
 

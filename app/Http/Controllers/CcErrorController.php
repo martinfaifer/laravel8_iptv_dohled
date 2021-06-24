@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CcError;
 use App\Models\Stream;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
@@ -115,82 +115,72 @@ class CcErrorController extends Controller
      */
     public function take_streams_check_if_exist_cc_and_count()
     {
+        $name = [];
         $streamCount = 0;
-        $ountput = null;
-        if (Stream::first()) {
-            foreach (Stream::all() as $stream) {
-                // vyhledání zda existuje cc error v ccError table dle streamId
-                if (CcError::where('streamId', $stream->id)->first()) {
-                    $chartCCRadio = [];
-                    $chartCCRvideo = [];
-                    $defaultCCerror = 0;
-                    // existuje minimálně jeden záznam
+        $output = null;
+        $chartCCRaudio = [];
+        $chartCCRvideo = [];
 
-                    foreach (CcError::where('streamId', $stream->id)->get() as $ccErrorRecord) {
-                        if ($ccErrorRecord->pozition != "video") {
-                            $chartCCRadio[] = $ccErrorRecord->ccError;
-                        }
-                        $chartCCRvideo[] = $ccErrorRecord->ccError;
-                        $chartCreated_at[] = substr($ccErrorRecord->created_at, 11, 19);
-                        // count ccError
-                        if (isset($ccErrors)) {
-                            $ccErrors = $ccErrors + (int) $ccErrorRecord->ccError;
-                        }
-                        $ccErrors = $defaultCCerror + (int) $ccErrorRecord->ccError;
-                    }
-                    // získání záznamů pro vykreslení
-                    $ountput[] = array(
-                        'stream' => $stream->nazev,
-                        'ccerrors' => $ccErrors,
+        foreach (Stream::all() as $stream) {
+            for ($i = 1; $i <= 60; $i++) {
+                if (Cache::has($stream->id . "_video_" . now()->subMinutes($i)->format('H:i'))) {
+                    $cache_stream_video = Cache::get($stream->id . "_video_"  . now()->subMinutes($i)->format('H:i'));
+                    $chartCCRvideo[] = $cache_stream_video['ccError'];
+                }
 
-                        'chartOptions' => [
-                            'fill' => array(
-                                'colors' => ["#F44336", "#E91E63", "#9C27B0"]
-                            ),
-                            'chart' => array(
-                                'id' => $stream->nazev
-                            ),
-                            'xaxis' => array(
-                                'categories' => $chartCreated_at
-                            )
-                        ],
-                        'series' => [
-                            array(
-                                'name' => $stream->nazev . " audio",
-                                'data' => $chartCCRadio
-                            ),
-                            array(
-                                'name' => $stream->nazev . " video",
-                                'data' => $chartCCRvideo
-                            )
-                        ]
-                    );
+                if (Cache::has($stream->id . "_audio_" . now()->subMinutes($i)->format('H:i'))) {
+                    $cache_stream_audio = Cache::get($stream->id . "_audio_"  . now()->subMinutes($i)->format('H:i'));
+                    $chartCCRaudio[] = $cache_stream_audio['ccError'];
+                }
+                if (isset($cache_stream_video)) {
+                    $chartCreated_at[] = $cache_stream_video['created_at'];
+                }
 
-                    unset($ccErrors);
-                    unset($chartCCR);
-                    unset($chartCreated_at);
-                    unset($chartCCRadio);
-                    unset($chartCCRvideo);
+                if (!isset($name[$stream->nazev])) {
+                    $name[$stream->nazev] = $stream->nazev;
+                }
 
-                    $streamCount++;
-                    if ($streamCount >= 9) {
-                        break;
-                    }
+                if (array_key_exists($stream->nazev, $name)) {
                 }
             }
-            if (is_null($ountput)) {
-                return [
-                    'status' => "empty"
-                ];
+
+            if (isset($chartCreated_at)) {
+                $output[] = array(
+                    'stream' => $stream->nazev,
+                    'ccerrors' => 0,
+
+                    'chartOptions' => [
+                        'fill' => array(
+                            'colors' => ["#F44336", "#E91E63", "#9C27B0"]
+                        ),
+                        'chart' => array(
+                            'id' => $stream->nazev
+                        ),
+                        'xaxis' => array(
+                            'categories' => $chartCreated_at
+                        )
+                    ],
+                    'series' => [
+                        array(
+                            'name' => $stream->nazev . " audio",
+                            'data' => $chartCCRaudio
+                        ),
+                        array(
+                            'name' => $stream->nazev . " video",
+                            'data' => $chartCCRvideo
+                        )
+                    ]
+                );
             }
-            return [
-                'status' => "exist",
-                'streams' => $ountput
-            ];
-        } else {
+        }
+        if (is_null($output)) {
             return [
                 'status' => "empty"
             ];
         }
+        return [
+            'status' => "exist",
+            'streams' => $output
+        ];
     }
 }

@@ -10,6 +10,7 @@ use App\Models\CcError;
 use App\Models\Stream;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 
 class Analyze_PidStreamController extends Controller
 {
@@ -59,6 +60,13 @@ class Analyze_PidStreamController extends Controller
                 $audioPidOutputData[] = array(
                     'description' => str_replace('description=', '', $audioPidData)
                 );
+
+                if (Str::contains($audioPidData, 'packets=')) {
+
+                    $audioPidOutputData = array(
+                        'packets' => str_replace('packets=', "", $audioPidData)
+                    );
+                }
             }
         }
 
@@ -82,7 +90,6 @@ class Analyze_PidStreamController extends Controller
      */
     public static function collect_pids_from_tsduckArr(array $tsduckArr): array
     {
-
         $videoDescription = null;
         $audioDescription = null;
         $videoPid = null;
@@ -150,6 +157,11 @@ class Analyze_PidStreamController extends Controller
 
                     $videoDescription = str_replace('description=', "", $videoPidData);
                 }
+
+                if (Str::contains($videoPidData, 'packets=')) {
+
+                    $videoPackets = str_replace('packets=', "", $videoPidData);
+                }
             }
             $videoPidOutputData = [
                 'pid' => $videoPidStr,
@@ -158,7 +170,8 @@ class Analyze_PidStreamController extends Controller
                 'bitrate' => $videoBitrate,
                 'scrambled' => $videoScrambled,
                 'access' => $videoAccess,
-                'videoDescription' => $videoDescription
+                'videoDescription' => $videoDescription,
+                'packets' => $videoPackets
             ];
         } else {
             // video pid neexituje = null;
@@ -266,7 +279,6 @@ class Analyze_PidStreamController extends Controller
      */
     public static function analyze_pids_and_storeData(array $pids, string $streamId): array
     {
-
         $videoBitrate = "";
         $audioBitrate = "";
         // zpracování videa
@@ -306,11 +318,11 @@ class Analyze_PidStreamController extends Controller
             }
             $scrambled = $pids['video']['scrambled'];
             if ($pids['video']['discontinuities'] != "0") {
-                CcError::create([
-                    'streamId' => $streamId,
+
+                Cache::put($streamId . "_video_" . date('H:i'), [
                     'ccError' => $pids['video']['discontinuities'],
-                    'pozition' => "video"
-                ]);
+                    'created_at' => date('H:i')
+                ], now()->addMinutes(5));
             }
 
             if (!array_key_exists("videoDescription", $pids['video'])) {
@@ -351,11 +363,11 @@ class Analyze_PidStreamController extends Controller
             $audioDiscontinuities = $pids['audio']['discontinuities'];
 
             if ($pids['audio']['discontinuities'] != "0") {
-                CcError::create([
-                    'streamId' => $streamId,
+
+                Cache::put($streamId . "_audio_" . date('H:i'), [
                     'ccError' => $pids['audio']['discontinuities'],
-                    'pozition' => "audio"
-                ]);
+                    'created_at' => date('H:i')
+                ], now()->addMinutes(60));
             }
 
             if (!array_key_exists("scrambled", $pids['audio'])) {
@@ -363,10 +375,21 @@ class Analyze_PidStreamController extends Controller
             }
             $audioScrambled = $pids['audio']['scrambled'];
 
+            if (!array_key_exists("clear", $pids['audio'])) {
+                $audioClear = "0";
+            }
+            $audioClear = $pids['audio']['clear'];
+
+            if (!array_key_exists("packets", $pids['audio'])) {
+                $audioPackets = "0";
+            }
+            $audioPackets = $pids['audio']['packets'];
+
             if (!array_key_exists("language", $pids['audio'])) {
                 $audioLanguage = "language_not_detected";
+            } else {
+                $audioLanguage = $pids['audio']['language'];
             }
-            $audioLanguage = $pids['audio']['language'];
         }
 
 
@@ -395,8 +418,12 @@ class Analyze_PidStreamController extends Controller
          * broadcast videa
          * ---------------------------------------------------------------------------
          */
-        if (isset($videoPid, $videoAccess, $discontinuities, $scrambled, $videoBitrate)) {
-            event(new StreamInfoTsVideoBitrate($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess, $videoDescription));
+        if (isset($videoPid, $videoAccess, $discontinuities, $scrambled, $videoBitrate, $videoClear, $videoPackets)) {
+            event(new StreamInfoTsVideoBitrate($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess, $videoDescription, $videoPackets, $videoClear));
+            Cache::put($streamId . "_video_bitrate_" . date('H:i:s'), [
+                'value' => $videoBitrate,
+                'created_at' => date('H:i:s')
+            ], now()->addMinutes(2));
         }
 
         /**
@@ -405,13 +432,17 @@ class Analyze_PidStreamController extends Controller
          * ---------------------------------------------------------------------------
          */
 
-        if (isset($audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess)) {
+        if (isset($audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioClear, $audioPackets)) {
 
             if (!array_key_exists("description", $pids['audio'])) {
                 $audioDescription = "";
             }
             $audioDescription = $pids['audio']['description'];
-            event(new StreamInfoAudioBitrate($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioDescription));
+            event(new StreamInfoAudioBitrate($streamId, $audioBitrate, $audioPid, $audioDiscontinuities, $audioScrambled, $audioLanguage, $audioAccess, $audioDescription, $audioClear, $audioPackets));
+            Cache::put($streamId . "_audio_bitrate_" . date('H:i:s'), [
+                'value' => $audioBitrate,
+                'created_at' => date('H:i:s')
+            ], now()->addMinutes(2));
 
 
             // Dispatch JOB pouze pokud hodnoty jsou jiné než 0 až na videoBitrate

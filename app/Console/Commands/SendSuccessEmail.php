@@ -13,7 +13,7 @@ class SendSuccessEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'command:SendSuccessEmail';
+    protected $signature = 'email:SendSuccessEmail';
 
     /**
      * The console command description.
@@ -39,6 +39,6 @@ class SendSuccessEmail extends Command
      */
     public function handle()
     {
-        EmailNotificationController::notify_success_stream($this->streamId);
+        EmailNotificationController::notify_success_stream();
     }
 }

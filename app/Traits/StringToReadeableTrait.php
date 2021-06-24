@@ -21,7 +21,7 @@ trait StringToReadeableTrait
 
         foreach ($tsDuckData as $data) {
             // title: vynecháváme jelikož pro nás je to zbytečný udaj
-            if ($data == "title:") {
+            if ($data === "title:") {
                 /**
                  * -------------------------------------------------------------
                  * NIC ZDE NEDĚLÁME A POKRACUJEME VESELE DÁLE VE ZPRACOVÁNÍ POLE

@@ -27,7 +27,7 @@ class UserController extends Controller
     public function loginUser(Request $request): array
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
-            if (Auth::user()->status == "active") {
+            if (Auth::user()->status === "access") {
 
                 return $this->frontend_notification("success", "Přihlášeno!");
             } else {
@@ -112,7 +112,7 @@ class UserController extends Controller
      *
      * @return array
      */
-    public static function userDetail(): array
+    public static function userDetail()
     {
         $user = Auth::user();
         if (empty($user)) {
@@ -136,9 +136,6 @@ class UserController extends Controller
                 $customData = $user->customData;
             }
 
-            // vyhledání user role
-            $role = UserRole::where('id', $user->role_id)->first();
-
             $userDetail = UserDetail::where('user_id', $user->id)->first();
 
             return [
@@ -149,8 +146,8 @@ class UserController extends Controller
                 'mozaika' => $user->mozaika,
                 'customData' => $customData,
                 'staticChannels' => $staticChannels ?? "false",
-                'role' => $role->role_name,
-                'inicial' => $user->name[0],
+                'role' => $user->role_id,
+                'inicial' => "",
                 'pagination' => $user->pagination,
                 'created_at' => substr($user->created_at, 0, 10)
             ];
@@ -199,7 +196,7 @@ class UserController extends Controller
         $user = Auth::user();
         try {
             User::find($user->id)->update(['name' => $request->name, 'email' => $request->email]);
-            event(new UserEdit($user->id));
+            // event(new UserEdit($user->id));
             return $this->frontend_notification("success", "Upraveno!");
         } catch (\Throwable $th) {
             return $this->frontend_notification("error", "Error 500!");
@@ -214,13 +211,8 @@ class UserController extends Controller
      */
     public function user_password_edit(Request $request): array
     {
-
         if (empty($request->password)) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Heslo nesmí být prázdné"
-            ];
+            return $this->frontend_notification("error", "Heslo je prázdné!");
         }
 
         $user = Auth::user();
@@ -229,17 +221,9 @@ class UserController extends Controller
         try {
             User::find($user->id)->update(['password' => Hash::make($request->password)]);
             event(new UserEdit($user->id));
-            return [
-                'isAlert' => "isAlert",
-                'status' => "success",
-                'msg' => "Heslo úspěšně změměno"
-            ];
+            return $this->frontend_notification("success", "Heslo změněno!");
         } catch (\Throwable $th) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nepodařilo se editovat"
-            ];
+            return $this->frontend_notification("error", "Něco selhalo!");
         }
     }
 
@@ -251,20 +235,13 @@ class UserController extends Controller
      */
     public function user_gui_edit(Request $request)
     {
-
         // ovření vstupů
         if ($request->customMozaika == true) {
             $mozaika = "custom";
             if (!empty($request->staticChannels)) {
                 $customData = json_encode($request->staticChannels, true);
             } else {
-                // status , msg
-                return [
-                    "status" => array(
-                        'status' => "warning",
-                        'msg' => "Je nutné vybrat kanály, které mají být statické!"
-                    )
-                ];
+                return $this->frontend_notification("warning", "e nutné vybrat kanály, které mají být statické!");
             }
         } else {
             $mozaika = "default";
@@ -275,20 +252,9 @@ class UserController extends Controller
         try {
             $user = Auth::user();
             User::find($user->id)->update(['mozaika' => $mozaika, 'customData' => $customData, 'pagination' => $request->pagination]);
-            return [
-                "status" => array(
-                    'status' => "success",
-                    'msg' => "Editace byla úspěšná!"
-                ),
-                "data" => Auth::user()
-            ];
+            return $this->frontend_notification("success", "Upraveno!");
         } catch (\Throwable $th) {
-            return [
-                "status" => array(
-                    'status' => "error",
-                    'msg' => "Nepodařilo se editovat!"
-                )
-            ];
+            return $this->frontend_notification("error", "Něco selhalo!");
         }
     }
 
@@ -320,7 +286,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role_id' => UserRole::find($user->role_id)->role_name,
+                'role_id' => $user->role_id,
                 'mozaika' => $user->mozaika,
                 'customData' => $staticChannels ?? null,
                 'pagination' => $user->pagination,
@@ -391,8 +357,8 @@ class UserController extends Controller
             User::create([
                 'name' => $request->jmeno,
                 'email' => $request->email,
-                'role_id' => $request->role_id,
-                'status' => "active",
+                'role_id' => UserRole::find($request->role_id)->role_name,
+                'status' => "access",
                 'password' =>  Hash::make($password),
             ]);
             EmailNotificationController::send_welcome_message_to_new_user($request->email, $password, env("APP_URL"));
@@ -416,6 +382,10 @@ class UserController extends Controller
             return self::frontend_notification("error", "Uživatel nevyhledán!");
         }
 
+        if ($user->id === Auth::user()->id) {
+            return self::frontend_notification("error", "Editace sama sebe není možná!");
+        }
+
 
         if ($request->status != false) {
             $status = "blocket";
@@ -431,7 +401,7 @@ class UserController extends Controller
         $user->update([
             'name' => $request->jmeno,
             'email' => $request->email,
-            'role_id' => $request->role_id,
+            'role_id' => UserRole::find($request->role_id)->role_name,
             'status' => $status
         ]);
         return self::frontend_notification("success", "Upraveno!");
@@ -491,7 +461,7 @@ class UserController extends Controller
             $output[] = array(
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => UserRole::where('id', $user->role_id)->first()->role_name
+                'role' => $user->role_id
             );
         }
 

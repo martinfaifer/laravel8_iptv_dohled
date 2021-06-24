@@ -33,6 +33,7 @@ class Stream extends Model
         'status',
         'process_pid',
         'ffmpeg_pid',
-        'socket_process_pid'
+        'socket_process_pid',
+        'is_problem'
     ];
 }
