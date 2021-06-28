@@ -47,7 +47,6 @@
                         <v-spacer></v-spacer>
                         <v-btn
                             @click="GuiEdit()"
-                            small
                             text
                             outlined
                             class="mr-12"

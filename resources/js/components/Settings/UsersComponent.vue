@@ -82,7 +82,7 @@
                                 </strong>
                             </v-sheet>
                         </span>
-                        <span v-if="item.status == 'blocket'">
+                        <span v-else>
                             <v-sheet
                                 color="rgba(255, 0, 0, 0.2)"
                                 class="red--text text-center transition-swing rounded-lg"

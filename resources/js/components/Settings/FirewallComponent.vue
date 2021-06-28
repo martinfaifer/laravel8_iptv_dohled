@@ -22,7 +22,7 @@
                         <v-card-title>
                             <v-text-field
                                 v-model="searchLog"
-                                append-icon="mdi-magnify"
+                                prepend-inner-icon="mdi-magnify"
                                 label="Hledat v logách ..."
                                 single-line
                                 hide-details
@@ -54,7 +54,7 @@
                         <v-card-title>
                             <v-text-field
                                 v-model="searchAllowedIp"
-                                append-icon="mdi-magnify"
+                                prepend-inner-icon="mdi-magnify"
                                 label="Hledat v povolených IP ..."
                                 single-line
                                 hide-details

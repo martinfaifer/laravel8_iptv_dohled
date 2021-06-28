@@ -1,91 +1,76 @@
 <template>
     <v-main class="mt-12">
-        <v-container>
-            <aside>
-                <usersidebar-component :user="user"></usersidebar-component>
-            </aside>
-        </v-container>
-        <v-row class="justify-center mt-6">
-            <v-toolbar color="transparent" fixed class="mb-6" dense flat>
-                <v-spacer></v-spacer>
+        <v-row>
+            <v-col cols="12" sm="2" md="2" lg="2">
+                <aside>
+                    <usersidebar-component :user="user"></usersidebar-component>
+                </aside>
+            </v-col>
+            <v-col cols="12" sm="9" md="9" lg="9">
+                <v-row class="justify-center mt-6">
+                    <v-toolbar
+                        color="transparent"
+                        fixed
+                        class="mb-6"
+                        dense
+                        flat
+                    >
+                        <v-tabs
+                            background-color="transparent"
+                            centered
+                            dense
+                            dark
+                            color="teal"
+                        >
+                            <v-tabs-slider color="teal"></v-tabs-slider>
+                            <v-tab link to="/user/prehled" href="#prehled">
+                                <v-icon>mdi-view-dashboard</v-icon>
+                            </v-tab>
 
-                <v-btn
-                    link
-                    to="/user/prehled"
-                    :class="{
-                        'white--text': $vuetify.theme.dark === true,
-                        'black--text': $vuetify.theme.dark === false
-                    }"
-                    icon
-                >
-                    <v-icon v-if="$route.path === '/user/prehled'" color="teal">
-                        mdi-view-dashboard
-                    </v-icon>
-                    <v-icon v-else>mdi-view-dashboard</v-icon>
-                </v-btn>
-                <v-btn
-                    link
-                    to="/user/editace"
-                    icon
-                    :class="{
-                        'white--text': $vuetify.theme.dark === true,
-                        'black--text': $vuetify.theme.dark === false
-                    }"
-                >
-                    <v-icon v-if="$route.path === '/user/editace'" color="teal">
-                        mdi-account-cog-outline
-                    </v-icon>
-                    <v-icon v-else>mdi-account-cog-outline</v-icon>
-                </v-btn>
-                <v-btn
-                    link
-                    to="/user/gui"
-                    icon
-                    :class="{
-                        'white--text': $vuetify.theme.dark === true,
-                        'black--text': $vuetify.theme.dark === false
-                    }"
-                >
-                    <v-icon v-if="$route.path === '/user/gui'" color="teal">
-                        mdi-television-guide
-                    </v-icon>
-                    <v-icon v-else>mdi-television-guide</v-icon>
-                </v-btn>
-                <v-btn
-                    link
-                    to="/user/alert"
-                    icon
-                    :class="{
-                        'white--text': $vuetify.theme.dark === true,
-                        'black--text': $vuetify.theme.dark === false
-                    }"
-                >
-                    <v-icon v-if="$route.path === '/user/alert'" color="teal">
-                        mdi-message-alert
-                    </v-icon>
-                    <v-icon v-else>mdi-message-alert</v-icon>
-                </v-btn>
-                <v-spacer></v-spacer>
-            </v-toolbar>
+                            <v-tab link to="/user/editace" href="#editace">
+                                <v-icon>mdi-account-cog-outline</v-icon>
+                            </v-tab>
+
+                            <v-tab
+                                link
+                                to="/user/gui"
+                                href="#nastavení mozaiky"
+                            >
+                                <v-icon>mdi-television-guide</v-icon>
+                            </v-tab>
+
+                            <v-tab link to="/user/alert" href="#notifikace">
+                                <v-icon>mdi-message-alert</v-icon>
+                            </v-tab>
+                        </v-tabs>
+                        <v-spacer></v-spacer>
+
+                        <v-spacer></v-spacer>
+                    </v-toolbar>
+                </v-row>
+                <v-container class="mr-12">
+                    <v-row>
+                        <userdashboard-component
+                            v-if="prehled == true"
+                            :user="user"
+                        ></userdashboard-component>
+                        <usersettings-component
+                            v-if="editace == true"
+                            :user="user"
+                        >
+                        </usersettings-component>
+                        <usergui-component
+                            v-if="gui == true"
+                            :user="user"
+                        ></usergui-component>
+                        <useralert-component
+                            v-if="alert == true"
+                            :user="user"
+                        ></useralert-component>
+                    </v-row>
+                </v-container>
+            </v-col>
         </v-row>
-        <v-container class="mr-12">
-            <v-row>
-                <userdashboard-component
-                    v-if="prehled == true"
-                    :user="user"
-                ></userdashboard-component>
-                <usersettings-component v-if="editace == true" :user="user">
-                </usersettings-component>
-                <usergui-component
-                    v-if="gui == true"
-                    :user="user"
-                ></usergui-component>
-                <useralert-component
-                    v-if="alert == true"
-                    :user="user"
-                ></useralert-component>
-            </v-row>
-        </v-container>
     </v-main>
 </template>
 <script>

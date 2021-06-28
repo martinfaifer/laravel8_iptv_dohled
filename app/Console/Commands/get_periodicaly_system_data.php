@@ -42,5 +42,7 @@ class get_periodicaly_system_data extends Command
         SystemController::get_periodicly_systemLoad_ram_hdd_swap();
         SystemController::store_cpu_usage();
         StreamController::take_count_of_working_streams();
+        StreamController::take_count_of_stopped_streams();
+        StreamController::take_count_of_issued_streams();
     }
 }

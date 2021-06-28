@@ -245,13 +245,6 @@
                                     <v-col cols="12" sm="12" md="12" lg="12">
                                         <span class="font-weight-bold ml-3">
                                             Audio:
-                                            <v-icon
-                                                small
-                                                class="ml-12"
-                                                @click="loadAudioBitrate()"
-                                            >
-                                                mdi-chart-areaspline
-                                            </v-icon>
                                         </span>
                                     </v-col>
                                 </v-row>
@@ -305,55 +298,6 @@
                                                             {{
                                                                 stream.audio
                                                                     .scrambled
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                    </v-row>
-
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Packets:
-                                                    <span
-                                                        class="ml-3 green--text"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.audio
-                                                                    .packets
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Clear:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.audio
-                                                                    .clear ==
-                                                                stream.audio
-                                                                    .packets,
-                                                            'red--text':
-                                                                stream.audio
-                                                                    .scrambled !=
-                                                                stream.audio
-                                                                    .packets
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.audio
-                                                                    .clear
                                                             }}
                                                         </strong>
                                                     </span>
@@ -422,8 +366,8 @@
                                         </v-col>
                                     </v-row>
                                 </v-card>
-                                <div class="mt-12 ml-3 mr-3">
-                                    <span class="ml-3">
+                                <!-- <div class="mt-12 ml-3 mr-3"> -->
+                                    <!-- <span class="ml-3">
                                         Bitrate
                                         <strong
                                             v-if="stream.audio.bitrate === 0"
@@ -439,8 +383,8 @@
                                             }}
                                             kbps
                                         </strong></span
-                                    >
-                                    <v-progress-linear
+                                    > -->
+                                    <!-- <v-progress-linear
                                         v-if="
                                             stream.audio.audioAccess ===
                                                 'success'
@@ -454,8 +398,8 @@
                                         color="success"
                                         stream
                                     >
-                                    </v-progress-linear>
-                                    <v-progress-linear
+                                    </v-progress-linear> -->
+                                    <!-- <v-progress-linear
                                         v-else
                                         :value="
                                             countBitrate(stream.audio.bitrate)
@@ -466,8 +410,8 @@
                                         color="error"
                                         stream
                                     >
-                                    </v-progress-linear>
-                                </div>
+                                    </v-progress-linear> -->
+                                <!-- </div> -->
                             </div>
                         </v-col>
                         <v-col cols="12" sm="12" md="6" lg="6">
@@ -480,13 +424,6 @@
                                     <v-col cols="12" sm="12" md="12" lg="12">
                                         <span class="font-weight-bold ml-3">
                                             Video:
-                                            <v-icon
-                                                small
-                                                class="ml-12"
-                                                @click="loadVideoBitrate()"
-                                            >
-                                                mdi-chart-areaspline
-                                            </v-icon>
                                         </span>
                                     </v-col>
                                 </v-row>
@@ -549,55 +486,6 @@
                                     </v-row>
 
                                     <v-row>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Packets:
-                                                    <span
-                                                        class="ml-3 green--text"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.video
-                                                                    .packets
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Clear:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.video
-                                                                    .clear ==
-                                                                stream.video
-                                                                    .packets,
-                                                            'red--text':
-                                                                stream.video
-                                                                    .scrambled !=
-                                                                stream.video
-                                                                    .packets
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.video
-                                                                    .clear
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                    </v-row>
-
-                                    <v-row>
                                         <v-col
                                             cols="12"
                                             sm="12"
@@ -646,8 +534,8 @@
                                         </v-col>
                                     </v-row>
                                 </v-card>
-                                <div class="mt-12 ml-3 mr-3">
-                                    <span class="ml-3">
+                                <!-- <div class="mt-12 ml-3 mr-3"> -->
+                                    <!-- <span class="ml-3">
                                         Bitrate
                                         <strong
                                             v-if="stream.video.bitrate === 0"
@@ -666,8 +554,8 @@
                                             }}
                                             Mbps
                                         </strong>
-                                    </span>
-                                    <v-progress-linear
+                                    </span> -->
+                                    <!-- <v-progress-linear
                                         v-if="stream.video.access === 'success'"
                                         :value="
                                             countBitrate(stream.video.bitrate)
@@ -690,56 +578,49 @@
                                         color="error"
                                         stream
                                     >
-                                    </v-progress-linear>
-                                </div>
+                                    </v-progress-linear> -->
+                                <!-- </div> -->
                             </div>
+                        </v-col>
+                    </v-row>
+                    <v-row>
+                        <v-col
+                            cols="12"
+                            sm="12"
+                            md="12"
+                            lg="12"
+                            v-if="series.length > 0"
+                        >
+                            <v-card color="transparent" flat light>
+                                <apexchart
+                                    height="200"
+                                    type="area"
+                                    :options="chartOptions"
+                                    :series="series"
+                                ></apexchart>
+                            </v-card>
+                        </v-col>
+                        <v-col
+                            v-else
+                            cols="12"
+                            sm="12"
+                            md="12"
+                            lg="12"
+                            class="mt-3 mb-3 pr-10"
+                        >
+                            <v-row align="center" justify="space-around">
+                                <span class="mt-12">
+                                    <i
+                                        style="color:#EAF0F1"
+                                        class="fas fa-spinner fa-spin fa-5x"
+                                    ></i>
+                                </span>
+                            </v-row>
                         </v-col>
                     </v-row>
                 </div>
             </v-container>
         </v-card>
-
-        <!-- dialog -->
-
-        <v-row justify="center">
-            <v-dialog v-model="chart_dialog" persistent max-width="800">
-                <v-card flat color="#1E1E1E" light>
-                    <v-card-title class="white--text">
-                        {{ cardTitle }}
-                    </v-card-title>
-
-                    <v-container fluid v-if="audioChart === true">
-                        <apexchart
-                            v-if="this.series_audio[0].data.length > 0"
-                            height="285"
-                            type="area"
-                            :options="chartOptions_Audio"
-                            :series="series_audio"
-                        ></apexchart>
-                    </v-container>
-                    <v-container fluid v-if="videoChart === true">
-                        <apexchart
-                            v-if="this.series_video[0].data.length > 0"
-                            height="285"
-                            type="area"
-                            :options="chartOptions_Video"
-                            :series="series_video"
-                        ></apexchart>
-                    </v-container>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn
-                            color="green"
-                            text
-                            outlined
-                            @click="closeDialog()"
-                        >
-                            zavřít
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </v-row>
     </v-main>
 </template>
 <script>
@@ -806,60 +687,29 @@ export default {
         routeId: null,
         websocketAlert: null,
 
-        chartOptions_Audio: {
-            legend: {
-                show: false
-            },
+        chartOptions: {
             dataLabels: {
                 enabled: false
             },
             chart: {
-                id: "Audio_bitrate",
-                animations: {
-                    enabled: true,
-                    easing: "linear",
-                    dynamicAnimation: {
-                        speed: 1000
-                    }
-                },
-                toolbar: {
+                id: "Audio / Video Bitrate"
+            },
+            xaxis: {
+                show: false,
+                categories: [],
+                labels: {
                     show: false
                 }
             },
-            xaxis: {
-                categories: null,
+            yaxis: {
+                show: false,
                 labels: {
                     show: false
                 }
             }
         },
-        series_audio: [
-            {
-                name: "takový tok",
-                data: [] // data
-            }
-        ],
 
-        chartOptions_Video: {
-            dataLabels: {
-                enabled: false
-            },
-            chart: {
-                id: "Audio bitrate"
-            },
-            xaxis: {
-                categories: null,
-                labels: {
-                    show: false
-                }
-            }
-        },
-        series_video: [
-            {
-                name: "takový tok",
-                data: [] // data
-            }
-        ]
+        series: []
     }),
 
     created() {
@@ -867,6 +717,7 @@ export default {
         this.bindRouteId();
         this.websocketData();
         this.checkIfSebsocketisConnectedAndReturnResponse();
+        this.loadAudioVideoBitrate();
     },
     methods: {
         bindRouteId() {
@@ -878,43 +729,24 @@ export default {
             this.audioChart = false;
             this.videoChart = false;
         },
-        loadAudioBitrate() {
+        loadAudioVideoBitrate() {
             axios
-                .post("streamInfo/audio_bitrate", {
+                .post("streamInfo/bitrates", {
                     streamId: this.$route.params.id
                 })
                 .then(response => {
-                    this.cardTitle = "Audio bitrate";
-                    this.chart_dialog = true;
-                    this.audioChart = true;
-                    this.chartOptions_Audio.xaxis.categories =
-                        response.data.xaxis;
-                    this.series_audio[0].data = response.data.seriesData;
-                })
-                .catch(error => {
-                    this.cardTitle = "Audio bitrate";
-                    this.chart_dialog = true;
-                    this.audioChart = "error";
-                });
-        },
+                    if (response.data.status === "exist") {
+                        this.chartOptions.xaxis.categories =
+                            response.data.xaxis;
+                        this.series = response.data.seriesData;
+                    }
+                    if (response.data.status === "error") {
+                        console.log(response.data);
+                    }
 
-        loadVideoBitrate() {
-            axios
-                .post("streamInfo/video_bitrate", {
-                    streamId: this.$route.params.id
-                })
-                .then(response => {
-                    this.cardTitle = "Video bitrate";
-                    this.chart_dialog = true;
-                    this.videoChart = true;
-                    this.chartOptions_Video.xaxis.categories =
-                        response.data.xaxis;
-                    this.series_video[0].data = response.data.seriesData;
-                })
-                .catch(error => {
-                    this.cardTitle = "Audio bitrate";
-                    this.chart_dialog = true;
-                    this.videoChart = "error";
+                    if (response.data.status === "empty") {
+                        this.series = [];
+                    }
                 });
         },
 
@@ -1075,9 +907,9 @@ export default {
 
         this.interval = setInterval(() => {
             try {
-                this.loadCCError();
+                this.loadAudioVideoBitrate();
             } catch (error) {}
-        }, 15000);
+        }, 2000);
     },
     watch: {
         $route(to, from) {

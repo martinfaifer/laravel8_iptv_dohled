@@ -11,7 +11,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StreamInfoTsVideoBitrate implements ShouldBroadcast
+class StreamInfoTsVideoBitrate implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -22,15 +22,13 @@ class StreamInfoTsVideoBitrate implements ShouldBroadcast
     public $scrambled;
     public $videoAccess;
     public $videoDescription;
-    public $videoPackets;
-    public $videoClear;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess, $videoDescription, $videoPackets, $videoClear)
+    public function __construct($streamId, $videoBitrate, $videoPid, $discontinuities, $scrambled, $videoAccess, $videoDescription,)
     {
         $this->videoBitrate = $videoBitrate;
         $this->videoPid = $videoPid;
@@ -38,8 +36,6 @@ class StreamInfoTsVideoBitrate implements ShouldBroadcast
         $this->scrambled = $scrambled;
         $this->videoAccess = $videoAccess;
         $this->videoDescription = $videoDescription;
-        $this->videoPackets = $videoPackets;
-        $this->videoClear = $videoClear;
 
         $this->streamId = $streamId;
     }
@@ -63,8 +59,6 @@ class StreamInfoTsVideoBitrate implements ShouldBroadcast
             'scrambled' => $this->scrambled,
             'access' => $this->videoAccess,
             'videoDescription' => $this->videoDescription,
-            'videoPackets' => $this->videoPackets,
-            'videoClear' => $this->videoClear
         ];
     }
 }

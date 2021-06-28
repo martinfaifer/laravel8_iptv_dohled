@@ -45,7 +45,6 @@
                                             user.name == '' || user.email == ''
                                         "
                                         type="submit"
-                                        small
                                         color="success"
                                         >Editovat</v-btn
                                     >
@@ -93,7 +92,6 @@
                                         @click="ZmenaHesla()"
                                         :disabled="password != passwordCheck"
                                         type="submit"
-                                        small
                                         color="success"
                                         >Editovat</v-btn
                                     >

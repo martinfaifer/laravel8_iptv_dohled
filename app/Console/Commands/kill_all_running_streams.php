@@ -12,7 +12,7 @@ class kill_all_running_streams extends Command
      *
      * @var string
      */
-    protected $signature = 'command:kill_all_running_streams';
+    protected $signature = 'streams:kill_all_running_streams';
 
     /**
      * The console command description.

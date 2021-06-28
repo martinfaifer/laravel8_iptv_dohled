@@ -390,7 +390,7 @@ class UserController extends Controller
         if ($request->status != false) {
             $status = "blocket";
         } else {
-            $status = "active";
+            $status = "access";
         }
 
         // vyhledání, zda není nejaka hodnota empty

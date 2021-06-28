@@ -97,56 +97,6 @@
                     </v-card>
                 </v-col>
             </v-row>
-
-            <!-- container pro historii uzivatele -->
-
-            <v-row class="mt-8 ml-3 mr-3">
-                <v-col cols="12" sm="12" md="12" lg="12">
-                    <v-card class="text-center" flat>
-                        <v-card-text>
-                            <span>
-                                <strong class="white--text">
-                                    Historie
-                                </strong>
-                            </span>
-                            <v-container v-if="history != 'none'">
-                                <v-timeline dense>
-                                    <v-timeline-item
-                                        v-for="userHist in history"
-                                        :key="userHist.id"
-                                        small
-                                    >
-                                        <template v-slot:opposite>
-                                            <span
-                                                class="
-                                                body-1 font-weight-bold
-                                            "
-                                                v-text="userHist.created_at"
-                                            ></span>
-                                        </template>
-                                        <div class="py-4">
-                                            <div>
-                                                <strong class="green--text">
-                                                    {{ userHist.created_at }}
-                                                    =>
-                                                    {{ userHist.message }}
-                                                </strong>
-                                            </div>
-                                        </div>
-                                    </v-timeline-item>
-                                </v-timeline>
-                            </v-container>
-                            <v-container v-else>
-                                <div>
-                                    <v-alert outlined text type="info">
-                                        Není evidována žádná historie
-                                    </v-alert>
-                                </div>
-                            </v-container>
-                        </v-card-text>
-                    </v-card>
-                </v-col>
-            </v-row>
         </v-container>
         <br />
     </v-main>
@@ -154,23 +104,9 @@
 <script>
 export default {
     props: ["user"],
-    data: () => ({
-        history: null
-    }),
-    created() {
-        this.loaduserHistory();
-    },
+    data: () => ({}),
+    created() {},
 
-    methods: {
-        loaduserHistory() {
-            window.axios
-                .post("user/history", {
-                    streamId: this.streamId
-                })
-                .then(response => {
-                    this.history = response.data;
-                });
-        }
-    }
+    methods: {}
 };
 </script>

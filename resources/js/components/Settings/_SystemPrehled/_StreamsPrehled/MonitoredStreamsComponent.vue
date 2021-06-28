@@ -66,12 +66,7 @@ export default {
                     }
                 }
             },
-            series: [
-                {
-                    name: "počet aktivních streamů",
-                    data: null
-                }
-            ]
+            series: []
         };
     },
     created() {
@@ -82,7 +77,7 @@ export default {
             axios.get("system/working_streams/areacharts").then(response => {
                 if (response.data.status === "exist") {
                     this.chartOptions.xaxis.categories = response.data.xaxis;
-                    this.series[0].data = response.data.seriesData;
+                    this.series = response.data.seriesData;
                     this.loadingAreaChart = false;
                 } else {
                     this.loadingAreaChart = false;

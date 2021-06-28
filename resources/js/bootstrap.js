@@ -16,9 +16,9 @@ window.Pusher = require("pusher-js");
 
 window.Echo = new Echo({
     broadcaster: "pusher",
-    key: process.env.MIX_PUSHER_APP_KEY,
-    wsHost: "192.168.88.16",
-    // wsHost: window.location.hostname,
+    key: 'TSanalyzerKey',
+    // wsHost: "192.168.88.26",
+    wsHost: window.location.hostname,
     wsPort: 6001,
     forceTLS: false,
     disableStats: true

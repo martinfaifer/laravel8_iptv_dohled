@@ -314,7 +314,7 @@ class StreamController extends Controller
         $stream_to_edit = Stream::find($request->streamId);
 
 
-        if ($request->dohledovano === true) {
+        if ($request->dohledovano == true) {
             // Zjistení puvodního statusu, pokud je jiný než stop, nemění se
             if ($stream_to_edit->status === "stop") {
                 $status = "waiting";
@@ -654,6 +654,29 @@ class StreamController extends Controller
         }
     }
 
+    public static function take_count_of_stopped_streams(): void
+    {
+        if (Stream::first()) {
+
+            Cache::put('stopped_streams' . date('H:i'), [
+                'value' => Stream::where([['dohledovano', false]])->count(),
+                'created_at' => date('H:i')
+            ], now()->addMinutes(480));
+        }
+    }
+
+    public static function take_count_of_issued_streams(): void
+    {
+        if (Stream::first()) {
+
+            Cache::put('issueing_streams' . date('H:i'), [
+                'value' => Stream::where([['is_problem', true], ['dohledovano', true]])->count(),
+                'created_at' => date('H:i')
+            ], now()->addMinutes(480));
+        }
+    }
+
+
     /**
      * fn pro vykreslení areachartu pro dashboard
      *
@@ -668,12 +691,46 @@ class StreamController extends Controller
                 $seriesData[] = $cache['value'];
                 $xaxis[] = $cache['created_at'];
             }
+
+            // stopped
+            if (Cache::has('stopped_streams' . now()->subMinutes($i)->format('H:i'))) {
+                $cache_stopped = Cache::get('stopped_streams' . now()->subMinutes($i)->format('H:i'));
+
+                $seriesData_stopped[] = $cache_stopped['value'];
+            } else {
+                $seriesData_stopped[] = 0;
+            }
+
+            // issued
+            if (Cache::has('issueing_streams' . now()->subMinutes($i)->format('H:i'))) {
+                $cache_issue = Cache::get('issueing_streams' . now()->subMinutes($i)->format('H:i'));
+
+                $seriesData_issued[] = $cache_issue['value'];
+            } else {
+                $seriesData_issued[] = 0;
+            }
         }
         if (isset($xaxis)) {
+
+            $output = [
+                array(
+                    'name' => "funkční streamy",
+                    'data' => $seriesData
+                ),
+                array(
+                    'name' => "zastavené streamy",
+                    'data' => $seriesData_stopped
+                ),
+                array(
+                    'name' => "problémové streamy",
+                    'data' => $seriesData_issued
+                )
+            ];
+
             return [
                 'status' => "exist",
                 'xaxis' => $xaxis,
-                'seriesData' => $seriesData
+                'seriesData' => $output
             ];
         }
 
@@ -749,38 +806,7 @@ class StreamController extends Controller
         ];
     }
 
-    public function show_video_bitrate_data(Request $request): array
-    {
-        try {
-            for ($i = 120; $i > 1; $i--) {
-                if (Cache::has($request->streamId . '_video_bitrate_' . now()->subSeconds($i)->format('H:i:s'))) {
-
-                    $cache = Cache::get($request->streamId . '_video_bitrate_'  . now()->subSeconds($i)->format('H:i:s'));
-
-                    $seriesData[] = $cache['value'];
-                    $xaxis[] = $cache['created_at'];
-                }
-            }
-
-            if (isset($seriesData)) {
-                return [
-                    'status' => "exist",
-                    'xaxis' => $xaxis,
-                    'seriesData' => $seriesData
-                ];
-            }
-
-            return [
-                'status' => "empty"
-            ];
-        } catch (\Throwable $th) {
-            return [
-                'status' => "empty"
-            ];
-        }
-    }
-
-    public function show_audio_bitrate_data(Request $request): array
+    public function show_audio_video_bitrate_data(Request $request): array
     {
         try {
             for ($i = 120; $i > 1; $i--) {
@@ -788,16 +814,34 @@ class StreamController extends Controller
 
                     $cache = Cache::get($request->streamId . '_audio_bitrate_'  . now()->subSeconds($i)->format('H:i:s'));
 
-                    $seriesData[] = $cache['value'];
+                    $seriesData_audio[] = $cache['value'];
                     $xaxis[] = $cache['created_at'];
+                }
+
+                if (Cache::has($request->streamId . '_video_bitrate_' . now()->subSeconds($i)->format('H:i:s'))) {
+
+                    $cache = Cache::get($request->streamId . '_video_bitrate_'  . now()->subSeconds($i)->format('H:i:s'));
+
+                    $seriesData_video[] = $cache['value'];
                 }
             }
 
-            if (isset($seriesData)) {
+            if (isset($xaxis)) {
+                $output = [
+                    array(
+                        'name' => "audio bitrate v Kbps",
+                        'data' => $seriesData_audio
+                    ),
+                    array(
+                        'name' => "video bitrate v Kbps",
+                        'data' => $seriesData_video
+                    ),
+                ];
+
                 return [
                     'status' => "exist",
                     'xaxis' => $xaxis,
-                    'seriesData' => $seriesData
+                    'seriesData' => $output
                 ];
             }
 
@@ -806,7 +850,7 @@ class StreamController extends Controller
             ];
         } catch (\Throwable $th) {
             return [
-                'status' => "empty"
+                'status' => "error"
             ];
         }
     }

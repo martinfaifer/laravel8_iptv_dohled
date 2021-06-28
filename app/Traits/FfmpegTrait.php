@@ -3,7 +3,9 @@
 namespace App\Traits;
 
 use App\Events\StreamImage;
+use App\Http\Controllers\ApiController;
 use App\Http\Controllers\StreamHistoryController;
+use App\Jobs\RestartStreamJob;
 use App\Models\Stream;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -114,6 +116,8 @@ trait FfmpegTrait
                             'stream' => $stream->nazev,
                             'msg' => "Audio video resync!"
                         ]);
+                        RestartStreamJob::dispatch($streamId);
+                        // ZAVOLÁNÍ FN PRO RESTART STREAMU
                         StreamHistoryController::create($streamId, 'stream_out_of_sync');
                     }
                 }

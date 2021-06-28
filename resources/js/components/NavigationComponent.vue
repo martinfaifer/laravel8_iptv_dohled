@@ -16,165 +16,94 @@
             <v-app-bar :color="navigationColor" fixed dense>
                 <div v-if="this.$route.path != '/'">
                     <v-btn link to="/" color="white" class="white--text" icon>
-                        <v-icon>mdi-home</v-icon>
+                        <v-icon color="grey">mdi-home</v-icon>
                     </v-btn>
                 </div>
                 <v-spacer></v-spacer>
                 <div v-if="isSettings === true">
-                    <v-row>
+                    <v-tabs
+                        background-color="transparent"
+                        centered
+                        dense
+                        dark
+                        color="teal"
+                    >
+                        <v-tabs-slider color="teal"></v-tabs-slider>
+
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
-                                <v-btn
+                                <v-tab
                                     link
                                     to="/settings/prehled"
-                                    :class="{
-                                        'white--text':
-                                            $vuetify.theme.dark === true,
-                                        'black--text':
-                                            $vuetify.theme.dark === false
-                                    }"
-                                    v-on="on"
-                                    icon
+                                    href="#dashboard"
                                 >
-                                    <v-icon
-                                        v-if="
-                                            $route.path === '/settings/prehled'
-                                        "
-                                        color="teal"
+                                    <v-icon v-on="on"
                                         >mdi-view-dashboard</v-icon
                                     >
-                                    <v-icon v-else>mdi-view-dashboard</v-icon>
-                                </v-btn>
+                                </v-tab>
                             </template>
                             <span>Dashboard</span>
                         </v-tooltip>
 
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
-                                <v-btn
-                                    dark
+                                <v-tab
                                     link
                                     to="/settings/streams"
-                                    :class="{
-                                        'white--text':
-                                            $vuetify.theme.dark === true,
-                                        'black--text':
-                                            $vuetify.theme.dark === false
-                                    }"
-                                    v-on="on"
-                                    icon
+                                    href="#tab-2"
                                 >
-                                    <v-icon
-                                        v-if="
-                                            $route.path === '/settings/streams'
-                                        "
-                                        color="teal"
+                                    <v-icon v-on="on"
                                         >mdi-television-guide</v-icon
                                     >
-                                    <v-icon v-else>mdi-television-guide</v-icon>
-                                </v-btn>
+                                </v-tab>
                             </template>
                             <span>Kanály</span>
                         </v-tooltip>
 
-                        <div v-if="userRole == 'admin'">
-                            <v-tooltip bottom>
-                                <template v-slot:activator="{ on }">
-                                    <v-btn
-                                        link
-                                        to="/settings/users"
-                                        :class="{
-                                            'white--text':
-                                                $vuetify.theme.dark === true,
-                                            'black--text':
-                                                $vuetify.theme.dark === false
-                                        }"
-                                        v-on="on"
-                                        icon
+                        <v-tooltip bottom v-if="userRole == 'admin'">
+                            <template v-slot:activator="{ on }">
+                                <v-tab link to="/settings/users" href="#tab-3">
+                                    <v-icon v-on="on"
+                                        >mdi-account-multiple-outline</v-icon
                                     >
-                                        <v-icon
-                                            v-if="
-                                                $route.path ===
-                                                    '/settings/users'
-                                            "
-                                            color="teal"
-                                            >mdi-account-multiple-outline</v-icon
-                                        >
-                                        <v-icon v-else
-                                            >mdi-account-multiple-outline</v-icon
-                                        >
-                                    </v-btn>
-                                </template>
-                                <span>Uživatelé</span>
-                            </v-tooltip>
-                        </div>
+                                </v-tab>
+                            </template>
+                            <span>Uživatelé</span>
+                        </v-tooltip>
 
-                        <div
-                            v-if="userRole == 'admin' || userRole == 'Hotline'"
-                        >
-                            <v-tooltip bottom>
-                                <template v-slot:activator="{ on }">
-                                    <v-btn
-                                        link
-                                        to="/settings/alerts"
-                                        :class="{
-                                            'white--text':
-                                                $vuetify.theme.dark === true,
-                                            'black--text':
-                                                $vuetify.theme.dark === false
-                                        }"
-                                        v-on="on"
-                                        icon
-                                    >
-                                        <v-icon
-                                            v-if="
-                                                $route.path ===
-                                                    '/settings/alerts'
-                                            "
-                                            color="teal"
-                                            >mdi-bell-outline</v-icon
-                                        >
-                                        <v-icon v-else>mdi-bell-outline</v-icon>
-                                    </v-btn>
-                                </template>
-                                <span>Nastavení Alertingu</span>
-                            </v-tooltip>
-                        </div>
+                        <v-tooltip bottom v-if="userRole == 'admin'">
+                            <template v-slot:activator="{ on }">
+                                <v-tab link to="/settings/alerts" href="#tab-3">
+                                    <v-icon v-on="on">mdi-bell-outline</v-icon>
+                                </v-tab>
+                            </template>
+                            <span>Nastavení Alertingu</span>
+                        </v-tooltip>
 
-                        <div
-                            v-if="userRole == 'admin' || userRole == 'Hotline'"
-                        >
-                            <v-tooltip bottom>
-                                <template v-slot:activator="{ on }">
-                                    <v-btn
-                                        link
-                                        to="/settings/firewall"
-                                        :class="{
-                                            'white--text':
-                                                $vuetify.theme.dark === true,
-                                            'black--text':
-                                                $vuetify.theme.dark === false
-                                        }"
-                                        v-on="on"
-                                        icon
+                        <v-tooltip bottom v-if="userRole == 'admin'">
+                            <template v-slot:activator="{ on }">
+                                <v-tab
+                                    link
+                                    to="/settings/firewall"
+                                    href="#tab-3"
+                                >
+                                    <v-icon v-on="on"
+                                        >mdi-shield-outline</v-icon
                                     >
-                                        <v-icon
-                                            v-if="
-                                                $route.path ===
-                                                    '/settings/firewall'
-                                            "
-                                            color="teal"
-                                            >mdi-shield-outline</v-icon
-                                        >
-                                        <v-icon v-else
-                                            >mdi-shield-outline</v-icon
-                                        >
-                                    </v-btn>
-                                </template>
-                                <span>Firewall</span>
-                            </v-tooltip>
-                        </div>
-                    </v-row>
+                                </v-tab>
+                            </template>
+                            <span>Firewall</span>
+                        </v-tooltip>
+
+                        <v-tooltip bottom v-if="userRole == 'admin'">
+                            <template v-slot:activator="{ on }">
+                                <v-tab link to="/settings/cron" href="#tab-3">
+                                    <v-icon v-on="on">mdi-clock-fast</v-icon>
+                                </v-tab>
+                            </template>
+                            <span>CRON</span>
+                        </v-tooltip>
+                    </v-tabs>
                 </div>
                 <v-spacer></v-spacer>
                 <!-- user Part -->
@@ -206,7 +135,7 @@
                         </template>
                         <v-list width="250px" class="text-center subtitle-2">
                             <!-- theme change -->
-                            <v-list-item>
+                            <!-- <v-list-item>
                                 <v-list-item-content>
                                     Dark mode<v-spacer></v-spacer>
                                 </v-list-item-content>
@@ -221,7 +150,7 @@
                                             )
                                     "
                                 />
-                            </v-list-item>
+                            </v-list-item> -->
                             <!-- end theme change -->
                             <v-list-item link to="/user/prehled">
                                 Editace <v-spacer></v-spacer

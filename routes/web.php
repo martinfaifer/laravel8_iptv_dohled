@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\SlackNotification;
 use App\Events\StreamInfoTs;
 use App\Http\Controllers\CcErrorController;
 use App\Http\Controllers\DiagnosticController;
@@ -7,12 +8,14 @@ use App\Http\Controllers\EmailNotificationController;
 use App\Http\Controllers\FirewallController;
 use App\Http\Controllers\FirewallLogController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SlackController;
 use App\Http\Controllers\StreamAlertController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamHistoryController;
 use App\Http\Controllers\StreamNotificationLimitController;
 use App\Http\Controllers\StreamSheduleFromIptvDokuController;
 use App\Http\Controllers\SystemController;
+use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDetailController;
 use App\Http\Controllers\UserHistoryController;
@@ -54,8 +57,7 @@ Route::group(['middleware' => 'firewall'], function () {
         // StreamInfo -> TodayEvent (sheduler)
         Route::post('todayEvent', [StreamSheduleFromIptvDokuController::class, 'check_if_today_is_shedule']);
         // vyjresleni audio / video grafu
-        Route::post('audio_bitrate', [StreamController::class, 'show_audio_bitrate_data']);
-        Route::post('video_bitrate', [StreamController::class, 'show_video_bitrate_data']);
+        Route::post('bitrates', [StreamController::class, 'show_audio_video_bitrate_data']);
     });
 
     // NavigationComponent -> zobrazení notifikace, pokud ke dnesnimu dni jsou plánované nejaké události
@@ -129,28 +131,29 @@ Route::group(['middleware' => 'firewall'], function () {
     /**
      * Systém blok
      */
-
-    // systémové pozadavky
-    Route::get('system', [SystemController::class, 'checkSystemUsage']);
-
-
-    Route::get('system/usage/areaChart', [SystemController::class, 'create_data_for_area_chart']);
-    Route::get('system/cpu"', [SystemController::class, 'cpu']);
-    Route::get('system/cpu/data', [SystemController::class, 'get_cpu_history_data']);
-    Route::get('system/avarage/load', function () {
-        foreach (sys_getloadavg() as $load) {
-            $output[] = round($load, 2);
-        }
-        return $output;
+    Route::group(['prefix' => 'system'], function () {
+        Route::get('', [SystemController::class, 'checkSystemUsage']);
+        Route::get('usage/areaChart', [SystemController::class, 'create_data_for_area_chart']);
+        Route::get('cpu"', [SystemController::class, 'cpu']);
+        Route::get('cpu/data', [SystemController::class, 'get_cpu_history_data']);
+        Route::get('ram', [SystemController::class, 'ram']);
+        Route::get('swap', [SystemController::class, 'swap']);
+        Route::get('hdd', [SystemController::class, 'hdd']);
+        Route::get('uptime', [SystemController::class, 'get_uptime']);
+        Route::get('status', [SystemController::class, 'server_status']);
+        Route::get('firewall/status', [FirewallController::class, 'check_status']);
+        Route::get("certifikate", [SystemController::class, 'check_web_certificate']);
+        Route::get('certifikate/check', [SystemController::class, 'count_expiration_of_ssl']);
+        Route::get('working_streams/areacharts', [StreamController::class, 'retun_count_of_working_streams']);
+        Route::get('streams/donutChart', [StreamController::class, 'return_streams_data_for_donutChart']);
+        Route::get('load/history', [SystemController::class, 'load_history_system_usage']);
+        Route::get('load/ram', [SystemController::class, 'ram_history_system_usage']);
+        Route::get('hdd/history', [SystemController::class, 'hdd_history_system_usage']);
+        Route::get('swap/history', [SystemController::class, 'swap_history_system_usage']);
+        Route::get("cron", [SystemSettingController::class, 'cron']);
+        Route::get("cron/{id}", [SystemSettingController::class, 'cron_show']);
+        Route::patch("cron", [SystemSettingController::class, 'cron_update']);
     });
-    Route::get('system/ram', [SystemController::class, 'ram']);
-    Route::get('system/swap', [SystemController::class, 'swap']);
-    Route::get('system/hdd', [SystemController::class, 'hdd']);
-    Route::get('system/uptime', [SystemController::class, 'get_uptime']);
-    Route::get('system/status', [SystemController::class, 'server_status']);
-    Route::get('system/firewall/status', [FirewallController::class, 'check_status']);
-    Route::get("system/certifikate", [SystemController::class, 'check_web_certificate']);
-    Route::get('system/certifikate/check', [SystemController::class, 'count_expiration_of_ssl']);
     // admin zona
     Route::get('admin/system/info', [SystemController::class, 'admin_info_system']);
     // dashboard -> vykreslení streamu s cc errory
@@ -200,96 +203,9 @@ Route::group(['middleware' => 'firewall'], function () {
         Route::post('delete', [EmailNotificationController::class, 'delete_email']);
         // editace emailove adresy
         Route::post('edit', [EmailNotificationController::class, 'edit_email']);
+
+        Route::get('slack', [SlackController::class, 'index']);
+        Route::post('slack', [SlackController::class, 'store']);
+        Route::delete('slack', [SlackController::class, 'delete']);
     });
-
-
-    /**
-     * DATA PRO VYKRESLOVÁNÍ GRAFŮ
-     */
-    // vykreslení funkčních || nefunkčních streamů
-    Route::get('system/working_streams/areacharts', [StreamController::class, 'retun_count_of_working_streams']);
-    // donut chart streamů
-    Route::get('system/streams/donutChart', [StreamController::class, 'return_streams_data_for_donutChart']);
-    // system -> load history for area chart
-    Route::get('system/load/history', [SystemController::class, 'load_history_system_usage']);
-    // System -> load history ram
-    Route::get('system/load/ram', [SystemController::class, 'ram_history_system_usage']);
-    // System -> load history HDD
-    Route::get('system/hdd/history', [SystemController::class, 'hdd_history_system_usage']);
-    // System -> load history swap
-    Route::get('system/swap/history', [SystemController::class, 'swap_history_system_usage']);
-});
-
-Route::get('test', function () {
-
-    $ffprobeOutput = shell_exec("timeout -s SIGKILL 10 ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs http://172.17.2.3:10224/udp/239.252.12.18:1234 -timeout 1");
-    $ffprobeOutput = json_decode($ffprobeOutput, true);
-
-
-    $start_time = null;
-    $video_start_time = null;
-    $audio_start_time = null;
-
-    if (array_key_exists('programs', $ffprobeOutput)) {
-        foreach ($ffprobeOutput["programs"] as $program) {
-            if (array_key_exists("start_time", $program)) {
-                $start_time = round($program["start_time"], 0);
-            }
-
-            foreach ($ffprobeOutput["programs"][0]["streams"] as $streams) {
-                if ($streams["codec_type"] == "video") {
-
-                    if (array_key_exists("start_time", $streams)) {
-                        $video_start_time = round($streams["start_time"], 0);
-                    }
-                }
-
-                if ($streams["codec_type"] == "audio") {
-                    if (array_key_exists("start_time", $streams)) {
-                        $audio_start_time = round($streams["start_time"], 0);
-                    }
-                }
-            }
-        }
-    }
-    dd($start_time);
-    if (!is_null($start_time) && !is_null($video_start_time) && !is_null($audio_start_time)) {
-        if ($start_time === $video_start_time && $start_time === $audio_start_time) {
-
-            dd("ok");
-        } else {
-
-            $checkVideo = intval($video_start_time) - intval($start_time);
-            $checkAudio = intval($audio_start_time) - intval($start_time);
-
-            if ($checkVideo <= 1 &&  $checkAudio <= 1) {
-                // v toleranci => success
-                dd("vse ok");
-            } else {
-                // AV resync
-                dd("resync");
-            }
-        }
-    }
-});
-
-
-Route::get('put', function () {
-    Cache::put('stream1001', []);
-});
-
-Route::get('pull', function () {
-    Cache::pull('stream1001');
-});
-
-Route::get('has', function () {
-    return Cache::has("stream1001_sended_notification");
-});
-
-Route::get('email', function () {
-    Mail::to("mfaifer@seznam.cz")->send(new SendErrorStream("TEST", "seznam.cz"));
-    // Mail::send(['text' => 'mail'], ['TEST'], function ($message) {
-    //     $message->to('martinfaifer@gmail.com', 'IPTV DOhled predmet')->subject('Laravel Basic Testing Mail');
-    //     $message->from('dohled@dohled.cz', 'IPTV DOhled');
-    // });
 });

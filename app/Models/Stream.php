@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class Stream extends Model
 {
     use HasFactory;
+    use Notifiable;
 
+    public function routeNotificationForSlack($notification)
+    {
+        return Slack::first()->channel;
+    }
 
     /**
      * ---------------------------------------------------------------------------------------------------------
@@ -34,6 +40,7 @@ class Stream extends Model
         'process_pid',
         'ffmpeg_pid',
         'socket_process_pid',
-        'is_problem'
+        'is_problem',
+        'slack'
     ];
 }

@@ -25,7 +25,7 @@ class ApiController extends Controller
     {
 
         try {
-            return $response = Http::get($this->iptvdokuUriApiConnectionTest, [
+            return $response = Http::timeout(3)->get($this->iptvdokuUriApiConnectionTest, [
                 'hello' => $this->hello_dokumentace,
             ]);
         } catch (\Throwable $th) {
@@ -224,7 +224,15 @@ class ApiController extends Controller
 
     public static function find_channel_logo(int $streamId): string
     {
-        return $response = Http::get('http://iptvdoku.grapesc.cz/api/v2/channel/logo', [
+        return $response = Http::timeout(3)->get('http://iptvdoku.grapesc.cz/api/v2/channel/logo', [
+            'is_dohled' => true,
+            'streamId' => $streamId
+        ]);
+    }
+
+    public static function send_req_for_restart_stream_to_dokumentation(int $streamId): void
+    {
+        Http::timeout(3)->get('http://iptvdoku.grapesc.cz/api/v2/channel/restart', [
             'is_dohled' => true,
             'streamId' => $streamId
         ]);

@@ -6,6 +6,9 @@ use App\Http\Controllers\StreamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+/**
+ * API V1
+ */
 Route::get('/iptvdoku/testConnection', [ApiController::class, 'test_connection_to_dokumentace'])->middleware('firewall');
 Route::post('/iptvdoku/search/stream', [ApiController::class, 'search_stream_data_v_dokumentaci']);
 Route::get('/iptvdoku/get/streams_for_monitoring', [ApiController::class, 'get_streams_for_monitoring_from_dohled'])->middleware('firewall');
@@ -33,4 +36,21 @@ Route::post('/stream/delete', [StreamController::class, 'delete']);
 
 Route::post('/stream/analyze',  [ApiController::class, 'stream_analyze']);
 
-// Route::get('system/cpu', [SelfHardwareCheckController::class, 'return_cpu_usage']);
+
+/**
+ *  API V2
+ */
+Route::group(['prefix' => 'v2'], function () {
+    Route::group(['prefix' => 'stream'], function () {
+        Route::post('', [ApiController::class, 'get_information_about_stream_by_streamId']);
+        Route::post('create', [ApiController::class, 'create_stream']);
+        Route::delete('', [StreamController::class, 'delete']);
+        Route::post('byUri', [ApiController::class, 'get_information_about_stream']);
+        Route::post('analyze',  [ApiController::class, 'stream_analyze']);
+    });
+
+    Route::group(['prefix' => 'event'], function () {
+        Route::post('', [ApiController::class, 'create_new_event']);
+        Route::delete('', [ApiController::class, 'delete_event']);
+    });
+});

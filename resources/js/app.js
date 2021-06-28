@@ -32,6 +32,7 @@ import StreamsComponent from "./components/Settings/StreamsComponent";
 import UsersComponent from "./components/Settings/UsersComponent";
 import FirewallComponent from './components/Settings/FirewallComponent';
 import AlertComponent from './components/Settings/AlertComponent'
+import CronComponent from "./components/Settings/CronComponent.vue";
 import PageNotFoundComponent from './components/PageNotFoundComponent'
 
 let routes = [
@@ -74,6 +75,10 @@ let routes = [
                     {
                         path: "/settings/alerts",
                         component: AlertComponent
+                    },
+                    {
+                        path: "/settings/cron",
+                        component: CronComponent
                     }
                 ]
             }

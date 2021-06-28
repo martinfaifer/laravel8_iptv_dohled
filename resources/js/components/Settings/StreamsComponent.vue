@@ -82,6 +82,15 @@
                             <v-icon color="red">mdi-close</v-icon>
                         </span>
                     </template>
+
+                    <template v-slot:item.slack="{ item }">
+                        <span v-if="item.slack == 1">
+                            <v-icon color="success">mdi-check</v-icon>
+                        </span>
+                        <span v-else-if="item.slack == 0">
+                            <v-icon color="red">mdi-close</v-icon>
+                        </span>
+                    </template>
                     <!-- ikony alertingu -->
                     <template v-slot:item.sendSmsAlert="{ item }">
                         <span v-if="item.sendSmsAlert == 1">
@@ -603,6 +612,7 @@ export default {
                 { text: "Dohled audia", value: "dohledVolume" },
                 { text: "Tvorba náhledu", value: "vytvaretNahled" },
                 { text: "E-mail alert", value: "sendMailAlert" },
+                { text: "Slack alert", value: "slack" },
                 { text: "SMS alert", value: "sendSmsAlert" },
                 { text: "Status", value: "status" },
                 { text: "Akce", value: "akce" }

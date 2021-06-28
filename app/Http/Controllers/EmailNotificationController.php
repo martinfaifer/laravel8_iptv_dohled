@@ -230,14 +230,12 @@ class EmailNotificationController extends Controller
     /**
      * funkce na vypsání všech emailových adres na které se budou zasílat alerty / pokud nic neexistuje vrácí pole se statusem empty
      *
-     * @return void
+     * @return array
      */
     public function return_emails(): array
     {
         if (!EmailNotification::first()) {
-            return [
-                'status' => "empty"
-            ];
+            return [];
         }
         foreach (EmailNotification::get() as $email) {
             $output[] = array(
@@ -250,10 +248,7 @@ class EmailNotificationController extends Controller
             );
         }
 
-        return [
-            'status' => "success",
-            'data' => $output
-        ];
+        return $output;
     }
 
     /**
