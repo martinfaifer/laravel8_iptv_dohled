@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\SlackController;
+use App\Http\Controllers\Notifications\SlackController;
 use Illuminate\Console\Command;
 
 class SlackNotification extends Command

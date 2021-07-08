@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Http\Controllers\StreamHistoryController;
+use App\Http\Controllers\Streams\StreamHistoryController;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;

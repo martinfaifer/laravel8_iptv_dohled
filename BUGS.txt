@@ -1,0 +1,5 @@
+Editace uživatele 
+    -> při změně role se zobrazí roleId ne název role. => OPRAVENO
+
+StreamInfo
+    -> grafy pri updatu neukazou timestamp

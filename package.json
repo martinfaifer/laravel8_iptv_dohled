@@ -31,6 +31,7 @@
         "vue-apexcharts": "^1.6.1",
         "vue-chartjs": "^3.5.1",
         "vue-chartkick": "^0.6.1",
+        "vue-meta": "^2.4.0",
         "vue-router": "^3.5.1",
         "vue-trend-chart": "^0.15.3",
         "vuetify": "^2.5.3",

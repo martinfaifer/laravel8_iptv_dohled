@@ -9,23 +9,24 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
+use App\Traits\FfmpegTrait;
+
 class FFmpegImageCreate implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use FfmpegTrait;
 
 
-    protected $streamId;
-    protected $streamUrl;
+    protected $stream;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($streamId, $streamUrl)
+    public function __construct($stream)
     {
-        $this->streamId = $streamId;
-        $this->streamUrl = $streamUrl;
+        $this->stream = $stream;
     }
 
     /**
@@ -35,6 +36,6 @@ class FFmpegImageCreate implements ShouldQueue
      */
     public function handle()
     {
-        FfmpegController::find_image_if_exist_delete_and_create_new($this->streamId, $this->streamUrl);
+        $this->ffmpeg_create_image($this->stream);
     }
 }

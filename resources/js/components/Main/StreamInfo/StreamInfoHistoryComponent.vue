@@ -259,7 +259,7 @@ export default {
                 axios
                     .post("streamInfo/history", {
                         streamId: this.$route.params.id,
-                        records: "5"
+                        records: "10"
                     })
                     .then(response => {
                         this.streamHistory = response.data;

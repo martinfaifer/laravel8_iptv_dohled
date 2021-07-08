@@ -17,16 +17,20 @@ class StreamInfoTs implements ShouldBroadcastNow
 
     public $streamId;
     public $country;
+    public $pids;
+    public $clearpids;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($streamId, $country)
+    public function __construct($streamId, $country, $pids, $clearpids)
     {
         $this->streamId = $streamId;
         $this->country = $country;
+        $this->pids = $pids;
+        $this->clearpids = $clearpids;
     }
 
     /**
@@ -43,7 +47,9 @@ class StreamInfoTs implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'country' => $this->country
+            'country' => $this->country,
+            'pids' => $this->pids,
+            'clearpids' => $this->clearpids
         ];
     }
 }

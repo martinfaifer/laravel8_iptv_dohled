@@ -14,11 +14,20 @@
             <search-component></search-component>
             <alert-component></alert-component>
             <v-app-bar :color="navigationColor" fixed dense>
-                <div v-if="this.$route.path != '/'">
-                    <v-btn link to="/" color="white" class="white--text" icon>
-                        <v-icon color="grey">mdi-home</v-icon>
-                    </v-btn>
-                </div>
+                <v-col
+                    cols="1"
+                    @click="returnToHome()"
+                    style="cursor:pointer"
+                    v-if="logo != null"
+                >
+                    <v-img link to="/" :src="logo" :lazy-src="logo"> </v-img>
+                </v-col>
+                <v-col cols="1" @click="returnToHome()" v-if="logo === null">
+                    <v-icon dark v-if="this.$route.path != '/'">
+                        mdi-home
+                    </v-icon>
+                </v-col>
+
                 <v-spacer></v-spacer>
                 <div v-if="isSettings === true">
                     <v-tabs
@@ -45,7 +54,7 @@
                             <span>Dashboard</span>
                         </v-tooltip>
 
-                        <v-tooltip bottom>
+                        <v-tooltip bottom v-if="userRole != 'view'">
                             <template v-slot:activator="{ on }">
                                 <v-tab
                                     link
@@ -82,26 +91,20 @@
 
                         <v-tooltip bottom v-if="userRole == 'admin'">
                             <template v-slot:activator="{ on }">
-                                <v-tab
-                                    link
-                                    to="/settings/firewall"
-                                    href="#tab-3"
-                                >
-                                    <v-icon v-on="on"
-                                        >mdi-shield-outline</v-icon
-                                    >
-                                </v-tab>
-                            </template>
-                            <span>Firewall</span>
-                        </v-tooltip>
-
-                        <v-tooltip bottom v-if="userRole == 'admin'">
-                            <template v-slot:activator="{ on }">
                                 <v-tab link to="/settings/cron" href="#tab-3">
                                     <v-icon v-on="on">mdi-clock-fast</v-icon>
                                 </v-tab>
                             </template>
                             <span>CRON</span>
+                        </v-tooltip>
+
+                        <v-tooltip bottom v-if="userRole == 'admin'">
+                            <template v-slot:activator="{ on }">
+                                <v-tab link to="/settings/logo" href="#tab-3">
+                                    <v-icon v-on="on">mdi-file-image</v-icon>
+                                </v-tab>
+                            </template>
+                            <span>Logo Společnosti</span>
                         </v-tooltip>
                     </v-tabs>
                 </div>
@@ -134,24 +137,6 @@
                             </v-btn>
                         </template>
                         <v-list width="250px" class="text-center subtitle-2">
-                            <!-- theme change -->
-                            <!-- <v-list-item>
-                                <v-list-item-content>
-                                    Dark mode<v-spacer></v-spacer>
-                                </v-list-item-content>
-
-                                <v-switch
-                                    dense
-                                    v-model="dark"
-                                    @click="
-                                        changeTheme($vuetify.theme.dark),
-                                            saveNewThemeOption(
-                                                $vuetify.theme.dark
-                                            )
-                                    "
-                                />
-                            </v-list-item> -->
-                            <!-- end theme change -->
                             <v-list-item link to="/user/prehled">
                                 Editace <v-spacer></v-spacer
                                 ><v-icon color="#DAE0E2" right small
@@ -220,73 +205,8 @@
                     </v-menu>
                 </template>
                 <!-- end User Part -->
-                <v-badge
-                    bottom
-                    color="#65C9FF"
-                    :content="alertCount"
-                    offset-x="10"
-                    offset-y="10"
-                >
-                    <v-icon color="white" @click="drawer = !drawer"
-                        >mdi-bell-outline</v-icon
-                    >
-                </v-badge>
             </v-app-bar>
         </div>
-        <v-navigation-drawer
-            v-model="drawer"
-            right
-            fixed
-            temporary
-            color="transparent"
-        >
-            <div v-if="alertCount != '0'">
-                <div
-                    id="alerty"
-                    class="pl-2 pr-2"
-                    v-for="alert in alerts"
-                    :key="alert.id"
-                >
-                    <v-alert
-                        v-if="alertCount != '0'"
-                        border="left"
-                        :type="alert.status"
-                        class="body-2 mt-2"
-                    >
-                        <strong>{{ alert.msg }}</strong>
-                        <div v-show="alert.data">
-                            <v-row
-                                class="ml-1"
-                                v-for="issueData in alert.data"
-                                :key="issueData.id"
-                            >
-                                <small>
-                                    <strong>
-                                        {{ issueData.message }}
-                                    </strong>
-                                </small>
-                            </v-row>
-                        </div>
-                    </v-alert>
-                </div>
-            </div>
-            <!--  -->
-            <div v-else>
-                <div class="pl-2 pr-2">
-                    <v-alert
-                        transition="slide-x-transition"
-                        dense
-                        border="left"
-                        type="success"
-                        class="body-2 mt-2"
-                    >
-                        <strong
-                            >Všechny dohledované streamy jsou funkční</strong
-                        >
-                    </v-alert>
-                </div>
-            </div>
-        </v-navigation-drawer>
 
         <transition name="fade" mode="out-in">
             <router-view class="mt-1"> </router-view>
@@ -308,14 +228,17 @@
                 Nejste Online
             </strong>
         </v-snackbar>
+        <toolbaralert-component v-if="this.$route.path != '/'"></toolbaralert-component>
     </v-main>
 </template>
 
 <script>
 import SearchComponent from "./Main/Search/SearchComponent";
 import AlertComponent from "./AlertComponent";
+import ToolBarAlertComponent from "./ToolBarAlertComponent";
 export default {
     data: () => ({
+        logo: null,
         internetConnection: true,
         loadingApp: true,
         status: null,
@@ -339,12 +262,13 @@ export default {
 
     components: {
         "search-component": SearchComponent,
-        "alert-component": AlertComponent
+        "alert-component": AlertComponent,
+        "toolbaralert-component": ToolBarAlertComponent
     },
     created() {
+        this.loadCompanyLogo();
         this.check_settings_route();
         this.checkIfisOnline();
-        this.loadAlerts();
         this.loadUser();
         setTimeout(
             function() {
@@ -356,6 +280,16 @@ export default {
         this.loadTodayEvents();
     },
     methods: {
+        loadCompanyLogo() {
+            axios.get("system/logo").then(resposne => {
+                if (resposne.data.length > 0) {
+                    this.logo = resposne.data[0].logo_path;
+                } else {
+                    this.logo = null;
+                }
+            });
+        },
+
         check_settings_route() {
             if (this.$route.path.includes("settings")) {
                 return (this.isSettings = true);
@@ -421,22 +355,11 @@ export default {
                     });
             } catch (error) {}
         },
-        async loadAlerts() {
-            try {
-                await axios.get("/streamAlerts").then(response => {
-                    if (response.data.length === 0) {
-                        this.alerts = response.data;
-                        this.$store.commit("updateAlert", response.data);
-                        this.alertCount = "0";
-                    } else {
-                        this.alerts = response.data;
-                        this.$store.commit("updateAlert", response.data);
-                        this.alertCount = response.data.length;
-                    }
-                });
-            } catch (error) {}
+        returnToHome() {
+            if (this.$route.path != "/") {
+                this.$router.push("/");
+            }
         },
-
         logOut() {
             axios.get("logout").then(response => {
                 if (response.data.status === "success") {
@@ -468,11 +391,9 @@ export default {
         }
     },
     mounted() {
-        // this.checkTheme()
         setInterval(
             function() {
                 try {
-                    this.loadAlerts();
                     this.checkIfisOnline();
                     this.loadUser();
                 } catch (error) {}

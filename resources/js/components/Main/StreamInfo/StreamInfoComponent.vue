@@ -6,7 +6,12 @@
                 v-if="status === 'waiting' || status === 'stop'"
                 class="text-center"
             >
-                <v-alert transition="scale-transition" outlined text type="warning">
+                <v-alert
+                    transition="scale-transition"
+                    outlined
+                    text
+                    type="warning"
+                >
                     <strong>
                         Stream se nedohleduje
                     </strong>
@@ -15,7 +20,12 @@
 
             <!-- notifikace, pokud má stream na dnesni den plánovanou udalost -->
             <div v-if="todayEvent != null" class="text-center">
-                <v-alert transition="scale-stransition" outlined text type="info">
+                <v-alert
+                    transition="scale-stransition"
+                    outlined
+                    text
+                    type="info"
+                >
                     <span v-for="event in todayEvent" :key="event.id">
                         <strong>
                             Plánovaný výpadek od {{ event.start }} do
@@ -25,6 +35,15 @@
                 </v-alert>
             </div>
             <v-row no-gutters>
+                <v-col cols="12" sm="12" md="12" lg="12">
+                    <p class="text-center subtitle-1">
+                        {{ streamName }}
+                        <span v-if="start_time != null">
+                            - stream se dohleduje od
+                            <span class="teal--text">{{ start_time }}</span>
+                        </span>
+                    </p>
+                </v-col>
                 <v-col cols="12" sm="12" md="4" lg="4">
                     <img-component></img-component>
                 </v-col>
@@ -54,11 +73,16 @@ import ImgComponent from "./StreamInfoImageComponent";
 import TsComponent from "./StreamInfoTSComponent";
 import HistoryComponent from "./StreamInfoHistoryComponent";
 export default {
+    metaInfo: {
+        title: "IPTV Dohled - detail streamu"
+    },
     data() {
         return {
             status: null,
             todayEvent: null,
-            interval: null
+            interval: null,
+            streamName: null,
+            start_time: null
         };
     },
 
@@ -81,6 +105,8 @@ export default {
                     })
                     .then(response => {
                         this.status = response.data.status;
+                        this.streamName = response.data.streamName;
+                        this.start_time = response.data.start_time;
                     });
             } catch (error) {
                 console.log(error);

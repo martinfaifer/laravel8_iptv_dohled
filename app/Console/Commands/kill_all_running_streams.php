@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamDiagnosticController;
+use App\Http\Controllers\Diagnostic\StreamDiagnosticController;
 use Illuminate\Console\Command;
 
 class kill_all_running_streams extends Command

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\SystemHistoryController;
+use App\Http\Controllers\System\SystemHistoryController;
 use Illuminate\Console\Command;
 
 class prum_older_than_twelve_hours extends Command

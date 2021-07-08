@@ -3,8 +3,7 @@
 namespace App\Traits;
 
 use App\Events\StreamImage;
-use App\Http\Controllers\ApiController;
-use App\Http\Controllers\StreamHistoryController;
+use App\Http\Controllers\Streams\StreamHistoryController;
 use App\Jobs\RestartStreamJob;
 use App\Models\Stream;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +13,7 @@ trait FfmpegTrait
 {
     public static function ffmpeg_create_image(object $stream): void
     {
+        // Log::info("queue pro vytvoření náhledu u streamu " . $stream);
         $newImgName = $stream->id . microtime(true) . '.jpg';
 
         $streamUrl = trim($stream->stream_url);
@@ -25,20 +25,19 @@ trait FfmpegTrait
 
         //  vytvoření náhledu
         if (Str::contains($streamUrl, "http")) {
-            shell_exec("timeout -s SIGKILL 20 ffmpeg -ss 3 -i {$streamUrl} -vframes:v 1 storage/app/public/channelsImages/{$newImgName} -timeout 15");
+            shell_exec("ffmpeg -ss 3 -i {$streamUrl} -vframes:v 1 " . public_path("storage/channelsImages/{$newImgName}"));
         } else {
-            shell_exec("timeout -s SIGKILL 20 ffmpeg -ss 3 -i udp://{$streamUrl} -vframes:v 1 storage/app/public/channelsImages/{$newImgName} -timeout 15");
+            shell_exec("ffmpeg -ss 3 -i udp://{$streamUrl} -vframes:v 1 " . public_path("storage/channelsImages/{$newImgName}"));
         }
 
         // kontrola, zda se náhled zkutečně vytvořil
         if (file_exists(public_path("storage/channelsImages/{$newImgName}"))) {
             $stream->update(['image' => "storage/channelsImages/{$newImgName}"]);
-
             event(new StreamImage($stream->id, "storage/channelsImages/{$newImgName}"));
         }
     }
 
-    public static function ffprobe(string $streamUrl): array
+    public static function ffprobe(string $streamUrl)
     {
         $ffprobeOutput = shell_exec("timeout -s SIGKILL 10 ffprobe -v quiet -print_format json -show_entries stream=bit_rate -show_programs {$streamUrl} -timeout 1");
 
@@ -92,6 +91,7 @@ trait FfmpegTrait
                     Cache::pull("stream" . $streamId . "_resync");
                     // zapsání do historie -> stream_ok
                     StreamHistoryController::create($streamId, "stream_audio_ok");
+                    // odeslání success mailu
                 }
             } else {
 

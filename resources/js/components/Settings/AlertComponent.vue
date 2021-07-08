@@ -382,6 +382,7 @@ export default {
                 })
                 .then(response => {
                     this.$store.state.alerts = response.data.alert;
+                    this.loadSlack();
                     this.closeDialog();
                 });
         },

@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <v-main>
         <v-container fluid>
-            <div class="ml-12 body-1">
-                <v-row>
-                    <strong>
-                        Statické kanály
-                    </strong>
+            <div class="ml-12 mt-1 body-1">
+                <v-row class="ml-1">
+                    <span class="text--disabled font-weight-medium">
+                        Statické streamy
+                    </span>
                 </v-row>
             </div>
             <v-row class="mx-auto mt-1 ma-1 mr-1">
@@ -14,116 +14,73 @@
                     :key="stream.id"
                     class="mt-2"
                 >
-                    <v-hover v-slot:default="{ hover }">
-                        <v-card
-                            link
-                            :to="'stream/' + stream.id"
-                            :elevation="hover ? 12 : 0"
-                            class="mx-auto ma-0 transition-fast-in-fast-out"
-                            height="160"
-                            width="280"
-                            :class="{
-                                'green darken-1': stream.status == 'success',
-                                'green darken-3':
-                                    stream.status == 'diagnostic_crash',
-                                'red darken-4': stream.status == 'error',
-                                'deep-orange accent-1':
-                                    stream.status == 'issue',
-                                '#202020': stream.status == 'waiting'
-                            }"
+                    <v-card
+                        link
+                        :to="'stream/' + stream.id"
+                        class="mx-auto ma-0 "
+                        height="160"
+                        width="280"
+                        color="#080808"
+                    >
+                        <!-- mdi-loading -->
+                        <!-- status stream waiting -->
+                        <v-img v-if="stream.status == 'waiting'">
+                            <v-row
+                                class="fill-height ma-0 mt-12"
+                                justify="center"
+                            >
+                                <div class="ml-2">
+                                    <p class="white--text text-center">
+                                        čeká se na zpracování...
+                                        <i
+                                            style="color:#BDBDBD"
+                                            class="fas fa-spinner fa-spin fa-2x"
+                                        ></i>
+                                    </p>
+                                </div>
+                            </v-row>
+                        </v-img>
+
+                        <v-img v-else-if="stream.image == 'false'">
+                            <v-row class="fill-height ma-0 mt-6">
+                                <div class="ml-2">
+                                    <v-col cols="12">
+                                        <p class="white--text text-center">
+                                            {{ stream.nazev }}
+                                        </p>
+                                        <p class="white--text text-center">
+                                            čeká se na náhled...
+                                            <i
+                                                style="color:#BDBDBD"
+                                                class="fas fa-spinner fa-spin fa-2x ml-6"
+                                            ></i>
+                                        </p>
+                                    </v-col>
+                                </div>
+                            </v-row>
+                            <p class="font-weight-bold text-center">
+                                {{ stream.nazev }}
+                            </p>
+                        </v-img>
+
+                        <v-img
+                            v-else
+                            :lazy-src="stream.image"
+                            :src="stream.image"
+                            :aspect-ratio="16 / 9"
                         >
-                            <!-- mdi-loading -->
-                            <!-- status stream waiting -->
-                            <v-img
-                                v-if="stream.status == 'waiting'"
-                                :elevation="hover ? 24 : 0"
-                                class="transition-fast-in-fast-out"
+                            <p
+                                class="font-weight-bold text-center black--text"
+                                style="text-shadow: 1px 1px white;"
                             >
-                                <v-row
-                                    class="fill-height ma-0 mt-12"
-                                    justify="center"
-                                >
-                                    <v-progress-circular
-                                        indeterminate
-                                        color="blue lighten-2"
-                                    ></v-progress-circular>
-                                    <div class="ml-2">
-                                        {{ stream.nazev }}
-                                        <v-row>
-                                            <small class="ml-3 blue--text">
-                                                čeká na zpracování ...
-                                            </small>
-                                        </v-row>
-                                    </div>
-                                </v-row>
-                            </v-img>
-
-                            <v-img
-                                v-else-if="stream.image == 'false'"
-                                :elevation="hover ? 24 : 0"
-                                class="transition-fast-in-fast-out"
-                            >
-                                <v-row
-                                    class="fill-height ma-0 mt-12"
-                                    justify="center"
-                                >
-                                    <div class="ml-2">
-                                        {{ stream.nazev }}
-                                        <v-row
-                                            v-if="
-                                                stream.status == 'success' ||
-                                                    stream.status == 'issue' ||
-                                                    stream.status ==
-                                                        'diagnostic_crash'
-                                            "
-                                        >
-                                            <small class="ml-3 white--text">
-                                                <strong>
-                                                    čeká se na vytvoření náhledu
-                                                    ...
-                                                </strong>
-                                            </small>
-                                        </v-row>
-                                        <v-row v-if="stream.status == 'error'">
-                                            <small class="ml-3 white--text">
-                                                <strong>
-                                                    stream je ve výpadku ...
-                                                </strong>
-                                            </small>
-                                        </v-row>
-                                    </div>
-                                </v-row>
-                            </v-img>
-
-                            <v-img
-                                v-else
-                                :lazy-src="stream.image"
-                                :src="stream.image"
-                                :aspect-ratio="16 / 9"
-                            >
-                                <v-expand-transition>
-                                    <div
-                                        v-if="hover"
-                                        class="d-flex transition-fast-in-fast-out grey darken-4 v-card--reveal display-1 white--text"
-                                        style="height: 100%;"
-                                    >
-                                        {{ stream.nazev }}
-                                    </div>
-                                </v-expand-transition>
-                            </v-img>
-                        </v-card>
-                    </v-hover>
+                                {{ stream.nazev }}
+                            </p>
+                        </v-img>
+                    </v-card>
                 </v-col>
             </v-row>
-            <div class="ml-12 mt-6 body-1">
-                <v-row>
-                    <strong>
-                        Dynamické kanály
-                    </strong>
-                </v-row>
-            </div>
         </v-container>
-    </div>
+    </v-main>
 </template>
 <script>
 export default {

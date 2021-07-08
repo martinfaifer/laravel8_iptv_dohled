@@ -10,6 +10,9 @@
 </template>
 <script>
 export default {
+    metaInfo: {
+        title: "IPTV Dohled - admin"
+    },
     computed: {
         userData() {
             return this.$store.state.userData;

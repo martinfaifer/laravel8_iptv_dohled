@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\SystemProccessController;
+use App\Http\Controllers\System\SystemProccessController;
 use Illuminate\Console\Command;
 
 class realtime_check_stream_runner extends Command

@@ -80,6 +80,9 @@ import UserSettingsComponent from "./UserSettingsComponent";
 import UserGuiComponent from "./UserGuiComponent";
 import UserAlertComponent from "./UserAlertComponent";
 export default {
+    metaInfo: {
+        title: "IPTV Dohled - uživatel"
+    },
     data: () => ({
         userId: null,
         user: [],

@@ -1,9 +1,6 @@
 <template>
     <div>
         <div>
-            <alert-component :status="status"></alert-component>
-        </div>
-        <div>
             <v-card
                 class="mx-auto text-center"
                 flat
@@ -38,7 +35,6 @@
     </div>
 </template>
 <script>
-import AlertComponent from "../../../AlertComponent";
 export default {
     data() {
         return {
@@ -46,10 +42,6 @@ export default {
             percent: "",
             status: []
         };
-    },
-
-    components: {
-        "alert-component": AlertComponent
     },
     created() {
         this.loadWorkingStreams();

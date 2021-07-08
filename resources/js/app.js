@@ -4,13 +4,16 @@ window.Vue = require("vue");
 
 import Chartkick from "vue-chartkick";
 import VueApexCharts from 'vue-apexcharts'
-// import Chart from "chart.js";
 import Vuetify from "vuetify";
 import VueRouter from "vue-router";
 import { store } from "./store/store";
 import Vue from "vue";
 import TrendChart from "vue-trend-chart";
-
+import VueMeta from 'vue-meta'
+ 
+Vue.use(VueMeta, {
+  refreshOnceOnNavigation: true
+})
 Vue.use(TrendChart);
 Vue.use(Vuetify);
 Vue.use(VueRouter);
@@ -27,12 +30,11 @@ import UserComponent from "./components/UserSettings/UserComponent";
 
 import SettingsComponent from "./components/Settings/SettingsComponent";
 import SettingsPrehledComponent from "./components/Settings/SettingsPrehledComponent";
-// import SettingsSystemPrehledComponent from "./components/Settings/SettingsSystemPrehledComponent";
 import StreamsComponent from "./components/Settings/StreamsComponent";
 import UsersComponent from "./components/Settings/UsersComponent";
-import FirewallComponent from './components/Settings/FirewallComponent';
 import AlertComponent from './components/Settings/AlertComponent'
 import CronComponent from "./components/Settings/CronComponent.vue";
+import LogoComponent from "./components/Settings/LogoComponent";
 import PageNotFoundComponent from './components/PageNotFoundComponent'
 
 let routes = [
@@ -69,16 +71,16 @@ let routes = [
                         component: UsersComponent
                     },
                     {
-                        path: "/settings/firewall",
-                        component: FirewallComponent
-                    },
-                    {
                         path: "/settings/alerts",
                         component: AlertComponent
                     },
                     {
                         path: "/settings/cron",
                         component: CronComponent
+                    },
+                    {
+                        path: "/settings/logo",
+                        component: LogoComponent
                     }
                 ]
             }

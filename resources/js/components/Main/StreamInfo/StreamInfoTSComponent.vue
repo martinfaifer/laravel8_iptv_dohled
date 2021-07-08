@@ -9,7 +9,7 @@
                     <v-row align="center" justify="space-around">
                         <span class="mt-12">
                             <i
-                                style="color:#EAF0F1"
+                                style="color:#BDBDBD"
                                 class="fas fa-spinner fa-spin fa-5x"
                             ></i>
                         </span>
@@ -137,6 +137,87 @@
                                     >
                                 </v-col>
                             </v-row>
+                            <v-row>
+                                <v-col
+                                    cols="12"
+                                    sm="12"
+                                    md="4"
+                                    lg="4"
+                                    v-if="
+                                        stream.ts.pids != null ||
+                                            stream.ts.clearpids
+                                    "
+                                >
+                                    <v-list-item>
+                                        <small>
+                                            Počet pidů
+                                            <span
+                                                class="ml-3"
+                                                v-if="
+                                                    stream.ts.pids ==
+                                                        stream.ts.clearpids
+                                                "
+                                            >
+                                                <strong class="green--text">
+                                                    {{ stream.ts.pids }} /
+                                                    {{ stream.ts.clearpids }}
+                                                </strong>
+                                            </span>
+
+                                            <span class="ml-3" v-else>
+                                                <strong class="red--text">
+                                                    {{ stream.ts.pids }} /
+                                                    {{ stream.ts.clearpids }}
+                                                </strong>
+                                            </span>
+                                        </small></v-list-item
+                                    >
+                                </v-col>
+
+                                <v-col cols="12" sm="12" md="4" lg="4">
+                                    <v-list-item>
+                                        <small>
+                                            Celkový počet chyb v audiu:
+                                            <span
+                                                class="ml-3"
+                                                v-if="audio_scrambled == 0"
+                                            >
+                                                <strong class="green--text">
+                                                    {{ audio_scrambled }}
+                                                </strong>
+                                            </span>
+
+                                            <span class="ml-3" v-else>
+                                                <strong class="red--text">
+                                                    {{ audio_scrambled }}
+                                                </strong>
+                                            </span>
+                                        </small></v-list-item
+                                    >
+                                </v-col>
+
+                                <v-col cols="12" sm="12" md="4" lg="4">
+                                    <v-list-item>
+                                        <small>
+                                            Celkový počet chyb ve videu:
+                                            <span
+                                                class="ml-3"
+                                                v-if="video_scrambled == 0"
+                                            >
+                                                <strong class="green--text">
+                                                    {{ video_scrambled }}
+                                                </strong>
+                                            </span>
+
+                                            <span class="ml-3" v-else>
+                                                <strong class="red--text">
+                                                    {{ video_scrambled }}
+                                                </strong>
+                                            </span>
+                                        </small></v-list-item
+                                    >
+                                </v-col>
+                            </v-row>
                         </v-card>
                     </v-col>
                     <!-- CA Modul-->
@@ -235,7 +316,7 @@
                     </v-col>
                     <v-divider></v-divider>
                     <v-row>
-                        <v-col cols="12" sm="12" md="6" lg="6">
+                        <v-col cols="12" sm="12" md="5" lg="5" class="ml-3">
                             <!-- audio -->
                             <div
                                 v-if="stream.audio.pid != null"
@@ -249,63 +330,6 @@
                                     </v-col>
                                 </v-row>
                                 <v-card color="transparent" flat>
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Discontinuity Errory:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.audio
-                                                                    .discontinuities ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.audio
-                                                                    .discontinuities !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.audio
-                                                                    .discontinuities
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Scrambled:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.audio
-                                                                    .scrambled ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.audio
-                                                                    .scrambled !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.audio
-                                                                    .scrambled
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                    </v-row>
-
                                     <v-row>
                                         <v-col cols="12" sm="12" md="6" lg="6">
                                             <v-list-item>
@@ -366,55 +390,9 @@
                                         </v-col>
                                     </v-row>
                                 </v-card>
-                                <!-- <div class="mt-12 ml-3 mr-3"> -->
-                                    <!-- <span class="ml-3">
-                                        Bitrate
-                                        <strong
-                                            v-if="stream.audio.bitrate === 0"
-                                            class="red--text"
-                                        >
-                                            {{ stream.audio.bitrate }}
-                                        </strong>
-                                        <strong v-else class="green--text">
-                                            {{
-                                                Math.round(
-                                                    stream.audio.bitrate / 1024
-                                                )
-                                            }}
-                                            kbps
-                                        </strong></span
-                                    > -->
-                                    <!-- <v-progress-linear
-                                        v-if="
-                                            stream.audio.audioAccess ===
-                                                'success'
-                                        "
-                                        :buffer-value="
-                                            countBitrate(stream.audio.bitrate)
-                                        "
-                                        :value="
-                                            countBitrate(stream.audio.bitrate)
-                                        "
-                                        color="success"
-                                        stream
-                                    >
-                                    </v-progress-linear> -->
-                                    <!-- <v-progress-linear
-                                        v-else
-                                        :value="
-                                            countBitrate(stream.audio.bitrate)
-                                        "
-                                        :buffer-value="
-                                            countBitrate(stream.audio.bitrate)
-                                        "
-                                        color="error"
-                                        stream
-                                    >
-                                    </v-progress-linear> -->
-                                <!-- </div> -->
                             </div>
                         </v-col>
-                        <v-col cols="12" sm="12" md="6" lg="6">
+                        <v-col cols="12" sm="12" md="5" lg="5" class="ml-3">
                             <!-- video -->
                             <div
                                 v-if="stream.video.pid != null"
@@ -428,63 +406,6 @@
                                     </v-col>
                                 </v-row>
                                 <v-card color="transparent" flat>
-                                    <v-row>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Discontinuity Errory:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.video
-                                                                    .discontinuities ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.video
-                                                                    .discontinuities !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.video
-                                                                    .discontinuities
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                        <v-col cols="12" sm="12" md="6" lg="6">
-                                            <v-list-item>
-                                                <small>
-                                                    Scrambled:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.video
-                                                                    .scrambled ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.video
-                                                                    .scrambled !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        <strong>
-                                                            {{
-                                                                stream.video
-                                                                    .scrambled
-                                                            }}
-                                                        </strong>
-                                                    </span>
-                                                </small></v-list-item
-                                            >
-                                        </v-col>
-                                    </v-row>
-
                                     <v-row>
                                         <v-col
                                             cols="12"
@@ -534,52 +455,6 @@
                                         </v-col>
                                     </v-row>
                                 </v-card>
-                                <!-- <div class="mt-12 ml-3 mr-3"> -->
-                                    <!-- <span class="ml-3">
-                                        Bitrate
-                                        <strong
-                                            v-if="stream.video.bitrate === 0"
-                                            class="red--text"
-                                        >
-                                            {{ stream.video.bitrate }}
-                                        </strong>
-
-                                        <strong class="green--text">
-                                            {{
-                                                Math.round(
-                                                    (stream.video.bitrate /
-                                                        1048576) *
-                                                        100
-                                                ) / 100
-                                            }}
-                                            Mbps
-                                        </strong>
-                                    </span> -->
-                                    <!-- <v-progress-linear
-                                        v-if="stream.video.access === 'success'"
-                                        :value="
-                                            countBitrate(stream.video.bitrate)
-                                        "
-                                        :buffer-value="
-                                            countBitrate(stream.video.bitrate)
-                                        "
-                                        color="success"
-                                        stream
-                                    >
-                                    </v-progress-linear>
-                                    <v-progress-linear
-                                        v-else
-                                        :value="
-                                            countBitrate(stream.video.bitrate)
-                                        "
-                                        :buffer-value="
-                                            countBitrate(stream.video.bitrate)
-                                        "
-                                        color="error"
-                                        stream
-                                    >
-                                    </v-progress-linear> -->
-                                <!-- </div> -->
                             </div>
                         </v-col>
                     </v-row>
@@ -597,6 +472,22 @@
                                     type="area"
                                     :options="chartOptions"
                                     :series="series"
+                                ></apexchart>
+                            </v-card>
+                        </v-col>
+                        <v-col
+                            cols="12"
+                            sm="12"
+                            md="12"
+                            lg="12"
+                            v-if="series.length > 0"
+                        >
+                            <v-card color="transparent" flat light>
+                                <apexchart
+                                    height="200"
+                                    type="area"
+                                    :options="chartOptions_scrambled"
+                                    :series="series_scrambleds"
                                 ></apexchart>
                             </v-card>
                         </v-col>
@@ -626,6 +517,8 @@
 <script>
 export default {
     data: () => ({
+        video_scrambled: 0,
+        audio_scrambled: 0,
         chart_dialog: false,
         cardTitle: "",
         audioChart: false,
@@ -669,7 +562,9 @@ export default {
                 provider: null
             },
             ts: {
-                country: null
+                country: null,
+                pids: null,
+                clearpids: null
             }
         },
         interval: null,
@@ -678,7 +573,6 @@ export default {
         audioBitrateChartArray: [],
         audioLabels: [],
         streamId: null,
-        ccErorrs: [],
 
         drawDuration: 2000,
         labelSize: 4,
@@ -709,15 +603,39 @@ export default {
             }
         },
 
-        series: []
+        series: [],
+
+        chartOptions_scrambled: {
+            dataLabels: {
+                enabled: false
+            },
+            chart: {
+                id: "Audio / Video Scrambleds"
+            },
+            xaxis: {
+                show: false,
+                categories: [],
+                labels: {
+                    show: false
+                }
+            },
+            yaxis: {
+                show: false,
+                labels: {
+                    show: false
+                }
+            }
+        },
+
+        series_scrambleds: []
     }),
 
     created() {
-        this.loadCCError();
         this.bindRouteId();
         this.websocketData();
         this.checkIfSebsocketisConnectedAndReturnResponse();
         this.loadAudioVideoBitrate();
+        this.loadScrambledData();
     },
     methods: {
         bindRouteId() {
@@ -729,6 +647,17 @@ export default {
             this.audioChart = false;
             this.videoChart = false;
         },
+
+        loadScrambledData() {
+            axios
+                .post("streamInfo/scrambled", {
+                    streamId: this.$route.params.id
+                })
+                .then(response => {
+                    this.video_scrambled = response.data.video_scrambled;
+                    this.audio_scrambled = response.data.audio_scrambled;
+                });
+        },
         loadAudioVideoBitrate() {
             axios
                 .post("streamInfo/bitrates", {
@@ -739,9 +668,12 @@ export default {
                         this.chartOptions.xaxis.categories =
                             response.data.xaxis;
                         this.series = response.data.seriesData;
+                        this.chartOptions_scrambled.xaxis.categories =
+                            response.data.xaxis;
+                        this.series_scrambleds =
+                            response.data.seriesDataScrambled;
                     }
                     if (response.data.status === "error") {
-                        console.log(response.data);
                     }
 
                     if (response.data.status === "empty") {
@@ -750,25 +682,6 @@ export default {
                 });
         },
 
-        loadCCError() {
-            try {
-                axios
-                    .post("streamInfo/ccError", {
-                        streamId: this.$route.params.id
-                    })
-                    .then(response => {
-                        if (response.data.status === "exist") {
-                            this.ccErorrs.audio = response.data.audio[0];
-                            this.ccErorrs.audioTime =
-                                response.data.audioTime[0];
-                            this.ccErorrs.video = response.data.video[0];
-                            this.ccErorrs.videoTime =
-                                response.data.videoTime[0];
-                        }
-                        this.ccErorrs = response.data;
-                    });
-            } catch (error) {}
-        },
         currentTime() {
             var today = new Date();
             return (
@@ -862,6 +775,8 @@ export default {
                     "StreamInfoTs",
                     eTS => {
                         this.stream.ts.country = eTS["country"];
+                        this.stream.ts.pids = eTS["pids"];
+                        this.stream.ts.clearpids = eTS["clearpids"];
                     }
                 );
             } catch (error) {}
@@ -908,6 +823,7 @@ export default {
         this.interval = setInterval(() => {
             try {
                 this.loadAudioVideoBitrate();
+                this.loadScrambledData();
             } catch (error) {}
         }, 2000);
     },
@@ -928,8 +844,6 @@ export default {
 
                 this.videoBitrateChartArray = [];
                 this.audioBitrateChartArray = [];
-
-                this.loadCCError();
 
                 Echo.channel("streamInfoTsVideoBitrate" + to.params.id).listen(
                     "StreamInfoTsVideoBitrate",
@@ -1008,6 +922,8 @@ export default {
                     "StreamInfoTs",
                     eTS => {
                         this.stream.ts.country = eTS["country"];
+                        this.stream.ts.pids = eTS["pids"];
+                        this.stream.ts.clearpids = eTS["clearpids"];
                     }
                 );
             } catch (error) {}

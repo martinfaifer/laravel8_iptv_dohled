@@ -30,7 +30,7 @@
                         <v-row align="center" justify="space-around">
                             <span class="mt-12">
                                 <i
-                                    style="color:#EAF0F1"
+                                    style="color:#BDBDBD"
                                     class="fas fa-spinner fa-spin fa-5x"
                                 ></i>
                             </span>

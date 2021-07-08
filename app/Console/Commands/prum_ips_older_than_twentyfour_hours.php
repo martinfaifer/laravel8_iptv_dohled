@@ -38,6 +38,6 @@ class prum_ips_older_than_twentyfour_hours extends Command
      */
     public function handle()
     {
-        FirewallLogController::prum_ips_older_than_twentyfour_hours();
+        // FirewallLogController::prum_ips_older_than_twentyfour_hours();
     }
 }

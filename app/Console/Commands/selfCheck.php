@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\SystemController;
+use App\Http\Controllers\System\SystemController;
 use Illuminate\Console\Command;
 
 class selfCheck extends Command

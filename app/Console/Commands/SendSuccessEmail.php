@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\EmailNotificationController;
+use App\Http\Controllers\Notifications\EmailNotificationController;
 use Illuminate\Console\Command;
 use PharIo\Manifest\Email;
 

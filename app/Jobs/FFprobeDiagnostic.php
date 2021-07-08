@@ -37,6 +37,6 @@ class FFprobeDiagnostic implements ShouldQueue
      */
     public function handle()
     {
-        FFprobeController::ffprobe_diagnostic($this->streamUrl, $this->streamId, $this->audioVideoCheck);
+        // FFprobeController::ffprobe_diagnostic($this->streamUrl, $this->streamId, $this->audioVideoCheck);
     }
 }

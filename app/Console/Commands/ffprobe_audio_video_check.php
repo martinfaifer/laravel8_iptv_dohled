@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamDiagnosticController;
+use App\Http\Controllers\Diagnostic\StreamDiagnosticController;
+use App\Models\SystemSetting;
 use Illuminate\Console\Command;
 
 class ffprobe_audio_video_check extends Command
@@ -38,6 +39,8 @@ class ffprobe_audio_video_check extends Command
      */
     public function handle()
     {
-        StreamDiagnosticController::check_stream_audio_video();
+        if (SystemSetting::where('modul', 'ffprobe')->first()->stav === "on") {
+            StreamDiagnosticController::check_stream_audio_video();
+        }
     }
 }

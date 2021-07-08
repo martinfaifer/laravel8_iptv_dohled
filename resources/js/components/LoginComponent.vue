@@ -81,6 +81,9 @@
 
 <script>
 export default {
+    metaInfo: {
+        title: "IPTV Dohled - Login"
+    },
     data() {
         return {
             isLoading: false,

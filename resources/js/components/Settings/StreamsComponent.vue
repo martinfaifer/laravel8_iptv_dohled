@@ -56,11 +56,11 @@
                         </span>
                     </template>
                     <!-- ikony zda se má doheldovat audio -->
-                    <template v-slot:item.dohledVolume="{ item }">
-                        <span v-if="item.dohledVolume == 1">
+                    <template v-slot:item.dohledAudia="{ item }">
+                        <span v-if="item.dohledAudia == 1">
                             <v-icon color="success">mdi-check</v-icon>
                         </span>
-                        <span v-else-if="item.dohledVolume == 0">
+                        <span v-else-if="item.dohledAudia == 0">
                             <v-icon color="red">mdi-close</v-icon>
                         </span>
                     </template>
@@ -129,7 +129,7 @@
                                     (stream_nazev = item.nazev),
                                     (stream_url = item.stream_url),
                                     (dohled = item.dohledovano),
-                                    (audioDohled = item.dohledVolume),
+                                    (audioDohled = item.dohledAudia),
                                     (vytvareniNahledu = item.vytvaretNahled),
                                     (emailAlert = item.sendMailAlert),
                                     (smsAlert = item.sendSmsAlert)
@@ -170,14 +170,14 @@
                                 <v-text-field
                                     autofocus
                                     v-model="stream_nazev"
-                                    label="Název kanálu"
+                                    label="Název streamu"
                                     required
                                 ></v-text-field>
                             </v-col>
                             <v-col cols="12" sm="12" lg="6" md="6">
                                 <v-text-field
                                     v-model="streamUrl"
-                                    label="Url"
+                                    label="Url dohledovaného streamu"
                                 ></v-text-field>
                             </v-col>
 
@@ -185,7 +185,7 @@
                                 <v-switch
                                     v-model="dohled"
                                     label="
-                                            Dohled kanálu
+                                            Dohled streamu
                                         "
                                 ></v-switch>
                             </v-col>
@@ -217,7 +217,7 @@
                                     disabled
                                     v-model="videoBitrateZero"
                                     type="number"
-                                    label="alerting pokud je nulový bitrate na videu"
+                                    label="notifikace pokud je nulový datový tok ve videu"
                                 ></v-text-field>
                             </v-col>
                             <!-- video_discontinuities -->
@@ -231,7 +231,7 @@
                                 <v-text-field
                                     v-model="video_discontinuities"
                                     type="number"
-                                    label="Počet CCR erroru ve videu"
+                                    label="maximální počet CCR erroru ve videu"
                                 ></v-text-field>
                             </v-col>
                             <!-- audio_discontinuities -->
@@ -245,7 +245,7 @@
                                 <v-text-field
                                     v-model="audio_discontinuities"
                                     type="number"
-                                    label="Počet CCR erroru v audiu"
+                                    label="maximální počet CCR erroru v audiu"
                                 ></v-text-field>
                             </v-col>
                             <!-- audio_scrambled -->
@@ -302,7 +302,7 @@
                                 <v-switch
                                     v-model="emailAlert"
                                     label="
-                                            Zasílání e-mail alertu
+                                            Zasílání e-mail notifikací
                                         "
                                 ></v-switch>
                             </v-col>
@@ -316,7 +316,7 @@
                                 <v-switch
                                     v-model="smsAlert"
                                     label="
-                                            Zasílání sms alertu
+                                            Zasílání sms notifikací
                                         "
                                 ></v-switch>
                             </v-col>
@@ -361,15 +361,16 @@
                             <v-col cols="12" sm="12" md="6" lg="6">
                                 <v-text-field
                                     autofocus
-                                    label="Název kanálu"
+                                    label="Název streamu"
                                     v-model="stream_nazev"
                                     required
                                 ></v-text-field>
                             </v-col>
                             <v-col cols="12" sm="12" md="6" lg="6">
                                 <v-text-field
+                                    disabled
                                     v-model="stream_url"
-                                    label="Url"
+                                    label="Url streamu"
                                 ></v-text-field>
                             </v-col>
 
@@ -377,7 +378,7 @@
                                 <v-switch
                                     v-model="dohled"
                                     label="
-                                            Dohled kanálu
+                                            Dohled streamu
                                         "
                                 ></v-switch>
                             </v-col>
@@ -409,7 +410,7 @@
                                     disabled
                                     v-model="videoBitrateZero"
                                     type="number"
-                                    label="alerting pokud je nulový bitrate na videu"
+                                    label="notifikace pokud je nulový datový tok ve videu"
                                 ></v-text-field>
                             </v-col>
                             <!-- video_discontinuities -->
@@ -423,7 +424,7 @@
                                 <v-text-field
                                     v-model="video_discontinuities"
                                     type="number"
-                                    label="Počet CCR erroru ve videu"
+                                    label="maximální počet CCR chyb ve videu"
                                 ></v-text-field>
                             </v-col>
                             <!-- audio_discontinuities -->
@@ -437,7 +438,7 @@
                                 <v-text-field
                                     v-model="audio_discontinuities"
                                     type="number"
-                                    label="Počet CCR erroru v audiu"
+                                    label="maximální počet CCR chyb v audiu"
                                 ></v-text-field>
                             </v-col>
                             <!-- audio_scrambled -->
@@ -451,7 +452,7 @@
                                 <v-text-field
                                     v-model="audio_scrambled"
                                     type="number"
-                                    label="Počet scrambled packetů v audiu"
+                                    label="maximální počet scrambled packetů v audiu"
                                 ></v-text-field>
                             </v-col>
 
@@ -494,7 +495,7 @@
                                 <v-switch
                                     v-model="emailAlert"
                                     label="
-                                            Zasílání e-mail alertu
+                                            Zasílání e-mail notifikací
                                         "
                                 ></v-switch>
                             </v-col>
@@ -508,7 +509,7 @@
                                 <v-switch
                                     v-model="smsAlert"
                                     label="
-                                            Zasílání sms alertu
+                                            Zasílání sms notifikací
                                         "
                                 ></v-switch>
                             </v-col>
@@ -609,7 +610,7 @@ export default {
                 { text: "Název", value: "nazev" },
                 { text: "Uri", value: "stream_url" },
                 { text: "Dohled", value: "dohledovano" },
-                { text: "Dohled audia", value: "dohledVolume" },
+                { text: "Dohled audia", value: "dohledAudia" },
                 { text: "Tvorba náhledu", value: "vytvaretNahled" },
                 { text: "E-mail alert", value: "sendMailAlert" },
                 { text: "Slack alert", value: "slack" },
@@ -637,7 +638,7 @@ export default {
                     stream_nazev: this.stream_nazev,
                     streamUrl: this.streamUrl,
                     dohled: this.dohled,
-                    audioDohled: this.audioDohled,
+                    dohledAudia: this.audioDohled,
                     vytvareniNahledu: this.vytvareniNahledu,
                     emailAlert: this.emailAlert,
                     smsAlert: this.smsAlert,
@@ -709,7 +710,7 @@ export default {
                     nazev: this.stream_nazev,
                     stream_url: this.stream_url,
                     dohledovano: this.dohled,
-                    dohledVolume: this.audioDohled,
+                    dohledAudia: this.audioDohled,
                     vytvaretNahled: this.vytvareniNahledu,
                     sendMailAlert: this.emailAlert,
                     sendSmsAlert: this.smsAlert,

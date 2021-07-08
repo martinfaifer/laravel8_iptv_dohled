@@ -41,6 +41,7 @@ class Stream extends Model
         'ffmpeg_pid',
         'socket_process_pid',
         'is_problem',
-        'slack'
+        'slack',
+        'start_time'
     ];
 }

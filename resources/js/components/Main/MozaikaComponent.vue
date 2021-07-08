@@ -1,569 +1,91 @@
 <template>
     <v-main class="mt-12">
-        <v-container v-if="streams !== null && streams.length === 0">
-            <v-alert outlined text type="info" class="mt-12">
-                <span class="font-weight-bold">
-                    Nedohleduje se žádný stream!
-                </span>
-            </v-alert>
-        </v-container>
-        <v-container v-else fluid>
+        <v-container fluid class="mt-6">
+            <v-row>
+                <errormozaika-component></errormozaika-component>
+            </v-row>
             <v-row>
                 <!-- načtení komponentu pro statickou část mozaiky -->
                 <staticmozaika-component
                     v-if="loggedUser.mozaika == 'custom'"
                     :usermozaika="loggedUser.customData"
                 ></staticmozaika-component>
-
+            </v-row>
+            <v-row>
+                <div class="ml-12 mt-1 body-1">
+                    <v-row class="ml-1">
+                        <span class="text--disabled font-weight-medium">
+                            Dynamická mozaika
+                        </span>
+                    </v-row>
+                </div>
                 <v-row class="mx-auto mt-1 ma-1 mr-1">
                     <v-col
                         v-for="stream in streams"
                         :key="stream.id"
                         class="mt-2"
                     >
-                        <v-hover v-slot:default="{ hover }">
-                            <v-card
-                                link
-                                :to="'stream/' + stream.id"
-                                :elevation="hover ? 12 : 0"
-                                class="mx-auto ma-0 transition-fast-in-fast-out"
-                                height="150"
-                                width="250"
-                                :class="{
-                                    'green darken-1': stream.is_problem === 0,
-                                    'red darken-4': stream.is_problem === 1
-                                }"
-                                @contextmenu="show($event, stream.id)"
-                            >
-                                <!-- mdi-loading -->
-                                <!-- status stream waiting -->
-                                <v-img
-                                    v-if="stream.status == 'waiting'"
-                                    :elevation="hover ? 24 : 0"
-                                    class="transition-fast-in-fast-out"
-                                >
-                                    <v-row
-                                        class="fill-height ma-0 mt-12"
-                                        justify="center"
-                                    >
-                                        <v-progress-circular
-                                            indeterminate
-                                            color="blue lighten-2"
-                                        ></v-progress-circular>
-                                        <div class="ml-2">
-                                            {{ stream.nazev }}
-                                            <v-row>
-                                                <small class="ml-3 blue--text">
-                                                    čeká na zpracování ...
-                                                </small>
-                                            </v-row>
-                                        </div>
-                                    </v-row>
-                                </v-img>
-
-                                <v-img
-                                    v-else-if="stream.image == 'false'"
-                                    :elevation="hover ? 24 : 0"
-                                    class="transition-fast-in-fast-out"
-                                >
-                                    <v-row class="fill-height ma-0 mt-6">
-                                        <div class="ml-2">
-                                            <v-col cols="12">
-                                                <strong>
-                                                    {{ stream.nazev }}
-                                                </strong>
-                                            </v-col>
-
-                                            <v-col
-                                                cols="12"
-                                                v-if="stream.is_problem === 0"
-                                            >
-                                                <span class="white--text">
-                                                    čeká se na náhled...
-                                                </span>
-                                            </v-col>
-
-                                            <v-col
-                                                cols="12"
-                                                v-if="stream.is_problem === 1"
-                                            >
-                                                <span class="white--text">
-                                                    stream je ve výpadku ...
-                                                </span>
-                                            </v-col>
-                                        </div>
-                                    </v-row>
-                                </v-img>
-
-                                <v-img
-                                    v-else
-                                    :lazy-src="stream.image"
-                                    :src="stream.image"
-                                    :aspect-ratio="16 / 9"
-                                >
-                                    <v-expand-transition>
-                                        <div
-                                            v-if="hover"
-                                            class="d-flex transition-fast-in-fast-out grey darken-4 v-card--reveal display-1 white--text"
-                                            style="height: 100%;"
-                                        >
-                                            {{ stream.nazev }}
-                                        </div>
-                                    </v-expand-transition>
-                                </v-img>
-                            </v-card>
-                        </v-hover>
-
-                        <!-- menu -->
-                        <v-menu
-                            class="body-2 elevation-0"
-                            dense
-                            v-model="showMenu"
-                            :position-x="x"
-                            :position-y="y"
-                            absolute
-                            offset-y
+                        <v-card
+                            link
+                            :to="'stream/' + stream.id"
+                            class="mx-auto ma-0"
+                            height="140"
+                            width="250"
+                            color="#080808"
                         >
-                            <v-list dense>
-                                <v-list-item @click="OpenLightDetailDialog">
-                                    <v-list-item-icon>
-                                        <v-icon color="#01CBC6" x-small
-                                            >mdi-magnify</v-icon
+                            <v-img v-if="stream.image == 'false'">
+                                <v-row class="fill-height ma-0 mt-6">
+                                    <div class="ml-2">
+                                        <v-col
+                                            cols="12"
+                                            v-if="stream.is_problem === 0"
                                         >
-                                    </v-list-item-icon>
-                                    <v-list-item-title>
-                                        Zobrazit rychlí náhled
-                                    </v-list-item-title>
-                                </v-list-item>
-                                <v-list-item @click="OpenSmallEditDialog">
-                                    <v-list-item-icon>
-                                        <v-icon color="#1287A5" x-small
-                                            >mdi-pencil</v-icon
-                                        >
-                                    </v-list-item-icon>
-                                    <v-list-item-title>
-                                        Upravit popis
-                                    </v-list-item-title>
-                                </v-list-item>
-                                <v-list-item disabled>
-                                    <v-list-item-icon>
-                                        <v-icon color="#EAF0F1" x-small
-                                            >mdi-calendar-blank</v-icon
-                                        >
-                                    </v-list-item-icon>
-                                    <v-list-item-title>
-                                        Přidat událost
-                                    </v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                        <!-- konec menu -->
+                                            <p
+                                                class="font-weight-bold text-center"
+                                            >
+                                                {{ stream.nazev }}
+                                            </p>
+                                            <p class="white--text text-center">
+                                                čeká se na náhled...
+                                                <i
+                                                    style="color:#BDBDBD"
+                                                    class="fas fa-spinner fa-spin fa-2x ml-6"
+                                                ></i>
+                                            </p>
+                                        </v-col>
+                                    </div>
+                                </v-row>
+                            </v-img>
+
+                            <v-img
+                                v-else
+                                :lazy-src="stream.image"
+                                :src="stream.image"
+                                :aspect-ratio="16 / 9"
+                            >
+                                <p
+                                    class="font-weight-bold text-center black--text"
+                                    style="text-shadow: 1px 1px white;"
+                                >
+                                    {{ stream.nazev }}
+                                </p>
+                            </v-img>
+                        </v-card>
                     </v-col>
                 </v-row>
             </v-row>
         </v-container>
-
-        <!-- Dialogy -->
-
-        <v-row justify="center">
-            <v-dialog v-model="detailDialog" persistent max-width="900px">
-                <v-card>
-                    <v-card-text class="pt-6">
-                        <div v-if="loading === true">
-                            <!-- loading animace -->
-                            <v-row align="center" justify="space-around">
-                                <span class="mt-12">
-                                    <i
-                                        style="color:#EAF0F1"
-                                        class="fas fa-spinner fa-spin fa-5x"
-                                    ></i>
-                                </span>
-                            </v-row>
-                        </div>
-                        <div v-else>
-                            <div
-                                v-if="stream.service.pcrpid != null"
-                                class="text-start"
-                            >
-                                <span>
-                                    <strong>
-                                        Servisní informace o streamu:
-                                    </strong>
-                                </span>
-                                <br />
-                                <v-card color="transparent" flat>
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    PcrPid:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            stream.service
-                                                                .pcrpid
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    PmtPid:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            stream.service
-                                                                .pmtpid
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    TSid:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            stream.service.tsid
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-                                </v-card>
-                            </div>
-                            <div
-                                v-if="stream.audio != null"
-                                class="text-start mt-6"
-                            >
-                                <span>
-                                    <strong>
-                                        Audio
-                                    </strong>
-                                </span>
-                                <br />
-                                <v-card color="transparent" flat>
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Discontinuity Errory:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.audio
-                                                                    .discontinuities ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.audio
-                                                                    .discontinuities !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        {{
-                                                            stream.audio
-                                                                .discontinuities
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Scrambled:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.audio
-                                                                    .scrambled ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.audio
-                                                                    .scrambled !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        {{
-                                                            stream.audio
-                                                                .scrambled
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    PID:
-                                                    <span class="ml-3">
-                                                        {{ stream.audio.pid }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Jazyková stopa:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            stream.audio
-                                                                .language
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Bitrate:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            Math.round(
-                                                                stream.audio
-                                                                    .bitrate /
-                                                                    1024
-                                                            )
-                                                        }}
-                                                        kbps
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Dekryptace
-                                                    <span class="ml-3">
-                                                        <span
-                                                            v-if="
-                                                                stream.audio
-                                                                    .audioAccess ==
-                                                                    'success'
-                                                            "
-                                                            class="green--text"
-                                                        >
-                                                            Dekryptuje
-                                                        </span>
-                                                        <span
-                                                            v-else
-                                                            class="red--text"
-                                                        >
-                                                            Nedekryptuje
-                                                        </span>
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-                                </v-card>
-                            </div>
-
-                            <div v-if="stream.video != null" class="text-start">
-                                <span>
-                                    <strong>
-                                        Video
-                                    </strong>
-                                </span>
-                                <br />
-                                <v-card color="transparent" flat>
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Discontinuity Errory:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.video
-                                                                    .discontinuities ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.video
-                                                                    .discontinuities !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        {{
-                                                            stream.video
-                                                                .discontinuities
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Scrambled:
-                                                    <span
-                                                        class="ml-3"
-                                                        :class="{
-                                                            'green--text':
-                                                                stream.video
-                                                                    .scrambled ==
-                                                                '0',
-                                                            'red--text':
-                                                                stream.video
-                                                                    .scrambled !=
-                                                                '0'
-                                                        }"
-                                                    >
-                                                        {{
-                                                            stream.video
-                                                                .scrambled
-                                                        }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Bitrate:
-                                                    <span class="ml-3">
-                                                        {{
-                                                            Math.round(
-                                                                (stream.video
-                                                                    .bitrate /
-                                                                    1048576) *
-                                                                    100
-                                                            ) / 100
-                                                        }}
-                                                        Mbps
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    Dekryptace
-                                                    <span class="ml-3">
-                                                        <span
-                                                            v-if="
-                                                                stream.video
-                                                                    .access ==
-                                                                    'success'
-                                                            "
-                                                            class="green--text"
-                                                        >
-                                                            Dekryptuje
-                                                        </span>
-                                                        <span
-                                                            v-else
-                                                            class="red--text"
-                                                        >
-                                                            Nedekryptuje
-                                                        </span>
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-
-                                    <v-list-item>
-                                        <v-list-item>
-                                            <small>
-                                                <strong>
-                                                    PID:
-                                                    <span class="ml-3">
-                                                        {{ stream.video.pid }}
-                                                    </span>
-                                                </strong>
-                                            </small></v-list-item
-                                        >
-                                    </v-list-item>
-                                </v-card>
-                            </div>
-                        </div>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn
-                            color="green darken-1"
-                            text
-                            @click="closeLightDetailDialog()"
-                        >
-                            Zavřít
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </v-row>
-
-        <!-- Editace Dialog -->
-
-        <v-row justify="center" v-if="smallEditStreamData != null">
-            <v-dialog v-model="smallEditDialog" persistent max-width="1000px">
-                <v-card>
-                    <v-card-title>
-                        <span class="headline text-center"
-                            >Editace streamu</span
-                        >
-                    </v-card-title>
-                    <v-card-text>
-                        <v-container>
-                            <v-row>
-                                <v-col>
-                                    <v-text-field
-                                        label="Název kanálu"
-                                        v-model="
-                                            smallEditStreamData.stream_name
-                                        "
-                                        required
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-                        </v-container>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="red darken-1" text @click="closeDialog()">
-                            Zavřít
-                        </v-btn>
-                        <v-btn color="green darken-1" text @click="saveEdit()">
-                            Editovat
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </v-row>
-
-        <!-- konec editace dialogu -->
-
-        <!-- konec dialogů -->
 
         <v-container
             class="text-center"
             v-if="streams !== null && streams.length > 0"
         >
             <v-pagination
+                class="pt-6"
+                color="teal"
                 v-model="pagination.current"
                 :length="pagination.total"
                 @input="onPageChange"
-                circle
             ></v-pagination>
         </v-container>
     </v-main>
@@ -571,7 +93,12 @@
 
 <script>
 import StaticMozaika from "./MozaikaStatic/MozaikaStaticComponent";
+import ErrorMozaika from "./MozaikaErrorComponent.vue";
 export default {
+    metaInfo: {
+        title: "IPTV Dohled - mozaika"
+    },
+
     computed: {
         loggedUser() {
             return this.$store.state.loggedUser;
@@ -580,13 +107,7 @@ export default {
     data: () => ({
         streamsInterval: null,
         paginationInterval: null,
-        smallEditDialog: false,
-        smallEditStreamData: null,
-        detailDialog: false,
-        streamId: null,
-        showMenu: false,
-        x: 0,
-        y: 0,
+      
         streams: null,
         streamWeb: "",
         pagination: {
@@ -594,143 +115,16 @@ export default {
             total: 0
         },
         loading: true,
-        stream: {
-            video: {
-                bitrate: null,
-                pid: null,
-                discontinuities: null,
-                scrambled: null,
-                access: null
-            },
-            audio: {
-                bitrate: null,
-                pid: null,
-                discontinuities: null,
-                scrambled: null,
-                audioLanguage: null,
-                audioAccess: null,
-                access: null
-            },
-            ca: {
-                access: null,
-                scrambled: null,
-                description: null
-            },
-            service: {
-                pcrpid: null,
-                pmtpid: null,
-                tsid: null
-            }
-        }
     }),
     components: {
-        "staticmozaika-component": StaticMozaika
+        "staticmozaika-component": StaticMozaika,
+        "errormozaika-component": ErrorMozaika
     },
 
     created() {
         this.getStreams();
-        this.smallEditStreamData = null;
     },
     methods: {
-        saveEdit() {
-            window.axios
-                .post("stream/mozaika/edit/save", {
-                    streamId: this.streamId,
-                    streamName: this.smallEditStreamData.stream_name
-                })
-                .then(response => {
-                    if (response.data.status === "success") {
-                        this.smallEditDialog = false;
-                    }
-                });
-        },
-        closeDialog() {
-            this.smallEditDialog = false;
-        },
-        OpenSmallEditDialog() {
-            window.axios
-                .post("stream/get_name_and_dohled", {
-                    streamId: this.streamId
-                })
-                .then(response => {
-                    if (response.data.status === "success") {
-                        this.smallEditStreamData = response.data;
-                        this.smallEditDialog = true;
-                    }
-                });
-        },
-        OpenLightDetailDialog() {
-            this.detailDialog = true;
-
-            // open socket connection
-            Echo.channel("streamInfoTsVideoBitrate" + this.streamId).listen(
-                "StreamInfoTsVideoBitrate",
-                eVideo => {
-                    this.stream.video.bitrate = eVideo["bitrate"];
-
-                    this.stream.video.pid = eVideo["videoPid"];
-                    this.stream.video.discontinuities =
-                        eVideo["discontinuities"];
-                    this.stream.video.scrambled = eVideo["scrambled"];
-                    this.stream.video.access = eVideo["access"];
-                    this.loading = false;
-                }
-            );
-
-            Echo.channel("streamInfoTsAudioBitrate" + this.streamId).listen(
-                "StreamInfoAudioBitrate",
-                eAudio => {
-                    // console.log(e["bitrate"]);
-                    this.stream.audio.bitrate = eAudio["bitrate"];
-
-                    this.stream.audio.pid = eAudio["audioPid"];
-                    this.stream.audio.discontinuities =
-                        eAudio["audioDiscontinuities"];
-                    this.stream.audio.scrambled = eAudio["audioScrambled"];
-                    this.stream.audio.audioLanguage = eAudio["audioLanguage"];
-                    this.stream.audio.audioAccess = eAudio["audioAccess"];
-                }
-            );
-
-            Echo.channel("streamInfoTsCa" + this.streamId).listen(
-                "StreamInfoCa",
-                eCA => {
-                    this.stream.ca.access = eCA["access"];
-                    this.stream.ca.description = eCA["description"];
-                    this.stream.ca.scrambled = eCA["scrambled"];
-                }
-            );
-
-            Echo.channel("streamInfoTsService" + this.streamId).listen(
-                "StreamInfoService",
-                eService => {
-                    this.stream.service.pcrpid = eService["pcrpid"];
-                    this.stream.service.pmtpid = eService["pmtpid"];
-                    this.stream.service.tsid = eService["tsid"];
-                }
-            );
-        },
-
-        closeLightDetailDialog() {
-            // leave channels
-            Echo.leaveChannel("streamInfoTsVideoBitrate" + this.streamId);
-            Echo.leaveChannel("streamInfoTsAudioBitrate" + this.streamId);
-            Echo.leaveChannel("streamInfoTsCa" + this.streamId);
-            Echo.leaveChannel("streamInfoTsService" + this.streamId);
-            this.streamId = null;
-            this.detailDialog = false;
-            this.loading = true;
-        },
-        show(e, streamId) {
-            this.streamId = streamId;
-            e.preventDefault();
-            this.showMenu = false;
-            this.x = e.clientX;
-            this.y = e.clientY;
-            this.$nextTick(() => {
-                this.showMenu = true;
-            });
-        },
         async getStreams() {
             try {
                 await axios

@@ -37,6 +37,6 @@ class add_ccError implements ShouldQueue
      */
     public function handle()
     {
-        CcErrorController::store_ccError($this->streamId, $this->error, $this->pozice);
+        // CcErrorController::store_ccError($this->streamId, $this->error, $this->pozice);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\EmailNotificationController;
+use App\Http\Controllers\Notifications\EmailNotificationController;
 use Illuminate\Console\Command;
 
 class SendErrorStreamEmail extends Command

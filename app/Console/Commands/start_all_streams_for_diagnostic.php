@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\StreamController;
-use App\Http\Controllers\StreamDiagnosticController;
+use App\Http\Controllers\Diagnostic\StreamDiagnosticController;
 use Illuminate\Console\Command;
 
 class start_all_streams_for_diagnostic extends Command

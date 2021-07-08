@@ -5,7 +5,9 @@
                 <strong> Výpis z dokumentace </strong>
             </span>
             <v-card flat color="transparent">
-                <v-container v-if="dataFromDoku === null">
+                <v-container
+                    v-if="dataFromDoku === null || dataFromDoku.length == 0"
+                >
                     <v-alert outlined text type="info">
                         <strong
                             >Stream se nepodařilo vyhledat v dokumentaci</strong
@@ -52,7 +54,7 @@
                                 </span>
                             </v-col>
 
-                            <v-row v-if="dataFromDoku.device != false">
+                            <v-row v-if="dataFromDoku.device">
                                 <v-col cols="12">
                                     <span>
                                         <strong>
@@ -140,9 +142,14 @@ export default {
                 })
                 .then(response => {
                     if (response.data.status !== "success") {
-                        this.dataFromDoku = null;
+                        return this.dataFromDoku = null;
                     }
-                    this.dataFromDoku = response.data;
+
+                    if (response.data.alert) {
+                        return this.dataFromDoku = null;
+                    }
+
+                    return this.dataFromDoku = response.data;
                 })
                 .catch(error => {
                     this.dataFromDoku = null;

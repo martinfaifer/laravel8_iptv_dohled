@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\FfmpegController;
 use App\Jobs\FFmpegImageCreate;
 use App\Models\Stream;
+use App\Models\SystemSetting;
 use Illuminate\Console\Command;
 use App\Traits\FfmpegTrait;
 
@@ -43,8 +44,12 @@ class create_thumbnail_from_stream extends Command
      */
     public function handle()
     {
-        Stream::where([['status', "running"], ['is_problem', false], ['vytvaretNahled', true]])->get()->each(function ($stream) {
-            $this->ffmpeg_create_image($stream);
-        });
+        if (SystemSetting::where('modul', 'create_thumbnails')->first()->stav === "on") {
+            Stream::where([['status', "running"], ['is_problem', false], ['vytvaretNahled', true], ['dohledovano', true]])->get()->each(function ($stream) {
+                FFmpegImageCreate::dispatch($stream)
+                    ->onConnection('redis')
+                    ->onQueue('ffmpeg');
+            });
+        }
     }
 }

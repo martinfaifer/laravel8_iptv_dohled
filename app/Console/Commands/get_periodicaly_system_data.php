@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamController;
-use App\Http\Controllers\SystemController;
+use App\Http\Controllers\Streams\StreamController;
+use App\Http\Controllers\System\SystemController;
+use App\Http\Controllers\System\SystemCpuController;
 use Illuminate\Console\Command;
 
 class get_periodicaly_system_data extends Command
@@ -40,9 +41,7 @@ class get_periodicaly_system_data extends Command
     public function handle()
     {
         SystemController::get_periodicly_systemLoad_ram_hdd_swap();
-        SystemController::store_cpu_usage();
-        StreamController::take_count_of_working_streams();
-        StreamController::take_count_of_stopped_streams();
-        StreamController::take_count_of_issued_streams();
+        SystemCpuController::store_cpu_usage();
+        StreamController::take_count_of_working_issued_stopped_streams();
     }
 }

@@ -28,7 +28,7 @@
         <v-container fluid class="mt-2">
             <v-row>
                 <v-col cols="12" sm="12" md="9" lg="9">
-                    <!-- <ccerrorstreams-component></ccerrorstreams-component> -->
+                    <!-- <systemlog-component></systemlog-component> -->
                 </v-col>
                 <v-col cols="12" sm="12" md="3" lg="3">
                     <streamhistory-component></streamhistory-component>
@@ -46,9 +46,13 @@ import CpuComponent from "./_SystemPrehled/CpuComponent.vue";
 import MonitoredStreamsComponent from "./_SystemPrehled/_StreamsPrehled/MonitoredStreamsComponent.vue";
 import DonutStreamsChartComponent from "./_SystemPrehled/_StreamsPrehled/DonutStreamsChartComponent.vue";
 import StreamHistoryComponent from "./_SystemPrehled/_StreamsPrehled/StreamsHistoryComponent";
+import SystemLogComponent from "./_SystemPrehled/SystemLogComponent.vue";
 
 export default {
     data() {
+        metaInfo: {
+            title: "IPTV Dohled - nastavení";
+        }
         return {};
     },
 
@@ -60,8 +64,8 @@ export default {
         "cpu-component": CpuComponent,
         "monitoredstreams-component": MonitoredStreamsComponent,
         "donutstreamschart-component": DonutStreamsChartComponent,
-
-        "streamhistory-component": StreamHistoryComponent
+        "streamhistory-component": StreamHistoryComponent,
+        "systemlog-component": SystemLogComponent
     },
     methods: {},
     watch: {}

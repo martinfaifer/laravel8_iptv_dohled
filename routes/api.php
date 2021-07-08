@@ -1,17 +1,15 @@
 <?php
 
-use App\Http\Controllers\ApiController;
-use App\Http\Controllers\SelfHardwareCheckController;
-use App\Http\Controllers\StreamController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\API\ApiController;
+use App\Http\Controllers\Streams\StreamController;
 use Illuminate\Support\Facades\Route;
 
 /**
  * API V1
  */
-Route::get('/iptvdoku/testConnection', [ApiController::class, 'test_connection_to_dokumentace'])->middleware('firewall');
+Route::get('/iptvdoku/testConnection', [ApiController::class, 'test_connection_to_dokumentace']);
 Route::post('/iptvdoku/search/stream', [ApiController::class, 'search_stream_data_v_dokumentaci']);
-Route::get('/iptvdoku/get/streams_for_monitoring', [ApiController::class, 'get_streams_for_monitoring_from_dohled'])->middleware('firewall');
+Route::get('/iptvdoku/get/streams_for_monitoring', [ApiController::class, 'get_streams_for_monitoring_from_dohled']);
 
 
 // externí API pro pripojeni

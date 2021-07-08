@@ -1,65 +1,55 @@
 <template>
-    <div>
+    <v-main>
         <v-container fluid v-if="errorStreams != null">
-            <div class="ml-12 body-1">
-                <v-row>
-                    <strong>
-                        Nefunknčí kanály
-                    </strong>
-                </v-row>
-            </div>
-            <v-row class="mx-auto mt-1 ma-1 mr-1">
-                <v-col
-                    v-for="stream in errorStreams"
-                    :key="stream.id"
-                    class="mt-2"
-                >
-                    <v-hover v-slot:default="{ hover }">
-                        <v-card
-                            link
-                            :to="'stream/' + stream.id"
-                            :elevation="hover ? 12 : 0"
-                            class="mx-auto ma-0 transition-fast-in-fast-out"
-                            height="180"
-                            width="300"
-                            :class="{
-                                'green darken-1': stream.status == 'success',
-                                'green darken-3':
-                                    stream.status == 'diagnostic_crash',
-                                'red darken-4': stream.status == 'error',
-                                'deep-orange accent-1':
-                                    stream.status == 'issue',
-                                '#202020': stream.status == 'waiting'
-                            }"
-                        >
-                            <v-img
-                                :elevation="hover ? 24 : 0"
-                                class="transition-fast-in-fast-out"
+
+                <div class="ml-12 mt-6 body-1">
+                    <v-row>
+                        <span class="text--disabled font-weight-medium">
+                            Nefunkční / problémové kanály
+                            <span class="red--text">{{ count }}</span>
+                        </span>
+                    </v-row>
+                </div>
+                <v-row class="mx-auto mt-1 ma-1 mr-1">
+                    <v-col
+                        v-for="stream in errorStreams"
+                        :key="stream.id"
+                        class="mt-2"
+                    >
+                        <v-hover v-slot:default="{ hover }">
+                            <v-card
+                                link
+                                :to="'stream/' + stream.id"
+                                :elevation="hover ? 12 : 0"
+                                class="mx-auto ma-0 transition-fast-in-fast-out"
+                                height="120"
+                                width="200"
+                                :color="stream.status"
                             >
-                                <v-row
-                                    class="fill-height ma-0 mt-12"
-                                    justify="center"
-                                >
-                                    <div class="ml-1">
-                                        <v-row>
-                                            <strong>
-                                                {{ stream.nazev }} je ve výpadku
+                                <v-card-text>
+                                    <v-col cols="12" sm="12" md="12" lg="12">
+                                        <div class="ml-1">
+                                            <strong
+                                                class="white--text"
+                                                v-text="stream.msg"
+                                            >
                                             </strong>
-                                        </v-row>
-                                    </div>
-                                </v-row>
-                            </v-img>
-                        </v-card>
-                    </v-hover>
-                </v-col>
-            </v-row>
+                                        </div>
+                                    </v-col>
+                                </v-card-text>
+                            </v-card>
+                        </v-hover>
+                    </v-col>
+                </v-row>
+
         </v-container>
-    </div>
+    </v-main>
 </template>
 <script>
 export default {
     data: () => ({
         streams: null,
+        count: 0,
         errorStreams: null
     }),
 
@@ -69,11 +59,13 @@ export default {
 
     methods: {
         getErrorStreams() {
-            axios.get("error/streams").then(response => {
-                if (response.data.status === "success") {
-                    this.errorStreams = response.data.data;
+            axios.get("streamAlerts").then(response => {
+                if (response.data.length > 0) {
+                    this.errorStreams = response.data;
+                    this.count = response.data.length;
                 } else {
                     this.errorStreams = null;
+                    this.count = 0;
                 }
             });
         }

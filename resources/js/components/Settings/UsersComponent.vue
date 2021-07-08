@@ -71,28 +71,26 @@
                     </template>
 
                     <template v-slot:item.status="{ item }">
-                        <span v-if="item.status == 'access'">
+                        <v-col cols="12" sm="12" md="8" lg="8">
                             <v-sheet
+                                v-if="item.status == 'access'"
                                 color="rgba(60, 179, 113, 0.2) "
                                 class="green--text text-center transition-swing rounded-lg"
-                                width="50%"
                             >
                                 <strong>
                                     Aktivní
                                 </strong>
                             </v-sheet>
-                        </span>
-                        <span v-else>
                             <v-sheet
+                                v-else
                                 color="rgba(255, 0, 0, 0.2)"
                                 class="red--text text-center transition-swing rounded-lg"
-                                width="50%"
                             >
                                 <strong>
                                     Blokován
                                 </strong>
                             </v-sheet>
-                        </span>
+                        </v-col>
                     </template>
 
                     <!-- AKCE U JEDNOTLIVÝC STREAMŮ -->
@@ -316,7 +314,6 @@ export default {
                 { text: "E-mail", value: "email" },
                 { text: "Role", value: "role_id" },
                 { text: "Typ mozaiky", value: "mozaika" },
-                { text: "Streamy", value: "customData" },
                 { text: "Počet kanálů v mozaice", value: "pagination" },
                 { text: "Status", value: "status" },
                 { text: "Akce", value: "akce" }
@@ -328,7 +325,7 @@ export default {
     },
     methods: {
         loadUsers() {
-            axios.get("users").then(response => {
+            axios.get("user/users").then(response => {
                 this.tableLoading = false;
                 this.users = response.data;
             });

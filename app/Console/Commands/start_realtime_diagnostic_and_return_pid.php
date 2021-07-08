@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\DiagnosticController;
+use App\Http\Controllers\Diagnostic\DiagnosticController;
 use Illuminate\Console\Command;
 
 class start_realtime_diagnostic_and_return_pid extends Command

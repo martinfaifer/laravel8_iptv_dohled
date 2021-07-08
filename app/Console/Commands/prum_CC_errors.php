@@ -38,6 +38,6 @@ class prum_CC_errors extends Command
      */
     public function handle()
     {
-        CcErrorController::prum_every_two_hours();
+        // CcErrorController::prum_every_two_hours();
     }
 }

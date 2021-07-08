@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamDiagnosticController;
+use App\Http\Controllers\Diagnostic\StreamDiagnosticController;
 use Illuminate\Console\Command;
 
 class try_start_crashed_stream extends Command

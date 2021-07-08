@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamHistoryController;
+use App\Http\Controllers\Streams\StreamHistoryController;
 use Illuminate\Console\Command;
 
 class Prum_history_records_older_then_twelve_hours extends Command

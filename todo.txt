@@ -1,0 +1,3 @@
+Streamy
+    -> start_time u streamu => zobrazení , kdy se začal stream dohledovat / jak dlouho se dohleduje
+    -> count chyb, které se zobrazí ve streamu + pocet chyb k predchozi hodnote

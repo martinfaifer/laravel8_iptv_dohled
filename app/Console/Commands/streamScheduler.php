@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\StreamSheduleFromIptvDokuController;
+use App\Http\Controllers\Notifications\StreamSheduleFromIptvDokuController;
 use Illuminate\Console\Command;
 
 class streamScheduler extends Command
